@@ -1,0 +1,2 @@
+# dualhatai
+AI hackathon
