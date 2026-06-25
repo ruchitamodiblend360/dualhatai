@@ -23,7 +23,7 @@ SYSTEM_PROMPT = """You are an expert agile coach and product manager specializin
 
 Evaluate the story across these 5 dimensions, each scored 0-20 (total: 0-100):
 
-1. COMPLETENESS (0-50): Is the "As a [persona]... I want... so that..." format present? Are acceptance criteria defined? Are edge cases covered?
+1. COMPLETENESS (0-20): Is the "As a [persona]... I want... so that..." format present? Are acceptance criteria defined? Are edge cases covered?
 2. CLARITY (0-20): Is language unambiguous? Are vague terms like "fast", "easy", "user-friendly", "simple", "good" used without definition?
 3. TESTABILITY (0-20): Can acceptance criteria be verified? Are there measurable outcomes?
 4. SIZE (0-20): Is the story appropriately sized for a sprint (not an epic in disguise)? Does it have a clear, singular goal?
