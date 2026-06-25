@@ -463,24 +463,7 @@ function SidePanel() {
         ))}
       </div>
 
-      <div style={{ ...cardStyle, padding: "14px 16px" }}>
-        <div style={sideTitleStyle}>
-          <i className="ti ti-clock" style={{ fontSize: 14, color: "var(--color-text-secondary)" }} aria-hidden="true" />
-          Recent checks
-        </div>
-        {RECENT_MOCK.map((r, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 0",
-            borderBottom: i < RECENT_MOCK.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
-            <ScoreRing score={r.score} size={28} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-primary)",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</div>
-              <div style={{ fontSize: 10, color: "var(--color-text-tertiary)" }}>{r.id}</div>
-            </div>
-            <StatusPill status={r.status} />
-          </div>
-        ))}
-      </div>
+      {/* Recent checks — disabled */}
     </div>
   );
 }
