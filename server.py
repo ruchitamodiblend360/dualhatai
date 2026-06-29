@@ -193,13 +193,15 @@ class Handler(BaseHTTPRequestHandler):
                                         "raw": groq_data}))
             return
 
-        # Save to history
+        # Save to history (full result stored for panel view)
         entry = {
             "id": int(time.time() * 1000),
             "title": story.split("\n")[0][:80],
+            "story_text": story,
             "score": parsed.get("total", 0),
             "readiness_level": parsed.get("readiness_level", ""),
             "checked_at": time.strftime("%Y-%m-%d %H:%M"),
+            "result": parsed,
         }
         history = load_history()
         history.insert(0, entry)
