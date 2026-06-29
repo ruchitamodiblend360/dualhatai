@@ -526,8 +526,8 @@ Acceptance Criteria:
               "Add your DoR to score against your own bar"].map((t, i) => (
               <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", padding: "5px 0",
                 borderBottom: i < 2 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
-                <i className="ti ti-arrow-right" style={{ fontSize: 12, color: "var(--color-text-tertiary)", flexShrink: 0, marginTop: 1 }} aria-hidden="true" />
-                <span style={{ fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.5 }}>{t}</span>
+                <i className="ti ti-arrow-right" style={{ fontSize: 12, color: "var(--color-text-primary)", flexShrink: 0, marginTop: 1 }} aria-hidden="true" />
+                <span style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.5 }}>{t}</span>
               </div>
             ))}
           </div>
@@ -605,7 +605,7 @@ Acceptance Criteria:
 
       return (
         <div style={{ fontFamily: "var(--font-sans)", background: "var(--color-background-primary)",
-          border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)",
+          border: "0.5px solid var(--color-border-primary)", borderRadius: "var(--border-radius-lg)",
           overflow: "hidden" }}>
           <h2 className="sr-only">User story readiness checker</h2>
 
@@ -643,7 +643,7 @@ Acceptance Criteria:
                   <div style={cardStyle}>
                     <div style={{ padding: "16px 18px 0" }}>
                       <label style={{ display: "block", fontSize: 12, fontWeight: 500,
-                        color: "var(--color-text-secondary)", marginBottom: 7 }}>
+                        color: "var(--color-text-primary)", marginBottom: 7 }}>
                         Paste User Story here below:
                       </label>
                       <textarea
@@ -664,11 +664,11 @@ Acceptance Criteria:
 
                       <div style={{ borderTop: "0.5px solid var(--color-border-tertiary)", paddingTop: 13, marginBottom: 13 }}>
                         <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-secondary)", marginBottom: 9 }}>
-                          Context <span style={{ fontWeight: 400, color: "var(--color-text-tertiary)" }}>(optional)</span>
+                          Context <span style={{ fontWeight: 400, color: "var(--color-text-primary)" }}>(optional - COMING SOON)</span>
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                           <div>
-                            <label style={{ display: "block", fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 5 }}>Parent epic</label>
+                            <label style={{ display: "block", fontSize: 11, color: "var(--color-text-primary)", marginBottom: 5 }}>Parent epic</label>
                             <input value={epic} onChange={e => setEpic(e.target.value)}
                               placeholder="e.g. Auth & security epic"
                               style={{ width: "100%", fontSize: 12, padding: "7px 10px", boxSizing: "border-box",
@@ -677,7 +677,7 @@ Acceptance Criteria:
                                 borderRadius: "var(--border-radius-md)", color: "var(--color-text-primary)" }} />
                           </div>
                           <div>
-                            <label style={{ display: "block", fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 5 }}>Definition of Ready</label>
+                            <label style={{ display: "block", fontSize: 11, color: "var(--color-text-primary)", marginBottom: 5 }}>Definition of Ready</label>
                             <input value={dor} onChange={e => setDor(e.target.value)}
                               placeholder="e.g. GWT ACs, max 8 pts…"
                               style={{ width: "100%", fontSize: 12, padding: "7px 10px", boxSizing: "border-box",
@@ -694,7 +694,7 @@ Acceptance Criteria:
                       <button onClick={() => { setStory(EXAMPLE_STORY); setEpic(""); setDor(""); setUiState("idle"); setResult(null); }}
                         style={{ fontSize: 12, padding: "7px 13px", background: "none", cursor: "pointer",
                           border: "0.5px solid var(--color-border-secondary)",
-                          borderRadius: "var(--border-radius-md)", color: "var(--color-text-secondary)" }}>
+                          borderRadius: "var(--border-radius-md)", color: "var(--color-text-primary)" }}>
                         Load example
                       </button>
                       <button onClick={analyzeStory}
