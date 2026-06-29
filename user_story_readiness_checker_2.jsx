@@ -479,6 +479,9 @@ export default function App() {
   const [uiState, setUiState]     = useState("idle");
   const [loadStep, setLoadStep]   = useState(0);
   const [result, setResult]       = useState(null);
+  const [history, setHistory]     = useState(() => {
+    try { return JSON.parse(localStorage.getItem("story_history") || "[]"); } catch { return []; }
+  });
 
   const resultRef = useRef(null);
   const timerRef  = useRef(null);
@@ -526,6 +529,18 @@ export default function App() {
       const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
       setResult(parsed);
       setUiState("done");
+      const entry = {
+        id: Date.now(),
+        title: story.trim().split("\n")[0].slice(0, 80),
+        score: parsed.total,
+        readiness_level: parsed.readiness_level,
+        checkedAt: new Date().toLocaleString(),
+      };
+      setHistory(prev => {
+        const updated = [entry, ...prev];
+        localStorage.setItem("story_history", JSON.stringify(updated));
+        return updated;
+      });
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
     } catch {
       setUiState("error");
@@ -662,10 +677,73 @@ export default function App() {
       )}
 
       {activeNav === "dashboard" && (
-        <div style={{ padding: "48px 24px", textAlign: "center" }}>
-          <i className="ti ti-layout-dashboard" style={{ fontSize: 32, color: "var(--color-text-tertiary)", display: "block", marginBottom: 12 }} aria-hidden="true" />
-          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 6 }}>Sprint dashboard</div>
-          <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>View all stories for the current sprint and their readiness scores.</div>
+        <div style={{ padding: "24px 20px", background: "var(--color-background-secondary)", minHeight: 300 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <div>
+              <h2 style={{ fontSize: 18, fontWeight: 500, color: "#185FA5", margin: "0 0 4px" }}>Sprint Dashboard</h2>
+              <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: 0 }}>All user stories checked through the tool.</p>
+            </div>
+            {history.length > 0 && (
+              <button onClick={() => { setHistory([]); localStorage.removeItem("story_history"); }}
+                style={{ fontSize: 12, padding: "6px 12px", background: "none", cursor: "pointer",
+                  border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-md)",
+                  color: "var(--color-text-secondary)" }}>
+                <i className="ti ti-trash" style={{ fontSize: 13, marginRight: 5 }} aria-hidden="true" />
+                Clear all
+              </button>
+            )}
+          </div>
+
+          {history.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 24px" }}>
+              <i className="ti ti-clipboard-list" style={{ fontSize: 32, color: "var(--color-text-tertiary)", display: "block", marginBottom: 12 }} aria-hidden="true" />
+              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 6 }}>No stories checked yet</div>
+              <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>Go to the Readiness Checker tab and analyse a story — it will appear here.</div>
+            </div>
+          ) : (
+            <div style={{ ...cardStyle, overflow: "hidden" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: "var(--color-background-secondary)" }}>
+                    {["#", "Story Title", "Readiness Score", "Status", "Checked At"].map((h, i) => (
+                      <th key={i} style={{ textAlign: "left", padding: "10px 14px", fontSize: 11,
+                        fontWeight: 500, color: "var(--color-text-secondary)",
+                        borderBottom: "0.5px solid var(--color-border-tertiary)" }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((row, i) => {
+                    const rc = READINESS_CFG[row.readiness_level] || READINESS_CFG["Needs Work"];
+                    return (
+                      <tr key={row.id} style={{ background: i % 2 === 0 ? "var(--color-background-primary)" : "var(--color-background-secondary)" }}>
+                        <td style={{ padding: "11px 14px", color: "var(--color-text-tertiary)", width: 36 }}>{i + 1}</td>
+                        <td style={{ padding: "11px 14px", color: "var(--color-text-primary)", fontWeight: 400, maxWidth: 340 }}>
+                          <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.title}</div>
+                        </td>
+                        <td style={{ padding: "11px 14px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ height: 6, width: 80, background: "var(--color-background-secondary)", borderRadius: 99 }}>
+                              <div style={{ height: "100%", width: `${row.score}%`, borderRadius: 99,
+                                background: scoreColor(row.score / 5) }} />
+                            </div>
+                            <span style={{ fontWeight: 500, color: scoreColor(row.score / 5) }}>{row.score}/100</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: "11px 14px" }}>
+                          <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99,
+                            background: rc.bg, color: rc.color }}>{row.readiness_level}</span>
+                        </td>
+                        <td style={{ padding: "11px 14px", color: "var(--color-text-tertiary)", fontSize: 12 }}>{row.checkedAt}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
