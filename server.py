@@ -11,11 +11,28 @@ Then open http://localhost:8000  in your browser.
 
 import json
 import os
+import time
 import urllib.request
 import urllib.error
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
+HISTORY_FILE = os.path.join(ROOT, "history.json")
+
+
+def load_history():
+    if not os.path.exists(HISTORY_FILE):
+        return []
+    try:
+        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def save_history(entries):
+    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(entries, f, ensure_ascii=False, indent=2)
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODEL = "llama-3.3-70b-versatile"
 
@@ -74,6 +91,13 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_GET(self):
+        if self.path == "/api/history":
+            self._send(200, json.dumps(load_history()))
+            return
+        if self.path == "/api/history/clear":
+            save_history([])
+            self._send(200, json.dumps({"ok": True}))
+            return
         if self.path in ("/", "/index.html"):
             try:
                 with open(os.path.join(ROOT, "index.html"), "rb") as f:
@@ -168,6 +192,18 @@ class Handler(BaseHTTPRequestHandler):
             self._send(502, json.dumps({"error": f"Could not parse model output: {e}",
                                         "raw": groq_data}))
             return
+
+        # Save to history
+        entry = {
+            "id": int(time.time() * 1000),
+            "title": story.split("\n")[0][:80],
+            "score": parsed.get("total", 0),
+            "readiness_level": parsed.get("readiness_level", ""),
+            "checked_at": time.strftime("%Y-%m-%d %H:%M"),
+        }
+        history = load_history()
+        history.insert(0, entry)
+        save_history(history)
 
         self._send(200, json.dumps(parsed))
 
