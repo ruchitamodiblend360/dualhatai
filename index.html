@@ -772,8 +772,8 @@ Acceptance Criteria:
                         const scoreColor = v => v >= 80 ? "#1D9E75" : v >= 60 ? "#378ADD" : v >= 40 ? "#EF9F27" : "#E24B4A";
                         const rc = READINESS_CFG[row.readiness_level] || READINESS_CFG["Needs Work"];
                         return (
-                          <tr key={row.id} style={{ background: i % 2 === 0 ? "var(--color-background-primary)" : "var(--color-background-secondary)" }}>
-                            <td style={{ padding: "11px 14px", color: "var(--color-text-tertiary)", width: 36 }}>{i + 1}</td>
+                          <tr key={row.id} style={{ background: i % 2 === 0 ? "var(--color-background-primary)" : "var(--color-background-primary)" }}>
+                            <td style={{ padding: "11px 14px", color: "var(--color-text-primary)", width: 36 }}>{i + 1}</td>
                             <td style={{ padding: "11px 14px", color: "var(--color-text-primary)", maxWidth: 340 }}>
                               <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.title}</div>
                             </td>
@@ -789,7 +789,7 @@ Acceptance Criteria:
                               <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99,
                                 background: rc.bg, color: rc.color }}>{row.readiness_level}</span>
                             </td>
-                            <td style={{ padding: "11px 14px", color: "var(--color-text-tertiary)", fontSize: 12 }}>{row.checked_at}</td>
+                            <td style={{ padding: "11px 14px", color: "var(--color-text-primary)", fontSize: 12 }}>{row.checked_at}</td>
                           </tr>
                         );
                       })}
@@ -802,9 +802,9 @@ Acceptance Criteria:
 
           {activeNav === "panel" && (
             <div style={{ padding: "48px 24px", textAlign: "center" }}>
-              <i className="ti ti-file-analytics" style={{ fontSize: 32, color: "var(--color-text-tertiary)", display: "block", marginBottom: 12 }} aria-hidden="true" />
+              <i className="ti ti-file-analytics" style={{ fontSize: 32, color: "var(--color-text-primary)", display: "block", marginBottom: 12 }} aria-hidden="true" />
               <div style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 6 }}>Single story analysis panel</div>
-              <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>Deep-dive view — annotated story text alongside score breakdown and suggested ACs.</div>
+              <div style={{ fontSize: 13, color: "var(--color-text-primary)" }}>Deep-dive view — annotated story text alongside score breakdown and suggested ACs.</div>
             </div>
           )}
 
