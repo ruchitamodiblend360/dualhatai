@@ -547,6 +547,16 @@ Acceptance Criteria:
           <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>Click any story from the Dashboard to view its full analysis here.</div>
         </div>
       );
+      if (!selectedStory.result) return (
+        <div style={{ padding: "48px 24px", textAlign: "center" }}>
+          <i className="ti ti-info-circle" style={{ fontSize: 32, color: "var(--color-text-tertiary)", display: "block", marginBottom: 12 }} aria-hidden="true" />
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 6 }}>No analysis data for this story</div>
+          <div style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 16 }}>This story was checked before detailed storage was enabled. Re-check it to see the full analysis.</div>
+          <button onClick={onRecheck} style={{ fontSize: 13, padding: "8px 18px", background: "#185FA5", color: "#fff", border: "none", borderRadius: "var(--border-radius-md)", cursor: "pointer" }}>
+            Re-check this story
+          </button>
+        </div>
+      );
 
       const r = selectedStory.result || {};
       const sc = r.scores || {};
@@ -570,7 +580,7 @@ Acceptance Criteria:
               if (idx === -1) return [p];
               return [
                 p.slice(0, idx),
-                <mark key={ph + i} style={{ background: "#FAEEDA", color: "#854F0B", borderRadius: 3, padding: "0 3px", fontWeight: 500 }}>{p.slice(idx, idx + ph.length)}</mark>,
+                <mark key={ph + li} style={{ background: "#FAEEDA", color: "#854F0B", borderRadius: 3, padding: "0 3px", fontWeight: 500 }}>{p.slice(idx, idx + ph.length)}</mark>,
                 p.slice(idx + ph.length)
               ];
             });
