@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -428,6 +428,13 @@ Acceptance Criteria:
                                 color: "var(--color-text-primary)" }}>{d.type}</span>
                               <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px",
                                 borderRadius: 99, background: c.bg, color: c.color }}>{d.confidence} confidence</span>
+                              {d.status && (
+                                <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 99,
+                                  background: d.status === "acknowledged" ? "#E1F5EE" : d.status === "implied" ? "#FAEEDA" : "#FCEBEB",
+                                  color: d.status === "acknowledged" ? "#0F6E56" : d.status === "implied" ? "#854F0B" : "#A32D2D" }}>
+                                  {d.status}
+                                </span>
+                              )}
                             </div>
                             <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.5 }}>{d.description}</p>
                           </div>
@@ -467,6 +474,22 @@ Acceptance Criteria:
                         <i className="ti ti-circle-check" style={{ fontSize: 15, color: "#1D9E75",
                           marginTop: 2, flexShrink: 0 }} aria-hidden="true" />
                         <span style={{ fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.6 }}>{ac}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {result.split_suggestions?.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-primary)", marginTop: 16, marginBottom: 9,
+                      display: "flex", alignItems: "center", gap: 6 }}>
+                      <i className="ti ti-scissors" style={{ fontSize: 13, color: "#EF9F27" }} />
+                      Suggested split — this epic may be too large for a single sprint
+                    </div>
+                    {result.split_suggestions.map((s, i) => (
+                      <div key={i} style={{ display: "flex", gap: 9, padding: "7px 0",
+                        borderBottom: i < result.split_suggestions.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                        <span style={{ fontSize: 12, fontWeight: 500, color: "#EF9F27", minWidth: 18 }}>{i + 1}.</span>
+                        <span style={{ fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.6 }}>{s}</span>
                       </div>
                     ))}
                   </>
@@ -598,6 +621,14 @@ Acceptance Criteria:
               <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--color-text-secondary)" }}>
                 <i className="ti ti-arrow-left" style={{ fontSize: 16 }} aria-hidden="true" />
               </button>
+              {(selectedStory.mode || "story") === "epic"
+                ? <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: "#EDE9FE", color: "#5B21B6", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <i className="ti ti-map" style={{ fontSize: 10 }} /> Epic
+                  </span>
+                : <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: "#E6F1FB", color: "#185FA5", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <i className="ti ti-sparkles" style={{ fontSize: 10 }} /> User Story
+                  </span>
+              }
               <span style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)" }}>{selectedStory.title}</span>
               <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: rc.bg, color: rc.color }}>{r.readiness_level}</span>
             </div>
@@ -621,7 +652,9 @@ Acceptance Criteria:
             {/* LEFT */}
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 10 }}>STORY TEXT</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 10 }}>
+                  {(selectedStory.mode || "story") === "epic" ? "EPIC TEXT" : "STORY TEXT"}
+                </div>
                 <div style={{ fontSize: 13, color: "var(--color-text-primary)", fontFamily: "var(--font-mono)", lineHeight: 1.8 }}>
                   {annotatedText(selectedStory.story_text)}
                 </div>
@@ -696,12 +729,217 @@ Acceptance Criteria:
       );
     }
 
+    /* ── Dashboard ── */
+    function Dashboard({ history, setHistory, onRowClick }) {
+      const PAGE_SIZE = 10;
+      const RC = { "Not Ready": { color: "#A32D2D", bg: "#FCEBEB" }, "Needs Work": { color: "#854F0B", bg: "#FAEEDA" }, "Almost Ready": { color: "#185FA5", bg: "#E6F1FB" }, "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" } };
+      const scoreColor = v => v >= 80 ? "#1D9E75" : v >= 60 ? "#378ADD" : v >= 40 ? "#EF9F27" : "#E24B4A";
+
+      const [titleFilter, setTitleFilter] = useState("");
+      const [statusFilter, setStatusFilter] = useState("");
+      const [typeFilter, setTypeFilter] = useState("");
+      const [sortCol, setSortCol] = useState("checked_at");
+      const [sortDir, setSortDir] = useState("desc");
+      const [page, setPage] = useState(1);
+
+      function toggleSort(col) {
+        if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+        else { setSortCol(col); setSortDir("desc"); }
+        setPage(1);
+      }
+
+      function deleteRow(id, e) {
+        e.stopPropagation();
+        fetch(`/api/history/delete/${id}`).then(() =>
+          setHistory(h => h.filter(r => r.id !== id))
+        );
+      }
+
+      const filtered = history
+        .filter(r => r.title.toLowerCase().includes(titleFilter.toLowerCase()))
+        .filter(r => !statusFilter || r.readiness_level === statusFilter)
+        .filter(r => !typeFilter || (r.mode || "story") === typeFilter)
+        .sort((a, b) => {
+          let av = a[sortCol] ?? "", bv = b[sortCol] ?? "";
+          if (sortCol === "score") { av = Number(av); bv = Number(bv); }
+          if (av < bv) return sortDir === "asc" ? -1 : 1;
+          if (av > bv) return sortDir === "asc" ? 1 : -1;
+          return 0;
+        });
+
+      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+      const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+      function SortIcon({ col }) {
+        if (sortCol !== col) return <i className="ti ti-selector" style={{ fontSize: 11, opacity: 0.4 }} />;
+        return <i className={`ti ti-sort-${sortDir === "asc" ? "ascending" : "descending"}`} style={{ fontSize: 11, color: "#185FA5" }} />;
+      }
+
+      const thStyle = (extra = {}) => ({
+        textAlign: "left", padding: "10px 14px", fontSize: 11, fontWeight: 500,
+        color: "var(--color-text-secondary)", borderBottom: "0.5px solid var(--color-border-tertiary)",
+        cursor: "pointer", userSelect: "none", whiteSpace: "nowrap", ...extra
+      });
+
+      return (
+        <div style={{ padding: "24px 20px", background: "var(--color-background-secondary)", minHeight: 300 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <div>
+              <h2 style={{ fontSize: 18, fontWeight: 500, color: "#185FA5", margin: "0 0 4px" }}>Sprint Dashboard</h2>
+              <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: 0 }}>{filtered.length} of {history.length} stories</p>
+            </div>
+            {history.length > 0 && (
+              <button onClick={() => fetch("/api/history/clear").then(() => setHistory([]))}
+                style={{ fontSize: 12, padding: "6px 12px", background: "none", cursor: "pointer",
+                  border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-md)",
+                  color: "var(--color-text-secondary)", display: "flex", alignItems: "center", gap: 5 }}>
+                <i className="ti ti-trash" style={{ fontSize: 13 }} /> Clear all
+              </button>
+            )}
+          </div>
+
+          {history.length > 0 && (
+            <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+              <input value={titleFilter} onChange={e => { setTitleFilter(e.target.value); setPage(1); }}
+                placeholder="Filter by story title…"
+                style={{ fontSize: 12, padding: "7px 11px", border: "0.5px solid var(--color-border-secondary)",
+                  borderRadius: "var(--border-radius-md)", background: "var(--color-background-primary)",
+                  color: "var(--color-text-primary)", width: 220 }} />
+              <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+                style={{ fontSize: 12, padding: "7px 11px", border: "0.5px solid var(--color-border-secondary)",
+                  borderRadius: "var(--border-radius-md)", background: "var(--color-background-primary)",
+                  color: "var(--color-text-primary)" }}>
+                <option value="">All statuses</option>
+                {["Not Ready", "Needs Work", "Almost Ready", "Sprint Ready"].map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(1); }}
+                style={{ fontSize: 12, padding: "7px 11px", border: "0.5px solid var(--color-border-secondary)",
+                  borderRadius: "var(--border-radius-md)", background: "var(--color-background-primary)",
+                  color: "var(--color-text-primary)" }}>
+                <option value="">All types</option>
+                <option value="story">User Story</option>
+                <option value="epic">Epic</option>
+              </select>
+              {(titleFilter || statusFilter || typeFilter) && (
+                <button onClick={() => { setTitleFilter(""); setStatusFilter(""); setTypeFilter(""); setPage(1); }}
+                  style={{ fontSize: 12, padding: "7px 11px", background: "none", cursor: "pointer",
+                    border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-md)",
+                    color: "var(--color-text-secondary)" }}>Clear filters</button>
+              )}
+            </div>
+          )}
+
+          {history.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 24px" }}>
+              <i className="ti ti-clipboard-list" style={{ fontSize: 32, color: "var(--color-text-tertiary)", display: "block", marginBottom: 12 }} />
+              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 6 }}>No stories checked yet</div>
+              <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>Go to the Readiness Checker tab and analyse a story — it will appear here.</div>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 24px" }}>
+              <div style={{ fontSize: 14, color: "var(--color-text-secondary)" }}>No stories match the current filters.</div>
+            </div>
+          ) : (
+            <>
+              <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: "var(--color-background-secondary)" }}>
+                      <th style={thStyle({ width: 36, cursor: "default" })}>#</th>
+                      <th style={thStyle()} onClick={() => toggleSort("title")}>Title <SortIcon col="title" /></th>
+                      <th style={thStyle({ width: 100 })} onClick={() => toggleSort("mode")}>Type <SortIcon col="mode" /></th>
+                      <th style={thStyle()} onClick={() => toggleSort("epic")}>Epic <SortIcon col="epic" /></th>
+                      <th style={thStyle()} onClick={() => toggleSort("score")}>Score <SortIcon col="score" /></th>
+                      <th style={thStyle()} onClick={() => toggleSort("readiness_level")}>Status <SortIcon col="readiness_level" /></th>
+                      <th style={thStyle()} onClick={() => toggleSort("checked_at")}>Checked At <SortIcon col="checked_at" /></th>
+                      <th style={thStyle({ cursor: "default", width: 40 })}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageRows.map((row, i) => {
+                      const rc = RC[row.readiness_level] || RC["Needs Work"];
+                      return (
+                        <tr key={row.id} onClick={() => onRowClick(row)}
+                          style={{ background: "var(--color-background-primary)", cursor: "pointer" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f0f4ff"}
+                          onMouseLeave={e => e.currentTarget.style.background = "var(--color-background-primary)"}>
+                          <td style={{ padding: "11px 14px", color: "var(--color-text-tertiary)", width: 36 }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
+                          <td style={{ padding: "11px 14px", color: "#185FA5", maxWidth: 240 }}>
+                            <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "underline" }}>{row.title}</div>
+                          </td>
+                          <td style={{ padding: "11px 14px" }}>
+                            {(row.mode || "story") === "epic"
+                              ? <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: "#EDE9FE", color: "#5B21B6", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                  <i className="ti ti-map" style={{ fontSize: 10 }} /> Epic
+                                </span>
+                              : <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: "#E6F1FB", color: "#185FA5", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                  <i className="ti ti-sparkles" style={{ fontSize: 10 }} /> User Story
+                                </span>
+                            }
+                          </td>
+                          <td style={{ padding: "11px 14px", color: "var(--color-text-tertiary)", fontSize: 12 }}>
+                            {row.epic || <span style={{ fontStyle: "italic" }}>—</span>}
+                          </td>
+                          <td style={{ padding: "11px 14px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <div style={{ height: 5, width: 60, background: "var(--color-background-secondary)", borderRadius: 99 }}>
+                                <div style={{ height: "100%", width: `${row.score}%`, borderRadius: 99, background: scoreColor(row.score) }} />
+                              </div>
+                              <span style={{ fontWeight: 500, color: scoreColor(row.score), fontSize: 12 }}>{row.score}/100</span>
+                            </div>
+                          </td>
+                          <td style={{ padding: "11px 14px" }}>
+                            <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: rc.bg, color: rc.color }}>{row.readiness_level}</span>
+                          </td>
+                          <td style={{ padding: "11px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>{row.checked_at}</td>
+                          <td style={{ padding: "11px 14px" }} onClick={e => e.stopPropagation()}>
+                            <button onClick={e => deleteRow(row.id, e)}
+                              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-tertiary)", padding: "2px 4px", borderRadius: 4 }}
+                              onMouseEnter={e => e.currentTarget.style.color = "#A32D2D"}
+                              onMouseLeave={e => e.currentTarget.style.color = "var(--color-text-tertiary)"}>
+                              <i className="ti ti-trash" style={{ fontSize: 14 }} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {totalPages > 1 && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 2px" }}>
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                    style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid var(--color-border-secondary)",
+                      borderRadius: "var(--border-radius-md)", background: "none", cursor: page === 1 ? "default" : "pointer",
+                      color: page === 1 ? "var(--color-text-tertiary)" : "var(--color-text-primary)" }}>‹ Prev</button>
+                  {Array.from({ length: totalPages }, (_, ii) => ii + 1).map(p => (
+                    <button key={p} onClick={() => setPage(p)}
+                      style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid var(--color-border-secondary)",
+                        borderRadius: "var(--border-radius-md)", cursor: "pointer",
+                        background: p === page ? "#185FA5" : "none",
+                        color: p === page ? "#fff" : "var(--color-text-primary)" }}>{p}</button>
+                  ))}
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                    style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid var(--color-border-secondary)",
+                      borderRadius: "var(--border-radius-md)", background: "none", cursor: page === totalPages ? "default" : "pointer",
+                      color: page === totalPages ? "var(--color-text-tertiary)" : "var(--color-text-primary)" }}>Next ›</button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      );
+    }
+
     /* ── Main App ── */
     function App() {
-      const [activeNav, setActiveNav] = useState("checker");
-      const [story, setStory]         = useState("");
-      const [epic, setEpic]           = useState("");
-      const [dor, setDor]             = useState("");
+      const [activeNav, setActiveNav]     = useState("checker");
+      const [checkerMode, setCheckerMode] = useState("story"); // "story" | "epic"
+      const [story, setStory]             = useState("");
+      const [epic, setEpic]               = useState("");
+      const [dor, setDor]                 = useState("");
 
       // "idle" | "loading" | "done" | "error"
       const [uiState, setUiState]     = useState("idle");
@@ -741,7 +979,7 @@ Acceptance Criteria:
           const res = await fetch("/api/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ story, epic, dor }),
+            body: JSON.stringify({ story, epic, dor, mode: checkerMode }),
           });
           const data = await res.json();
           if (!res.ok) {
@@ -770,7 +1008,15 @@ Acceptance Criteria:
           <h2 className="sr-only">User story readiness checker</h2>
 
           {/* Top nav */}
-          <div style={{ display: "flex", borderBottom: "0.5px solid var(--color-border-tertiary)" }}>
+          <div style={{ display: "flex", alignItems: "center", borderBottom: "0.5px solid var(--color-border-tertiary)" }}>
+            {/* Home link */}
+            <a href="/" style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 16px",
+              fontSize: 13, color: "var(--color-text-secondary)", textDecoration: "none",
+              borderRight: "0.5px solid var(--color-border-tertiary)", flexShrink: 0 }}
+              title="Back to home">
+              <i className="ti ti-home" style={{ fontSize: 14 }} aria-hidden="true" />
+              Home
+            </a>
             {navTabs.map(t => (
               <button key={t.id} onClick={() => setActiveNav(t.id)}
                 style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 18px",
@@ -788,9 +1034,28 @@ Acceptance Criteria:
           {activeNav === "checker" && (
             <div style={{ padding: "24px 20px", background: "var(--color-background-secondary)" }}>
               <div style={{ marginBottom: 20 }}>
-                <h1 style={{ fontSize: 20, fontWeight: 500, color: "#185FA5", margin: "0 0 4px" }}>Check a user story</h1>
-                <p style={{ fontSize: 13, color: "rgb(24, 95, 165)", margin: "0 o 4px"}}>
-                  Paste your story below and get a readiness score, flagged gaps, and an improved version in seconds.
+                {/* Mode toggle */}
+                <div style={{ display: "inline-flex", border: "0.5px solid var(--color-border-secondary)",
+                  borderRadius: "var(--border-radius-md)", overflow: "hidden", marginBottom: 14 }}>
+                  {[{ id: "story", label: "User Story", icon: "ti-sparkles" },
+                    { id: "epic",  label: "Epic",       icon: "ti-map" }].map(m => (
+                    <button key={m.id} onClick={() => { setCheckerMode(m.id); setUiState("idle"); setResult(null); }}
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 16px",
+                        fontSize: 12, border: "none", cursor: "pointer",
+                        background: checkerMode === m.id ? "#185FA5" : "none",
+                        color: checkerMode === m.id ? "#fff" : "var(--color-text-secondary)" }}>
+                      <i className={`ti ${m.icon}`} style={{ fontSize: 13 }} />
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                <h1 style={{ fontSize: 20, fontWeight: 500, color: "#185FA5", margin: "0 0 4px" }}>
+                  {checkerMode === "epic" ? "Check an Epic" : "Check a User Story"}
+                </h1>
+                <p style={{ fontSize: 13, color: "rgb(24, 95, 165)", margin: "0 0 4px" }}>
+                  {checkerMode === "epic"
+                    ? "Paste your epic below and get a readiness score, flagged gaps, and an improved version in seconds."
+                    : "Paste your story below and get a readiness score, flagged gaps, and an improved version in seconds."}
                 </p>
               </div>
 
@@ -804,13 +1069,15 @@ Acceptance Criteria:
                     <div style={{ padding: "16px 18px 0" }}>
                       <label style={{ display: "block", fontSize: 12, fontWeight: 500,
                         color: "var(--color-text-primary)", marginBottom: 7 }}>
-                        Paste User Story here below:
+                        {checkerMode === "epic" ? "Paste Epic here below:" : "Paste User Story here below:"}
                       </label>
                       <textarea
                         value={story}
                         onChange={e => setStory(e.target.value)}
                         rows={9}
-                        placeholder={`As a [persona], I want [goal] so that [reason].\n\nAcceptance Criteria:\n- …`}
+                        placeholder={checkerMode === "epic"
+                          ? `Epic title: [title]\n\nDescription: [what this epic covers]\n\nGoal: [business outcome]\n\nScope:\n- …`
+                          : `As a [persona], I want [goal] so that [reason].\n\nAcceptance Criteria:\n- …`}
                         style={{ width: "100%", resize: "vertical", fontSize: 13,
                           fontFamily: "var(--font-mono)", lineHeight: 1.7,
                           background: "var(--color-background-secondary)",
@@ -887,88 +1154,14 @@ Acceptance Criteria:
           )}
 
           {activeNav === "dashboard" && (
-            <div style={{ padding: "24px 20px", background: "var(--color-background-secondary)", minHeight: 300 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <div>
-                  <h2 style={{ fontSize: 18, fontWeight: 500, color: "#185FA5", margin: "0 0 4px" }}>Sprint Dashboard</h2>
-                  <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: 0 }}>All user stories checked through the tool.</p>
-                </div>
-                {history.length > 0 && (
-                  <button onClick={() => fetch("/api/history/clear").then(() => setHistory([]))}
-                    style={{ fontSize: 12, padding: "6px 12px", background: "none", cursor: "pointer",
-                      border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-md)",
-                      color: "var(--color-text-secondary)", display: "flex", alignItems: "center", gap: 5 }}>
-                    <i className="ti ti-trash" style={{ fontSize: 13 }} aria-hidden="true" /> Clear all
-                  </button>
-                )}
-              </div>
-
-              {history.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "48px 24px" }}>
-                  <i className="ti ti-clipboard-list" style={{ fontSize: 32, color: "var(--color-text-tertiary)", display: "block", marginBottom: 12 }} aria-hidden="true" />
-                  <div style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 6 }}>No stories checked yet</div>
-                  <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>Go to the Readiness Checker tab and analyse a story — it will appear here.</div>
-                </div>
-              ) : (
-                <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", overflow: "hidden" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: "var(--color-background-secondary)" }}>
-                        {["#", "Story Title", "Readiness Score", "Status", "Checked At"].map((h, i) => (
-                          <th key={i} style={{ textAlign: "left", padding: "10px 14px", fontSize: 11,
-                            fontWeight: 500, color: "var(--color-text-secondary)",
-                            borderBottom: "0.5px solid var(--color-border-tertiary)" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {history.map((row, i) => {
-                        const READINESS_CFG = {
-                          "Not Ready":    { color: "#A32D2D", bg: "#FCEBEB" },
-                          "Needs Work":   { color: "#854F0B", bg: "#FAEEDA" },
-                          "Almost Ready": { color: "#185FA5", bg: "#E6F1FB" },
-                          "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" },
-                        };
-                        const scoreColor = v => v >= 80 ? "#1D9E75" : v >= 60 ? "#378ADD" : v >= 40 ? "#EF9F27" : "#E24B4A";
-                        const rc = READINESS_CFG[row.readiness_level] || READINESS_CFG["Needs Work"];
-                        return (
-                          <tr key={row.id}
-                            onClick={() => { setSelectedStory(row); setActiveNav("panel"); }}
-                            style={{ background: "var(--color-background-primary)", cursor: "pointer" }}
-                            onMouseEnter={e => e.currentTarget.style.background = "#f0f4ff"}
-                            onMouseLeave={e => e.currentTarget.style.background = "var(--color-background-primary)"}>
-                            <td style={{ padding: "11px 14px", color: "var(--color-text-secondary)", width: 36 }}>{i + 1}</td>
-                            <td style={{ padding: "11px 14px", color: "#185FA5", maxWidth: 340 }}>
-                              <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "underline" }}>{row.title}</div>
-                            </td>
-                            <td style={{ padding: "11px 14px" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <div style={{ height: 6, width: 80, background: "var(--color-background-secondary)", borderRadius: 99 }}>
-                                  <div style={{ height: "100%", width: `${row.score}%`, borderRadius: 99, background: scoreColor(row.score) }} />
-                                </div>
-                                <span style={{ fontWeight: 500, color: scoreColor(row.score) }}>{row.score}/100</span>
-                              </div>
-                            </td>
-                            <td style={{ padding: "11px 14px" }}>
-                              <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99,
-                                background: rc.bg, color: rc.color }}>{row.readiness_level}</span>
-                            </td>
-                            <td style={{ padding: "11px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>{row.checked_at}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+            <Dashboard history={history} setHistory={setHistory}
+              onRowClick={row => { setSelectedStory(row); setActiveNav("panel"); }} />
           )}
-
           {activeNav === "panel" && (
             <StoryPanel
               selectedStory={selectedStory}
               onBack={() => { setSelectedStory(null); setActiveNav("dashboard"); }}
-              onRecheck={() => { setActiveNav("checker"); setStory(selectedStory?.story_text || ""); }}
+              onRecheck={() => { setActiveNav("checker"); setStory(selectedStory?.story_text || ""); setCheckerMode(selectedStory?.mode || "story"); }}
             />
           )}
 
