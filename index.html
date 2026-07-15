@@ -1158,8 +1158,8 @@ Acceptance Criteria:
       }
 
       if (loading) return (
-        <div style={{ padding: "48px 24px", textAlign: "center", color: "#5a6675", fontSize: 13 }}>
-          <i className="ti ti-loader-2" style={{ fontSize: 28, display: "block", marginBottom: 10, animation: "spin 1s linear infinite", color: "#0052CC" }} />
+        <div style={{ padding: "48px 24px", textAlign: "center", color: "var(--color-text-secondary)", fontSize: 13 }}>
+          <i className="ti ti-loader-2" style={{ fontSize: 28, display: "block", marginBottom: 10, animation: "spin 1s linear infinite", color: "#185FA5" }} />
           Loading issues from {label}…
         </div>
       );
@@ -1168,20 +1168,16 @@ Acceptance Criteria:
         <div style={{ background: "#fff", minHeight: 400 }}>
 
           {/* ── Top header ── */}
-          <div style={{ padding: "12px 20px", borderBottom: "1px solid #e2e8f0",
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid #e2e8f0",
             display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2230" }}>{board.projectName || board.name}</span>
-              <span style={{ color: "#d0d9e0" }}>·</span>
-              <span style={{ fontSize: 13, color: "#5a6675" }}>{label}</span>
-              <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, fontWeight: 500,
-                background: "#E1F5EE", color: "#0F6E56", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                <i className="ti ti-circle-filled" style={{ fontSize: 7 }} /> Jira connected
-              </span>
+            <div>
+              <h2 style={{ fontSize: 18, fontWeight: 500, color: "#185FA5", margin: "0 0 3px" }}>{board.projectName || board.name}</h2>
+              <p style={{ fontSize: 13, color: "#5a6675", margin: 0 }}>{label} · {issues.length} issues</p>
             </div>
             <button onClick={onChangeBoard}
-              style={{ fontSize: 12, padding: "5px 11px", border: "1px solid #e2e8f0", borderRadius: 6,
-                background: "none", cursor: "pointer", color: "#5a6675", display: "flex", alignItems: "center", gap: 5 }}>
+              style={{ fontSize: 12, padding: "6px 12px", border: "1px solid #e2e8f0",
+                borderRadius: 6, background: "none", cursor: "pointer",
+                color: "#5a6675", display: "flex", alignItems: "center", gap: 5 }}>
               <i className="ti ti-arrow-left" style={{ fontSize: 12 }} /> Change board
             </button>
           </div>
@@ -1192,7 +1188,7 @@ Acceptance Criteria:
               {/* Progress bar */}
               <div style={{ height: 3, background: "#dde4ea" }}>
                 <div style={{ height: "100%", width: `${progressPct}%`, transition: "width 0.5s ease",
-                  background: running ? "linear-gradient(90deg,#0052CC,#2684FF)" : "#1D9E75" }} />
+                  background: running ? "linear-gradient(90deg,#185FA5,#2684FF)" : "#1D9E75" }} />
               </div>
               <div style={{ padding: "11px 20px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 {/* Left: check + count */}
@@ -1200,7 +1196,7 @@ Acceptance Criteria:
                   <input type="checkbox"
                     checked={selected.size === issues.length && issues.length > 0}
                     onChange={toggleAll} disabled={running}
-                    style={{ width: 14, height: 14, accentColor: "#0052CC" }} />
+                    style={{ width: 14, height: 14, accentColor: "#185FA5" }} />
                   <span style={{ fontSize: 13, fontWeight: 500, color: "#1a2230" }}>
                     {selectedCount} of {issues.length} selected
                   </span>
@@ -1208,11 +1204,11 @@ Acceptance Criteria:
                 {/* Middle: live status text */}
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {running && (
-                    <span style={{ fontSize: 12, fontWeight: 500, color: "#0052CC",
+                    <span style={{ fontSize: 12, fontWeight: 500, color: "#185FA5",
                       display: "inline-flex", alignItems: "center", gap: 6 }}>
                       <svg width="14" height="14" style={{ animation: "spin 0.9s linear infinite", flexShrink: 0 }}>
                         <circle cx="7" cy="7" r="5" fill="none" stroke="#dde4ea" strokeWidth="2.5" />
-                        <circle cx="7" cy="7" r="5" fill="none" stroke="#0052CC" strokeWidth="2.5"
+                        <circle cx="7" cy="7" r="5" fill="none" stroke="#185FA5" strokeWidth="2.5"
                           strokeDasharray="8 23" strokeLinecap="round" transform="rotate(-90 7 7)" />
                       </svg>
                       Analysing {activeIdx}/{selectedCount}…
@@ -1232,7 +1228,7 @@ Acceptance Criteria:
                     style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 500,
                       padding: "7px 16px", borderRadius: 7, border: "none",
                       cursor: running || selectedCount === 0 ? "not-allowed" : "pointer",
-                      background: running ? "#85B7EB" : "#0052CC", color: "#fff" }}>
+                      background: running ? "#85B7EB" : "#185FA5", color: "#fff" }}>
                     {running
                       ? <><i className="ti ti-loader-2" style={{ fontSize: 13, animation: "spin 1s linear infinite" }} /> Running batch…</>
                       : <><i className="ti ti-refresh" style={{ fontSize: 13 }} /> Re-run</>}
@@ -1248,7 +1244,7 @@ Acceptance Criteria:
                 <input type="checkbox"
                   checked={selected.size === issues.length && issues.length > 0}
                   onChange={toggleAll}
-                  style={{ width: 14, height: 14, accentColor: "#0052CC" }} />
+                  style={{ width: 14, height: 14, accentColor: "#185FA5" }} />
                 <span style={{ fontSize: 13, fontWeight: 500, color: "#1a2230" }}>
                   {selectedCount} of {issues.length} selected
                 </span>
@@ -1258,7 +1254,7 @@ Acceptance Criteria:
                   style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 500,
                     padding: "8px 18px", borderRadius: 8, border: "none",
                     cursor: selectedCount === 0 ? "not-allowed" : "pointer",
-                    background: selectedCount === 0 ? "#85B7EB" : "#0052CC", color: "#fff" }}>
+                    background: selectedCount === 0 ? "#85B7EB" : "#185FA5", color: "#fff" }}>
                   <i className="ti ti-sparkles" style={{ fontSize: 13 }} /> Run batch
                 </button>
               </div>
@@ -1271,12 +1267,12 @@ Acceptance Criteria:
               {[
                 { val: `${doneCount}/${selectedCount}`, sub: "Analysed",     color: "#185FA5", icon: "ti-chart-bar" },
                 { val: sprintReadyCount,                sub: "Sprint ready",  color: "#0F6E56", icon: "ti-circle-check" },
-                { val: criticalGaps,                    sub: "Critical gaps", color: criticalGaps > 0 ? "#A32D2D" : "#8fa3b1", icon: "ti-alert-circle" },
+                { val: criticalGaps,                    sub: "Critical gaps", color: criticalGaps > 0 ? "#A32D2D" : "#9aabb6", icon: "ti-alert-circle" },
               ].map((s, i) => (
                 <div key={i} style={{ flex: 1, textAlign: "center", padding: "14px 0",
                   borderRight: i < 2 ? "1px solid #e2e8f0" : "none" }}>
                   <div style={{ fontSize: 24, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.val}</div>
-                  <div style={{ fontSize: 11, color: "#8fa3b1", marginTop: 4, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                  <div style={{ fontSize: 11, color: "#9aabb6", marginTop: 4, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                     <i className={`ti ${s.icon}`} style={{ fontSize: 11 }} />{s.sub}
                   </div>
                 </div>
@@ -1290,15 +1286,16 @@ Acceptance Criteria:
               No issues found in this {type}.
             </div>
           ) : (
+            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", margin: "0" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
                   <th style={{ width: 42, padding: "9px 16px", borderBottom: "1px solid #e2e8f0" }} />
-                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#8fa3b1", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>ID</th>
-                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#8fa3b1", borderBottom: "1px solid #e2e8f0" }}>TITLE</th>
-                  <th style={{ textAlign: "right", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#8fa3b1", borderBottom: "1px solid #e2e8f0", width: 60, whiteSpace: "nowrap" }}>PTS</th>
-                  <th style={{ textAlign: "center", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#8fa3b1", borderBottom: "1px solid #e2e8f0", width: 60 }}>SCORE</th>
-                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#8fa3b1", borderBottom: "1px solid #e2e8f0", width: 130 }}>STATUS</th>
+                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#9aabb6", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>ID</th>
+                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#9aabb6", borderBottom: "1px solid #e2e8f0" }}>TITLE</th>
+                  <th style={{ textAlign: "right", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#9aabb6", borderBottom: "1px solid #e2e8f0", width: 60, whiteSpace: "nowrap" }}>PTS</th>
+                  <th style={{ textAlign: "center", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#9aabb6", borderBottom: "1px solid #e2e8f0", width: 60 }}>SCORE</th>
+                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#9aabb6", borderBottom: "1px solid #e2e8f0", width: 130 }}>STATUS</th>
                   <th style={{ width: 36, borderBottom: "1px solid #e2e8f0" }} />
                 </tr>
               </thead>
@@ -1315,30 +1312,34 @@ Acceptance Criteria:
                   const rows = [
                     <tr key={issue.key}
                       style={{ borderBottom: isExp ? "none" : "1px solid #f4f6f8",
-                        background: st === "running" ? "#EFF4FF" : isExp ? "#f8fafc" : "transparent",
-                        transition: "background 200ms" }}>
+                        background: st === "running" ? "#EFF4FF" : isExp ? "#f8fafc" : "#fff",
+                        cursor: st === "done" ? "pointer" : "default",
+                        transition: "background 200ms" }}
+                      onClick={() => st === "done" && setExpandedKey(isExp ? null : issue.key)}
+                      onMouseEnter={e => { if (st !== "running") e.currentTarget.style.background = "#f0f4ff"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = st === "running" ? "#EFF4FF" : isExp ? "#f8fafc" : "#fff"; }}>
                       {/* Checkbox */}
-                      <td style={{ padding: "10px 16px", textAlign: "center" }}>
+                      <td style={{ padding: "11px 16px", textAlign: "center" }} onClick={e => e.stopPropagation()}>
                         <input type="checkbox" checked={isSel} disabled={running}
                           onChange={() => toggleSelect(issue.key)}
-                          style={{ width: 14, height: 14, accentColor: "#0052CC" }} />
+                          style={{ width: 14, height: 14, accentColor: "#185FA5" }} />
                       </td>
                       {/* Key + type */}
-                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: "#0052CC", background: "#EFF4FF", padding: "2px 7px", borderRadius: 5 }}>{issue.key}</span>
+                      <td style={{ padding: "11px 12px", whiteSpace: "nowrap" }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "#185FA5", background: "#E6F1FB", padding: "2px 7px", borderRadius: 5 }}>{issue.key}</span>
                         <span style={{ display: "inline-block", marginLeft: 5 }}>
                           {isEpic
-                            ? <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: "#EDE9FE", color: "#5B21B6" }}>epic</span>
-                            : <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: "#E6F1FB", color: "#185FA5" }}>story</span>}
+                            ? <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: "#EDE9FE", color: "#5B21B6", display: "inline-flex", alignItems: "center", gap: 4 }}><i className="ti ti-map" style={{ fontSize: 9 }} />epic</span>
+                            : <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: "#E6F1FB", color: "#185FA5", display: "inline-flex", alignItems: "center", gap: 4 }}><i className="ti ti-sparkles" style={{ fontSize: 9 }} />story</span>}
                         </span>
                       </td>
                       {/* Title */}
-                      <td style={{ padding: "10px 12px", color: "#1a2230", maxWidth: 280 }}>
-                        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{issue.summary}</div>
+                      <td style={{ padding: "11px 12px", color: "#185FA5", maxWidth: 280 }}>
+                        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: st === "done" ? "underline" : "none" }}>{issue.summary}</div>
                         {issue.assignee && <div style={{ fontSize: 11, color: "#9aabb6", marginTop: 1 }}>{issue.assignee}</div>}
                       </td>
                       {/* Points */}
-                      <td style={{ padding: "10px 12px", textAlign: "right", color: "#8fa3b1", fontSize: 12, whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "11px 12px", textAlign: "right", color: "#9aabb6", fontSize: 12, whiteSpace: "nowrap" }}>
                         {issue.points != null ? `${issue.points} pts` : "—"}
                       </td>
                       {/* Score ring */}
@@ -1346,35 +1347,34 @@ Acceptance Criteria:
                         {st === "done" && result ? <DoneRing score={result.total} />
                           : st === "running"     ? <SpinnerRing />
                           : st === "error"       ? <ErrorRing />
-                          : queued               ? <DashedRing />
                           : <DashedRing />}
                       </td>
                       {/* Status */}
-                      <td style={{ padding: "10px 12px" }}>
+                      <td style={{ padding: "11px 12px" }}>
                         {st === "done" && result ? (
-                          <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 99,
+                          <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99,
                             background: rc.bg, color: rc.color, whiteSpace: "nowrap" }}>
                             {result.readiness_level}
                           </span>
                         ) : st === "running" ? (
-                          <span style={{ fontSize: 11, color: "#0052CC", fontWeight: 500 }}>Analysing…</span>
+                          <span style={{ fontSize: 11, color: "#185FA5", fontWeight: 500 }}>Analysing…</span>
                         ) : st === "error" ? (
                           <span style={{ fontSize: 11, color: "#A32D2D" }}>Error</span>
                         ) : isSel ? (
                           <span style={{ fontSize: 11, color: "#b0bec5" }}>Queued</span>
                         ) : (
-                          <span style={{ fontSize: 11, color: "#d0d9e0" }}>Skipped</span>
+                          <span style={{ fontSize: 11, color: "#d0d9e0", fontStyle: "italic" }}>Skipped</span>
                         )}
                       </td>
-                      {/* Expand */}
-                      <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                      {/* Expand chevron */}
+                      <td style={{ padding: "11px 12px", textAlign: "center" }} onClick={e => e.stopPropagation()}>
                         {st === "done" && (
                           <button onClick={() => setExpandedKey(isExp ? null : issue.key)}
                             style={{ background: "none", border: "none", cursor: "pointer",
-                              color: "#8fa3b1", padding: "2px 4px", borderRadius: 4,
+                              color: "#9aabb6", padding: "2px 4px", borderRadius: 4,
                               transition: "color 120ms" }}
                             onMouseEnter={e => e.currentTarget.style.color = "#1a2230"}
-                            onMouseLeave={e => e.currentTarget.style.color = "#8fa3b1"}>
+                            onMouseLeave={e => e.currentTarget.style.color = "#9aabb6"}>
                             <i className={`ti ti-chevron-${isExp ? "up" : "right"}`} style={{ fontSize: 14 }} />
                           </button>
                         )}
@@ -1387,7 +1387,7 @@ Acceptance Criteria:
                       <tr key={issue.key + "-exp"}>
                         <td colSpan={7} style={{ padding: "0 16px 14px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
                           <div style={{ borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff",
-                            padding: "16px 18px", maxHeight: 400, overflowY: "auto" }}>
+                            padding: "16px 18px", maxHeight: 420, overflowY: "auto" }}>
                             {/* Summary + score */}
                             <div style={{ display: "flex", gap: 16, marginBottom: 14, alignItems: "flex-start" }}>
                               <div style={{ flex: 1 }}>
@@ -1406,7 +1406,7 @@ Acceptance Criteria:
                                   color: "#8fa3b1", marginBottom: 6 }}>
                                   {isEpic ? "Epic text" : "Story text"}
                                 </div>
-                                <pre style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.75,
+                                <pre style={{ margin: 0, fontFamily: "monospace", fontSize: 12, lineHeight: 1.75,
                                   whiteSpace: "pre-wrap", wordBreak: "break-word",
                                   background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6,
                                   padding: "10px 13px", color: "#314550", maxHeight: 180, overflowY: "auto" }}>
@@ -1422,7 +1422,7 @@ Acceptance Criteria:
                                     <span>{DIM_LABELS[k] || k}</span>
                                     <span style={{ color: sc2(v / 20 * 100), fontWeight: 600 }}>{v}/20</span>
                                   </div>
-                                  <div style={{ height: 4, background: "#eef1f4", borderRadius: 99 }}>
+                                  <div style={{ height: 5, background: "#eef1f4", borderRadius: 99 }}>
                                     <div style={{ height: "100%", width: `${(v/20)*100}%`, background: sc2(v/20*100), borderRadius: 99 }} />
                                   </div>
                                 </div>
@@ -1443,7 +1443,7 @@ Acceptance Criteria:
                               );
                             })}
                             {(result.gaps || []).length > 5 && (
-                              <p style={{ fontSize: 12, color: "#9aabb6", margin: "6px 0 0" }}>+{result.gaps.length - 5} more gaps</p>
+                              <p style={{ fontSize: 12, color: "#8fa3b1", margin: "6px 0 0" }}>+{result.gaps.length - 5} more gaps</p>
                             )}
                           </div>
                         </td>
@@ -1454,6 +1454,7 @@ Acceptance Criteria:
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       );
@@ -1521,38 +1522,6 @@ Acceptance Criteria:
         }
       }
 
-      const [jiraStatus, setJiraStatus]     = useState(null); // null | {connected,project,base_url}
-      const [jiraSearch, setJiraSearch]     = useState("");
-      const [jiraIssues, setJiraIssues]     = useState([]);
-      const [jiraLoading, setJiraLoading]   = useState(false);
-      const [jiraSearched, setJiraSearched] = useState(false);
-      const jiraSearchRef = useRef(null);
-
-      useEffect(() => {
-        fetch("/api/jira/status").then(r => r.json()).then(setJiraStatus).catch(() => {});
-      }, []);
-
-      function searchJira(q) {
-        setJiraLoading(true);
-        setJiraSearched(true);
-        fetch(`/api/jira/issues?q=${encodeURIComponent(q)}&max=20`)
-          .then(r => r.json())
-          .then(d => { setJiraIssues(d.issues || []); setJiraLoading(false); })
-          .catch(() => setJiraLoading(false));
-      }
-
-      function importJiraIssue(key) {
-        fetch(`/api/jira/issue/${key}`)
-          .then(r => r.json())
-          .then(d => {
-            setStory(d.text || "");
-            setCheckerMode(d.type === "Epic" ? "epic" : "story");
-            setUiState("idle"); setResult(null);
-            setJiraIssues([]); setJiraSearch(""); setJiraSearched(false);
-          })
-          .catch(e => console.error(e));
-      }
-
       const [batchSelection, setBatchSelection] = useState(null);
 
       const navTabs = [
@@ -1594,117 +1563,6 @@ Acceptance Criteria:
           {/* Checker view */}
           {activeNav === "checker" && (
             <div style={{ padding: "24px 20px", background: "var(--color-background-secondary)" }}>
-
-              {/* Jira card */}
-              <div style={{ marginBottom: 20, borderRadius: "var(--border-radius-lg)",
-                border: "1px solid #0052CC33", background: "linear-gradient(135deg, #f0f5ff 0%, #e8f0fe 100%)",
-                overflow: "hidden" }}>
-                <div style={{ height: 3, background: "linear-gradient(90deg, #0052CC, #2684FF)" }} />
-                <div style={{ padding: "14px 18px 16px", display: "flex", gap: 14, alignItems: "flex-start" }}>
-                  {/* Logo */}
-                  <div style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 9, background: "#0052CC",
-                    display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,82,204,0.25)" }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <path d="M11.571 11.392L6.188 6l-1.6 1.555 4.207 4.164L6.188 16.44 7.787 18l5.383-5.392a1.1 1.1 0 000-1.216z" fill="white"/>
-                      <path d="M17.812 11.392L12.429 6l-1.6 1.555 4.207 4.164-4.207 4.721 1.6 1.56 5.383-5.392a1.1 1.1 0 000-1.216z" fill="rgba(255,255,255,0.55)"/>
-                    </svg>
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Header row */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "#0052CC" }}>Jira</span>
-                      {jiraStatus?.connected
-                        ? <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99,
-                            background: "#E1F5EE", color: "#0F6E56", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                            <i className="ti ti-circle-filled" style={{ fontSize: 7 }} /> Connected · {jiraStatus.project}
-                          </span>
-                        : <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99,
-                            background: "#0052CC1A", color: "#0052CC", fontWeight: 500 }}>Not connected</span>
-                      }
-                    </div>
-
-                    {jiraStatus?.connected ? (
-                      /* ── Connected: search + import ── */
-                      <div>
-                        <div style={{ display: "flex", gap: 8, marginBottom: jiraSearched ? 10 : 0 }}>
-                          <input
-                            ref={jiraSearchRef}
-                            value={jiraSearch}
-                            onChange={e => setJiraSearch(e.target.value)}
-                            onKeyDown={e => e.key === "Enter" && searchJira(jiraSearch)}
-                            placeholder="Search issues by key or summary… (e.g. ASPPO-12)"
-                            style={{ flex: 1, fontSize: 12, padding: "7px 11px",
-                              border: "0.5px solid #0052CC55", borderRadius: "var(--border-radius-md)",
-                              background: "#fff", color: "#1a2230" }}
-                          />
-                          <button onClick={() => searchJira(jiraSearch)} disabled={jiraLoading}
-                            style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 500,
-                              padding: "7px 14px", borderRadius: "var(--border-radius-md)", border: "none",
-                              background: "#0052CC", color: "#fff", cursor: "pointer" }}>
-                            {jiraLoading
-                              ? <i className="ti ti-loader-2" style={{ fontSize: 13, animation: "spin 1s linear infinite" }} />
-                              : <i className="ti ti-search" style={{ fontSize: 13 }} />}
-                            {jiraLoading ? "Searching…" : "Search"}
-                          </button>
-                        </div>
-
-                        {/* Results */}
-                        {jiraSearched && !jiraLoading && (
-                          <div style={{ maxHeight: 220, overflowY: "auto", borderRadius: "var(--border-radius-md)",
-                            border: "0.5px solid #0052CC22", background: "#fff" }}>
-                            {jiraIssues.length === 0
-                              ? <div style={{ padding: "14px 14px", fontSize: 12, color: "#5a6675" }}>No issues found.</div>
-                              : jiraIssues.map(iss => (
-                                <div key={iss.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
-                                  padding: "9px 14px", borderBottom: "0.5px solid #0052CC11", gap: 10 }}>
-                                  <div style={{ minWidth: 0 }}>
-                                    <span style={{ fontSize: 11, fontWeight: 600, color: "#0052CC", marginRight: 8 }}>{iss.key}</span>
-                                    <span style={{ fontSize: 12, color: "#1a2230" }}
-                                      style={{ fontSize: 12, color: "#1a2230", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", maxWidth: 340 }}>
-                                      {iss.summary}
-                                    </span>
-                                    <div style={{ display: "flex", gap: 6, marginTop: 3 }}>
-                                      {iss.type && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: "#EDE9FE", color: "#5B21B6" }}>{iss.type}</span>}
-                                      {iss.status && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: "#F4F3F0", color: "#314550" }}>{iss.status}</span>}
-                                      {iss.points && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: "#E6F1FB", color: "#185FA5" }}>{iss.points} pts</span>}
-                                    </div>
-                                  </div>
-                                  <button onClick={() => importJiraIssue(iss.key)}
-                                    style={{ flexShrink: 0, fontSize: 11, fontWeight: 500, padding: "5px 11px",
-                                      borderRadius: "var(--border-radius-md)", border: "0.5px solid #0052CC",
-                                      background: "none", color: "#0052CC", cursor: "pointer", whiteSpace: "nowrap" }}>
-                                    Import
-                                  </button>
-                                </div>
-                              ))
-                            }
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      /* ── Not connected: info bullets ── */
-                      <div>
-                        <p style={{ fontSize: 12, color: "#314550", margin: "0 0 10px", lineHeight: 1.55 }}>
-                          Add your Jira credentials to <code style={{ fontSize: 11, background: "#fff", padding: "1px 5px", borderRadius: 4 }}>.env</code> to enable live import.
-                        </p>
-                        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
-                          {[
-                            { icon: "ti-download",  text: "Import issues directly — no copy-paste" },
-                            { icon: "ti-message-2", text: "Push readiness scores back as Jira comments" },
-                            { icon: "ti-filter",    text: "Filter dashboard by project or sprint" },
-                          ].map((item, i) => (
-                            <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 7 }}>
-                              <i className={`ti ${item.icon}`} style={{ fontSize: 12, color: "#0052CC", marginTop: 1, flexShrink: 0 }} />
-                              <span style={{ fontSize: 12, color: "#314550", lineHeight: 1.5 }}>{item.text}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
 
               <div style={{ marginBottom: 20 }}>
                 {/* Mode toggle */}
