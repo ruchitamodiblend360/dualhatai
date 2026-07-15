@@ -1,0 +1,1875 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Story Readiness Checker</title>
+
+  <!-- Tabler icons (the `ti ti-*` classes used in the component). Non-critical: if a
+       network filter blocks this, the app still works, just without icon glyphs. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" />
+
+  <!-- React + Babel served locally by server.py — no browser CDN dependency -->
+  <script src="/vendor/react.production.min.js"></script>
+  <script src="/vendor/react-dom.production.min.js"></script>
+  <script src="/vendor/babel.min.js"></script>
+
+  <style>
+    /* Theme for the CSS variables the component references */
+    :root {
+      --blend-white: #FFFFFF;
+      --blend-off-white: #F4F3F0;
+      --blend-light-turquoise: #A2F3F3;
+      --blend-neon-turquoise: #00EDED;
+      --blend-washed-blue: #053057;
+      --blend-cool-gray: #314550;
+      --blend-gray: #1A1A1A;
+      --blend-dark-gray: #0B0D0E;
+      
+      --color-background-primary: #053057;
+      --color-background-secondary: #ffffff;
+      --color-border-secondary: #314550;
+      --color-border-tertiary: #314550;
+      --color-text-primary: #FFFFFF;
+      --color-text-secondary: #5a6675;
+      --color-text-tertiary: #5a6675;
+      --border-radius-lg: 12px;
+      --border-radius-md: 8px;
+      --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'Fira Code', 'Courier New', monospace;
+
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #eef1f4;
+      font-family: var(--font-sans);
+    }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+    #root { max-width: 1100px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Surface any error on the page instead of failing to a blank screen -->
+  <script>
+    function showError(title, detail) {
+      var root = document.getElementById("root");
+      if (root) {
+        root.innerHTML =
+          '<div style="max-width:760px;margin:40px auto;padding:20px 24px;border:1px solid #F09595;' +
+          'background:#FCEBEB;border-radius:12px;font-family:sans-serif;color:#7a1f1f">' +
+          '<div style="font-weight:600;font-size:15px;margin-bottom:8px">' + title + '</div>' +
+          '<pre style="white-space:pre-wrap;font-size:12px;margin:0;color:#5a1717">' + detail + '</pre></div>';
+      }
+    }
+    window.addEventListener("error", function (e) {
+      showError("A script error occurred", (e.message || e.error || e) + "\n" + (e.filename || ""));
+    });
+    window.addEventListener("unhandledrejection", function (e) {
+      showError("Unhandled promise rejection", (e.reason && e.reason.message) || e.reason || "unknown");
+    });
+    // Verify the local libraries actually loaded
+    window.addEventListener("DOMContentLoaded", function () {
+      var missing = [];
+      if (typeof React === "undefined") missing.push("React");
+      if (typeof ReactDOM === "undefined") missing.push("ReactDOM");
+      if (typeof Babel === "undefined") missing.push("Babel");
+      if (missing.length) {
+        showError("Libraries failed to load: " + missing.join(", "),
+          "The /vendor/*.js files did not load. Make sure server.py is running and you opened http://localhost:8000 (not the file directly).");
+      }
+    });
+  </script>
+
+  <!-- type="text/plain" so Babel's auto-runner ignores it; we compile it manually
+       below with the CLASSIC runtime (React.createElement) to avoid emitting imports. -->
+  <script type="text/plain" id="app-src">
+    const { useState, useRef, useEffect } = React;
+
+    const EXAMPLE_STORY = `As a registered user, I want to reset my password so that I can regain access to my account if I forget it.
+
+Acceptance Criteria:
+- User can click "Forgot password" on login page
+- System sends an email
+- User can set a new password`;
+
+    const LOADING_STEPS = [
+      { label: "Parsing story format & persona" },
+      { label: "Detecting acceptance criteria" },
+      { label: "Scoring completeness, clarity, testability…" },
+      { label: "Detecting dependency signals" },
+      { label: "Generating improved story & ACs" },
+    ];
+
+    const SEVERITY_CFG = {
+      critical: { color: "#A32D2D", bg: "#FCEBEB", border: "#F09595", label: "Critical", icon: "ti-alert-circle" },
+      warning:  { color: "#854F0B", bg: "#FAEEDA", border: "#EF9F27", label: "Warning",  icon: "ti-alert-triangle" },
+      info:     { color: "#185FA5", bg: "#E6F1FB", border: "#85B7EB", label: "Info",     icon: "ti-info-circle" },
+    };
+
+    const CONFIDENCE_CFG = {
+      high:   { color: "#A32D2D", bg: "#FCEBEB" },
+      medium: { color: "#854F0B", bg: "#FAEEDA" },
+      low:    { color: "#185FA5", bg: "#E6F1FB" },
+    };
+
+    const DEP_ICONS = { team: "ti-users", api: "ti-api", story: "ti-git-branch", system: "ti-server" };
+
+    const SCORE_LABELS = {
+      completeness: "Completeness", clarity: "Clarity",
+      testability: "Testability", size: "Story size", dependency_risk: "Dependency risk",
+    };
+
+    const READINESS_CFG = {
+      "Not Ready":    { color: "#A32D2D", bg: "#FCEBEB" },
+      "Needs Work":   { color: "#854F0B", bg: "#FAEEDA" },
+      "Almost Ready": { color: "#185FA5", bg: "#E6F1FB" },
+      "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" },
+    };
+
+    const RECENT_MOCK = [
+      { id: "AUTH-14",  title: "Password reset via email",   score: 38, status: "Not Ready"    },
+      { id: "NOTIF-03", title: "Email notify on task assign", score: 91, status: "Sprint Ready" },
+      { id: "DASH-07",  title: "PDF export dashboard",        score: 61, status: "Needs Work"   },
+    ];
+
+    const scoreColor = v => v >= 16 ? "#1D9E75" : v >= 11 ? "#378ADD" : v >= 6 ? "#EF9F27" : "#E24B4A";
+
+    const cardStyle = {
+      background: "var(--color-background-primary)",
+      border: "0.5px solid var(--color-border-tertiary)",
+      borderRadius: "var(--border-radius-lg)",
+      overflow: "hidden",
+    };
+
+    const sideTitleStyle = {
+      fontSize: 12, fontWeight: 500, color: "var(--color-text-primary)",
+      display: "flex", alignItems: "center", gap: 6, marginBottom: 10,
+    };
+
+    function StatusPill({ status }) {
+      const c = READINESS_CFG[status] || READINESS_CFG["Needs Work"];
+      return (
+        <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 99,
+          background: c.bg, color: c.color, whiteSpace: "nowrap" }}>{status}</span>
+      );
+    }
+
+    function ScoreRing({ score, size = 28 }) {
+      const c = scoreColor(score);
+      const bg = READINESS_CFG[score >= 80 ? "Sprint Ready" : score >= 60 ? "Almost Ready" : score >= 40 ? "Needs Work" : "Not Ready"].bg;
+      return (
+        <div style={{ width: size, height: size, borderRadius: "50%", border: `2px solid ${c}`,
+          background: bg, display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: Math.round(size * 0.33), fontWeight: 500, color: c, flexShrink: 0 }}>
+          {score}
+        </div>
+      );
+    }
+
+    /* ── Loading state ── */
+    function LoadingState({ step }) {
+      return (
+        <div style={{ ...cardStyle, marginBottom: 0 }}>
+          <div style={{ padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: "50%",
+                  border: "3px solid #E6F1FB", borderTopColor: "#185FA5",
+                  animation: "spin 0.9s linear infinite", flexShrink: 0 }} aria-hidden="true" />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>Analysing your story…</div>
+                  <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 2 }}>This takes about 5–10 seconds</div>
+                </div>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 500, background: "#E6F1FB", color: "#185FA5",
+                padding: "4px 10px", borderRadius: 99 }}>In progress</span>
+            </div>
+
+            {LOADING_STEPS.map((s, i) => {
+              const done = i < step;
+              const active = i === step;
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0",
+                  borderBottom: i < LOADING_STEPS.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                  <div style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex",
+                    alignItems: "center", justifyContent: "center",
+                    background: done ? "#E1F5EE" : active ? "#E6F1FB" : "var(--color-background-secondary)",
+                    border: active ? "1.5px solid #85B7EB" : "none" }}>
+                    {done
+                      ? <i className="ti ti-check" style={{ fontSize: 12, color: "#1D9E75" }} aria-hidden="true" />
+                      : active
+                        ? <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#185FA5",
+                            animation: "pulse 1s ease-in-out infinite" }} />
+                        : null}
+                  </div>
+                  <span style={{ fontSize: 12, color: done ? "#0F6E56" : active ? "#185FA5" : "var(--color-text-tertiary)" }}>
+                    {s.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ borderTop: "0.5px solid var(--color-border-tertiary)", padding: "12px 18px", display: "flex", gap: 10 }}>
+            <div style={{ height: 12, borderRadius: 4, background: "var(--color-background-secondary)",
+              width: "55%", animation: "pulse 1.4s ease-in-out infinite" }} />
+            <div style={{ height: 12, borderRadius: 4, background: "var(--color-background-secondary)",
+              width: "25%", animation: "pulse 1.4s ease-in-out infinite" }} />
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Error state ── */
+    function ErrorState({ onRetry, onEdit, message }) {
+      return (
+        <div style={{ ...cardStyle }}>
+          <div style={{ padding: "36px 24px", display: "flex", flexDirection: "column",
+            alignItems: "center", textAlign: "center" }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#FCEBEB",
+              display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+              <i className="ti ti-alert-circle" style={{ fontSize: 24, color: "#A32D2D" }} aria-hidden="true" />
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 6 }}>
+              Analysis failed
+            </div>
+            <div style={{ fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.7,
+              marginBottom: 22, maxWidth: 360 }}>
+              {message || "Something went wrong while processing your story. Your text is still here — try again or edit the story."}
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={onEdit}
+                style={{ fontSize: 13, padding: "8px 16px", background: "none", cursor: "pointer",
+                  border: "0.5px solid var(--color-border-secondary)",
+                  borderRadius: "var(--border-radius-md)", color: "var(--color-text-secondary)" }}>
+                Edit story
+              </button>
+              <button onClick={onRetry}
+                style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, padding: "8px 16px",
+                  background: "#185FA5", color: "#fff", border: "none", cursor: "pointer",
+                  borderRadius: "var(--border-radius-md)" }}>
+                <i className="ti ti-refresh" style={{ fontSize: 14 }} aria-hidden="true" />
+                Try again
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Result state ── */
+    function ResultState({ result, onRecheck }) {
+      const [tab, setTab] = useState("gaps");
+      const [copied, setCopied] = useState(false);
+
+      function copyImproved() {
+        navigator.clipboard.writeText(result.improved_story || "");
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+
+      const resultTabs = [
+        { id: "gaps",         label: "Gaps",           icon: "ti-alert-circle",  count: result.gaps?.length },
+        { id: "ambiguities",  label: "Ambiguities",     icon: "ti-question-mark", count: result.ambiguities?.length },
+        { id: "dependencies", label: "Dependencies",    icon: "ti-git-branch",    count: result.dependencies?.length },
+        { id: "improved",     label: "Improved story",  icon: "ti-sparkles",      count: null },
+      ];
+
+      const criticalCount = result.gaps?.filter(g => g.severity === "critical").length || 0;
+      const rc = READINESS_CFG[result.readiness_level] || READINESS_CFG["Needs Work"];
+
+      return (
+        <div style={cardStyle}>
+          {/* Score header */}
+          <div style={{ padding: "16px 18px" }}>
+            <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <div style={{ minWidth: 130 }}>
+                <div style={{ fontSize: 11, fontWeight: 500, textTransform: "uppercase",
+                  letterSpacing: "0.05em", color: "var(--color-text-primary)", marginBottom: 6 }}>
+                  Readiness score
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 8 }}>
+                  <span style={{ fontSize: 44, fontWeight: 500, color: scoreColor(result.total / 5), lineHeight: 1 }}>
+                    {result.total}
+                  </span>
+                  <span style={{ fontSize: 16, color: "var(--color-text-tertiary)" }}>/100</span>
+                </div>
+                <span style={{ display: "inline-block", fontSize: 11, fontWeight: 500,
+                  padding: "4px 12px", borderRadius: 99, background: rc.bg, color: rc.color }}>
+                  {result.readiness_level}
+                </span>
+              </div>
+
+              <div style={{ flex: 1, minWidth: 180 }}>
+                {Object.entries(result.scores).map(([k, v]) => (
+                  <div key={k} style={{ marginBottom: 7 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between",
+                      fontSize: 11, color: "var(--color-text-primary)", marginBottom: 3 }}>
+                      <span>{SCORE_LABELS[k]}</span>
+                      <span style={{ color: scoreColor(v), fontWeight: 500 }}>{v}/20</span>
+                    </div>
+                    <div style={{ height: 4, background: "var(--color-background-primary)", borderRadius: 99 }}>
+                      <div style={{ height: "100%", width: `${Math.round((v / 20) * 100)}%`,
+                        background: scoreColor(v), borderRadius: 99,
+                        transition: "width 0.7s ease" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {result.summary && (
+              <p style={{ margin: "14px 0 0", fontSize: 13, color: "var(--color-text-primary)",
+                lineHeight: 1.7, borderTop: "0.5px solid var(--color-border-tertiary)", paddingTop: 12 }}>
+                {result.summary}
+              </p>
+            )}
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display: "flex", borderBottom: "0.5px solid var(--color-border-tertiary)",
+            borderTop: "0.5px solid var(--color-border-tertiary)", padding: "0 6px",
+            background: "var(--color-background-secondary)" }}>
+            {resultTabs.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "9px 12px",
+                  fontSize: 12, fontWeight: tab === t.id ? 500 : 400,
+                  color: tab === t.id ? "#185FA5" : "var(--color-text-secondary)",
+                  background: "none", border: "none",
+                  borderBottom: tab === t.id ? "2px solid #185FA5" : "2px solid transparent",
+                  cursor: "pointer", marginBottom: -1 }}>
+                <i className={`ti ${t.icon}`} style={{ fontSize: 13 }} aria-hidden="true" />
+                {t.label}
+                {t.count > 0 && (
+                  <span style={{ fontSize: 10, fontWeight: 500, padding: "1px 6px", borderRadius: 99,
+                    background: tab === t.id ? "#E6F1FB" : "var(--color-background-primary)",
+                    color: tab === t.id ? "#185FA5" : "var(--color-text-secondary)" }}>
+                    {t.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <div style={{ padding: "16px 18px" }}>
+
+            {tab === "gaps" && (
+              <div>
+                {!result.gaps?.length
+                  ? <p style={{ fontSize: 13, color: "var(--color-text-primary)" }}>No significant gaps detected.</p>
+                  : result.gaps.map((g, i) => {
+                      const c = SEVERITY_CFG[g.severity] || SEVERITY_CFG.info;
+                      return (
+                        <div key={i} style={{ border: `0.5px solid ${c.border}`, borderRadius: "var(--border-radius-md)",
+                          padding: "11px 13px", marginBottom: 9, background: c.bg }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+                            <i className={`ti ${c.icon}`} style={{ fontSize: 14, color: c.color }} aria-hidden="true" />
+                            <span style={{ fontSize: 11, fontWeight: 500, color: c.color }}>{c.label}</span>
+                            <span style={{ fontSize: 11, color: c.color, opacity: 0.7 }}>· {g.area}</span>
+                          </div>
+                          <p style={{ margin: "0 0 5px", fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.5 }}>{g.issue}</p>
+                          <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
+                            <i className="ti ti-arrow-right" style={{ fontSize: 12 }} aria-hidden="true" /> {g.fix}
+                          </p>
+                        </div>
+                      );
+                    })}
+              </div>
+            )}
+
+            {tab === "ambiguities" && (
+              <div>
+                {!result.ambiguities?.length
+                  ? <p style={{ fontSize: 13, color: "var(--color-text-primary)" }}>No ambiguous language detected.</p>
+                  : result.ambiguities.map((a, i) => (
+                      <div key={i} style={{ display: "flex", gap: 12, padding: "11px 0",
+                        borderBottom: i < result.ambiguities.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                        <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#FAEEDA",
+                          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <i className="ti ti-question-mark" style={{ fontSize: 15, color: "#854F0B" }} aria-hidden="true" />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "#854F0B",
+                            background: "#FAEEDA", padding: "2px 7px", borderRadius: 4,
+                            display: "inline-block", marginBottom: 5 }}>"{a.phrase}"</div>
+                          <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.6 }}>{a.question}</p>
+                        </div>
+                      </div>
+                    ))}
+              </div>
+            )}
+
+            {tab === "dependencies" && (
+              <div>
+                {!result.dependencies?.length
+                  ? <p style={{ fontSize: 13, color: "var(--color-text-primary)" }}>No dependency signals detected.</p>
+                  : result.dependencies.map((d, i) => {
+                      const c = CONFIDENCE_CFG[d.confidence] || CONFIDENCE_CFG.low;
+                      return (
+                        <div key={i} style={{ display: "flex", gap: 11, padding: "11px 0",
+                          borderBottom: i < result.dependencies.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                          <div style={{ width: 30, height: 30, borderRadius: "var(--border-radius-md)",
+                            background: "var(--color-background-secondary)", display: "flex",
+                            alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <i className={`ti ${DEP_ICONS[d.type] || "ti-link"}`}
+                              style={{ fontSize: 15, color: "var(--color-text-primary)" }} aria-hidden="true" />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
+                              <span style={{ fontSize: 12, fontWeight: 500, textTransform: "capitalize",
+                                color: "var(--color-text-primary)" }}>{d.type}</span>
+                              <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px",
+                                borderRadius: 99, background: c.bg, color: c.color }}>{d.confidence} confidence</span>
+                              {d.status && (
+                                <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 99,
+                                  background: d.status === "acknowledged" ? "#E1F5EE" : d.status === "implied" ? "#FAEEDA" : "#FCEBEB",
+                                  color: d.status === "acknowledged" ? "#0F6E56" : d.status === "implied" ? "#854F0B" : "#A32D2D" }}>
+                                  {d.status}
+                                </span>
+                              )}
+                            </div>
+                            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.5 }}>{d.description}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+              </div>
+            )}
+
+            {tab === "improved" && (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 11 }}>
+                  <span style={{ fontSize: 12, color: "var(--color-text-primary)" }}>AI-suggested rewrite — review before using</span>
+                  <button onClick={copyImproved}
+                    style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11,
+                      color: "var(--color-text-primary)", background: "none", cursor: "pointer",
+                      border: "0.5px solid var(--color-border-secondary)",
+                      borderRadius: "var(--border-radius-md)", padding: "4px 9px" }}>
+                    <i className={`ti ${copied ? "ti-check" : "ti-copy"}`} style={{ fontSize: 13 }} aria-hidden="true" />
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <pre style={{ margin: "0 0 14px", fontFamily: "var(--font-mono)", fontSize: 12,
+                  lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word",
+                  background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)",
+                  padding: "12px 14px", color: "var(--color-text-secondary)" }}>
+                  {result.improved_story}
+                </pre>
+                {result.suggested_acs?.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 9 }}>
+                      Suggested acceptance criteria
+                    </div>
+                    {result.suggested_acs.map((ac, i) => (
+                      <div key={i} style={{ display: "flex", gap: 9, padding: "7px 0",
+                        borderBottom: i < result.suggested_acs.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                        <i className="ti ti-circle-check" style={{ fontSize: 15, color: "#1D9E75",
+                          marginTop: 2, flexShrink: 0 }} aria-hidden="true" />
+                        <span style={{ fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.6 }}>{ac}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {result.split_suggestions?.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-primary)", marginTop: 16, marginBottom: 9,
+                      display: "flex", alignItems: "center", gap: 6 }}>
+                      <i className="ti ti-scissors" style={{ fontSize: 13, color: "#EF9F27" }} />
+                      Suggested split — this epic may be too large for a single sprint
+                    </div>
+                    {result.split_suggestions.map((s, i) => (
+                      <div key={i} style={{ display: "flex", gap: 9, padding: "7px 0",
+                        borderBottom: i < result.split_suggestions.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                        <span style={{ fontSize: 12, fontWeight: 500, color: "#EF9F27", minWidth: 18 }}>{i + 1}.</span>
+                        <span style={{ fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.6 }}>{s}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div style={{ borderTop: "0.5px solid var(--color-border-tertiary)", padding: "11px 18px",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            background: "var(--color-background-secondary)" }}>
+            <span style={{ fontSize: 12, color: criticalCount > 0 ? "#A32D2D" : "var(--color-text-secondary)" }}>
+              {criticalCount > 0
+                ? <><i className="ti ti-alert-circle" style={{ fontSize: 13, marginRight: 5 }} aria-hidden="true" />{criticalCount} blocker{criticalCount > 1 ? "s" : ""} must be resolved before sprint planning</>
+                : <><i className="ti ti-circle-check" style={{ fontSize: 13, marginRight: 5, color: "#1D9E75" }} aria-hidden="true" />No blockers — story is good to go</>}
+            </span>
+            <button onClick={onRecheck}
+              style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 500,
+                padding: "6px 14px", background: "#185FA5", color: "#fff", border: "none",
+                borderRadius: "var(--border-radius-md)", cursor: "pointer" }}>
+              <i className="ti ti-refresh" style={{ fontSize: 13 }} aria-hidden="true" />
+              Re-check
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Side panel ── */
+    function SidePanel() {
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ ...cardStyle, padding: "14px 16px" }}>
+            <div style={sideTitleStyle}>
+              <i className="ti ti-info-circle" style={{ fontSize: 14, color: "#185FA5" }} aria-hidden="true" />
+              What we check
+            </div>
+            {["Completeness of the story format", "Clarity & vague language",
+              "Testability of acceptance criteria", "Story size & sprint fit",
+              "Dependency signals"].map((t, i) => (
+              <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", padding: "5px 0",
+                borderBottom: i < 4 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                <i className="ti ti-check" style={{ fontSize: 13, color: "#1D9E75", flexShrink: 0, marginTop: 1 }} aria-hidden="true" />
+                <span style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.5 }}>{t}</span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ ...cardStyle, padding: "14px 16px" }}>
+            <div style={sideTitleStyle}>
+              <i className="ti ti-bulb" style={{ fontSize: 14, color: "#854F0B" }} aria-hidden="true" />
+              Tips for better results
+            </div>
+            {["Include all existing ACs, even rough ones",
+              "Mention the epic for dependency detection",
+              "Add your DoR to score against your own bar"].map((t, i) => (
+              <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", padding: "5px 0",
+                borderBottom: i < 2 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                <i className="ti ti-arrow-right" style={{ fontSize: 12, color: "var(--color-text-primary)", flexShrink: 0, marginTop: 1 }} aria-hidden="true" />
+                <span style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.5 }}>{t}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* 'Recent checks' section disabled */}
+        </div>
+      );
+    }
+
+    /* ── Single Story Panel ── */
+    function StoryPanel({ selectedStory, onBack, onRecheck }) {
+      const [copied, setCopied] = useState(false);
+      if (!selectedStory) return (
+        <div style={{ padding: "48px 24px", textAlign: "center" }}>
+          <i className="ti ti-file-analytics" style={{ fontSize: 32, color: "var(--color-text-tertiary)", display: "block", marginBottom: 12 }} aria-hidden="true" />
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 6 }}>No story selected</div>
+          <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>Click any story from the Dashboard to view its full analysis here.</div>
+        </div>
+      );
+      if (!selectedStory.result) return (
+        <div style={{ padding: "48px 24px", textAlign: "center" }}>
+          <i className="ti ti-info-circle" style={{ fontSize: 32, color: "var(--color-text-tertiary)", display: "block", marginBottom: 12 }} aria-hidden="true" />
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 6 }}>No analysis data for this story</div>
+          <div style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 16 }}>This story was checked before detailed storage was enabled. Re-check it to see the full analysis.</div>
+          <button onClick={onRecheck} style={{ fontSize: 13, padding: "8px 18px", background: "#185FA5", color: "#fff", border: "none", borderRadius: "var(--border-radius-md)", cursor: "pointer" }}>
+            Re-check this story
+          </button>
+        </div>
+      );
+
+      const r = selectedStory.result || {};
+      const sc = r.scores || {};
+      const scoreColor = v => v >= 80 ? "#1D9E75" : v >= 60 ? "#378ADD" : v >= 40 ? "#EF9F27" : "#E24B4A";
+      const dimColor = v => v >= 16 ? "#1D9E75" : v >= 11 ? "#378ADD" : v >= 6 ? "#EF9F27" : "#E24B4A";
+      const RC = { "Not Ready": { color: "#A32D2D", bg: "#FCEBEB" }, "Needs Work": { color: "#854F0B", bg: "#FAEEDA" }, "Almost Ready": { color: "#185FA5", bg: "#E6F1FB" }, "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" } };
+      const rc = RC[r.readiness_level] || RC["Needs Work"];
+      const SEV = { critical: { color: "#A32D2D", bg: "#FCEBEB", border: "#F09595", icon: "ti-alert-circle" }, warning: { color: "#854F0B", bg: "#FAEEDA", border: "#EF9F27", icon: "ti-alert-triangle" }, info: { color: "#185FA5", bg: "#E6F1FB", border: "#85B7EB", icon: "ti-info-circle" } };
+      const SCORE_LABELS = { completeness: "Completeness", clarity: "Clarity", testability: "Testability", size: "Story size", dependency_risk: "Dependencies" };
+
+      function annotatedText(text) {
+        if (!text) return null;
+        const phrases = (r.ambiguities || []).map(a => a.phrase);
+        const lines = text.split("\n");
+        return lines.map((line, li) => {
+          let parts = [line];
+          phrases.forEach(ph => {
+            parts = parts.flatMap(p => {
+              if (typeof p !== "string") return [p];
+              const idx = p.toLowerCase().indexOf(ph.toLowerCase());
+              if (idx === -1) return [p];
+              return [
+                p.slice(0, idx),
+                <mark key={ph + li} style={{ background: "#FAEEDA", color: "#854F0B", borderRadius: 3, padding: "0 3px", fontWeight: 500 }}>{p.slice(idx, idx + ph.length)}</mark>,
+                p.slice(idx + ph.length)
+              ];
+            });
+          });
+          return <div key={li} style={{ lineHeight: 1.8 }}>{parts}</div>;
+        });
+      }
+
+      return (
+        <div style={{ background: "var(--color-background-secondary)" }}>
+          {/* Panel header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px",
+            background: "var(--color-background-primary)", borderBottom: "0.5px solid var(--color-border-tertiary)", flexWrap: "wrap", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--color-text-secondary)" }}>
+                <i className="ti ti-arrow-left" style={{ fontSize: 16 }} aria-hidden="true" />
+              </button>
+              {(selectedStory.mode || "story") === "epic"
+                ? <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: "#EDE9FE", color: "#5B21B6", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <i className="ti ti-map" style={{ fontSize: 10 }} /> Epic
+                  </span>
+                : <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: "#E6F1FB", color: "#185FA5", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <i className="ti ti-sparkles" style={{ fontSize: 10 }} /> User Story
+                  </span>
+              }
+              <span style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)" }}>{selectedStory.title}</span>
+              <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: rc.bg, color: rc.color }}>{r.readiness_level}</span>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => { navigator.clipboard.writeText(r.improved_story || ""); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                style={{ fontSize: 12, padding: "7px 13px", background: "none", border: "0.5px solid var(--color-border-secondary)",
+                  borderRadius: "var(--border-radius-md)", color: "var(--color-text-secondary)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+                <i className={`ti ${copied ? "ti-check" : "ti-copy"}`} style={{ fontSize: 13 }} aria-hidden="true" />
+                {copied ? "Copied" : "Copy improved story"}
+              </button>
+              <button onClick={onRecheck}
+                style={{ fontSize: 12, padding: "7px 13px", background: "#185FA5", border: "none",
+                  borderRadius: "var(--border-radius-md)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+                <i className="ti ti-refresh" style={{ fontSize: 13 }} aria-hidden="true" /> Re-check
+              </button>
+            </div>
+          </div>
+
+          {/* Panel body */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, padding: "20px", alignItems: "start" }}>
+            {/* LEFT */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 10 }}>
+                  {(selectedStory.mode || "story") === "epic" ? "EPIC TEXT" : "STORY TEXT"}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--color-text-primary)", fontFamily: "var(--font-mono)", lineHeight: 1.8 }}>
+                  {annotatedText(selectedStory.story_text)}
+                </div>
+                {(r.ambiguities || []).length > 0 && (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: "0.5px solid var(--color-border-tertiary)" }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 8 }}>AMBIGUITIES</div>
+                    {r.ambiguities.map((a, i) => (
+                      <div key={i} style={{ fontSize: 12, color: "#854F0B", background: "#FAEEDA", borderRadius: 6, padding: "6px 10px", marginBottom: 6 }}>
+                        <strong>"{a.phrase}"</strong> — {a.question}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {(r.suggested_acs || []).length > 0 && (
+                <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 10 }}>SUGGESTED ACS</div>
+                  {r.suggested_acs.map((ac, i) => (
+                    <div key={i} style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: i < r.suggested_acs.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                      <i className="ti ti-circle-check" style={{ fontSize: 16, color: "#1D9E75", flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
+                      <span style={{ fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.6 }}>{ac}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 14 }}>SCORE BREAKDOWN</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 16 }}>
+                  <span style={{ fontSize: 44, fontWeight: 600, color: scoreColor(selectedStory.score) }}>{selectedStory.score}</span>
+                  <span style={{ fontSize: 18, color: "var(--color-text-tertiary)" }}>/100</span>
+                </div>
+                {Object.entries(sc).map(([k, v]) => (
+                  <div key={k} style={{ marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--color-text-secondary)", marginBottom: 4 }}>
+                      <span>{SCORE_LABELS[k] || k}</span>
+                      <span style={{ fontWeight: 600, color: dimColor(v) }}>{v}/20</span>
+                    </div>
+                    <div style={{ height: 5, background: "var(--color-background-secondary)", borderRadius: 99 }}>
+                      <div style={{ height: "100%", width: `${(v / 20) * 100}%`, background: dimColor(v), borderRadius: 99 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {(r.gaps || []).length > 0 && (
+                <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 12 }}>ISSUES TO FIX</div>
+                  {r.gaps.map((g, i) => {
+                    const s = SEV[g.severity] || SEV.info;
+                    return (
+                      <div key={i} style={{ border: `0.5px solid ${s.border}`, borderRadius: "var(--border-radius-md)", padding: "10px 12px", marginBottom: 8, background: s.bg }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                          <i className={`ti ${s.icon}`} style={{ fontSize: 13, color: s.color }} aria-hidden="true" />
+                          <span style={{ fontSize: 11, fontWeight: 600, color: s.color, textTransform: "capitalize" }}>{g.severity}</span>
+                          <span style={{ fontSize: 11, color: s.color, opacity: 0.7 }}>· {g.area}</span>
+                        </div>
+                        <p style={{ margin: "0 0 4px", fontSize: 13, color: "#1a2230", lineHeight: 1.5 }}>{g.issue}</p>
+                        <p style={{ margin: 0, fontSize: 12, color: "#5a6675" }}>
+                          <i className="ti ti-arrow-right" style={{ fontSize: 11 }} aria-hidden="true" /> {g.fix}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Dashboard ── */
+    function Dashboard({ history, setHistory, onRowClick }) {
+      const PAGE_SIZE = 10;
+      const RC = { "Not Ready": { color: "#A32D2D", bg: "#FCEBEB" }, "Needs Work": { color: "#854F0B", bg: "#FAEEDA" }, "Almost Ready": { color: "#185FA5", bg: "#E6F1FB" }, "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" } };
+      const scoreColor = v => v >= 80 ? "#1D9E75" : v >= 60 ? "#378ADD" : v >= 40 ? "#EF9F27" : "#E24B4A";
+
+      const [titleFilter, setTitleFilter] = useState("");
+      const [statusFilter, setStatusFilter] = useState("");
+      const [typeFilter, setTypeFilter] = useState("");
+      const [sortCol, setSortCol] = useState("checked_at");
+      const [sortDir, setSortDir] = useState("desc");
+      const [page, setPage] = useState(1);
+
+      function toggleSort(col) {
+        if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+        else { setSortCol(col); setSortDir("desc"); }
+        setPage(1);
+      }
+
+      function deleteRow(id, e) {
+        e.stopPropagation();
+        fetch(`/api/history/delete/${id}`).then(() =>
+          setHistory(h => h.filter(r => r.id !== id))
+        );
+      }
+
+      const filtered = history
+        .filter(r => r.title.toLowerCase().includes(titleFilter.toLowerCase()))
+        .filter(r => !statusFilter || r.readiness_level === statusFilter)
+        .filter(r => !typeFilter || (r.mode || "story") === typeFilter)
+        .sort((a, b) => {
+          let av = a[sortCol] ?? "", bv = b[sortCol] ?? "";
+          if (sortCol === "score") { av = Number(av); bv = Number(bv); }
+          if (av < bv) return sortDir === "asc" ? -1 : 1;
+          if (av > bv) return sortDir === "asc" ? 1 : -1;
+          return 0;
+        });
+
+      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+      const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+      function SortIcon({ col }) {
+        if (sortCol !== col) return <i className="ti ti-selector" style={{ fontSize: 11, opacity: 0.4 }} />;
+        return <i className={`ti ti-sort-${sortDir === "asc" ? "ascending" : "descending"}`} style={{ fontSize: 11, color: "#185FA5" }} />;
+      }
+
+      const thStyle = (extra = {}) => ({
+        textAlign: "left", padding: "10px 14px", fontSize: 11, fontWeight: 500,
+        color: "var(--color-text-secondary)", borderBottom: "0.5px solid var(--color-border-tertiary)",
+        cursor: "pointer", userSelect: "none", whiteSpace: "nowrap", ...extra
+      });
+
+      return (
+        <div style={{ padding: "24px 20px", background: "var(--color-background-secondary)", minHeight: 300 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <div>
+              <h2 style={{ fontSize: 18, fontWeight: 500, color: "#185FA5", margin: "0 0 4px" }}>Sprint Dashboard</h2>
+              <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: 0 }}>{filtered.length} of {history.length} stories</p>
+            </div>
+            {history.length > 0 && (
+              <button onClick={() => fetch("/api/history/clear").then(() => setHistory([]))}
+                style={{ fontSize: 12, padding: "6px 12px", background: "none", cursor: "pointer",
+                  border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-md)",
+                  color: "var(--color-text-secondary)", display: "flex", alignItems: "center", gap: 5 }}>
+                <i className="ti ti-trash" style={{ fontSize: 13 }} /> Clear all
+              </button>
+            )}
+          </div>
+
+          {history.length > 0 && (
+            <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+              <input value={titleFilter} onChange={e => { setTitleFilter(e.target.value); setPage(1); }}
+                placeholder="Filter by story title…"
+                style={{ fontSize: 12, padding: "7px 11px", border: "0.5px solid var(--color-border-secondary)",
+                  borderRadius: "var(--border-radius-md)", background: "var(--color-background-primary)",
+                  color: "var(--color-text-primary)", width: 220 }} />
+              <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+                style={{ fontSize: 12, padding: "7px 11px", border: "0.5px solid var(--color-border-secondary)",
+                  borderRadius: "var(--border-radius-md)", background: "var(--color-background-primary)",
+                  color: "var(--color-text-primary)" }}>
+                <option value="">All statuses</option>
+                {["Not Ready", "Needs Work", "Almost Ready", "Sprint Ready"].map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(1); }}
+                style={{ fontSize: 12, padding: "7px 11px", border: "0.5px solid var(--color-border-secondary)",
+                  borderRadius: "var(--border-radius-md)", background: "var(--color-background-primary)",
+                  color: "var(--color-text-primary)" }}>
+                <option value="">All types</option>
+                <option value="story">User Story</option>
+                <option value="epic">Epic</option>
+              </select>
+              {(titleFilter || statusFilter || typeFilter) && (
+                <button onClick={() => { setTitleFilter(""); setStatusFilter(""); setTypeFilter(""); setPage(1); }}
+                  style={{ fontSize: 12, padding: "7px 11px", background: "none", cursor: "pointer",
+                    border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-md)",
+                    color: "var(--color-text-secondary)" }}>Clear filters</button>
+              )}
+            </div>
+          )}
+
+          {history.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 24px" }}>
+              <i className="ti ti-clipboard-list" style={{ fontSize: 32, color: "var(--color-text-tertiary)", display: "block", marginBottom: 12 }} />
+              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 6 }}>No stories checked yet</div>
+              <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>Go to the Readiness Checker tab and analyse a story — it will appear here.</div>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 24px" }}>
+              <div style={{ fontSize: 14, color: "var(--color-text-secondary)" }}>No stories match the current filters.</div>
+            </div>
+          ) : (
+            <>
+              <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: "var(--color-background-secondary)" }}>
+                      <th style={thStyle({ width: 36, cursor: "default" })}>#</th>
+                      <th style={thStyle()} onClick={() => toggleSort("title")}>Title <SortIcon col="title" /></th>
+                      <th style={thStyle({ width: 100 })} onClick={() => toggleSort("mode")}>Type <SortIcon col="mode" /></th>
+                      <th style={thStyle()} onClick={() => toggleSort("epic")}>Epic <SortIcon col="epic" /></th>
+                      <th style={thStyle()} onClick={() => toggleSort("score")}>Score <SortIcon col="score" /></th>
+                      <th style={thStyle()} onClick={() => toggleSort("readiness_level")}>Status <SortIcon col="readiness_level" /></th>
+                      <th style={thStyle()} onClick={() => toggleSort("checked_at")}>Checked At <SortIcon col="checked_at" /></th>
+                      <th style={thStyle({ cursor: "default", width: 40 })}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageRows.map((row, i) => {
+                      const rc = RC[row.readiness_level] || RC["Needs Work"];
+                      return (
+                        <tr key={row.id} onClick={() => onRowClick(row)}
+                          style={{ background: "var(--color-background-primary)", cursor: "pointer" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f0f4ff"}
+                          onMouseLeave={e => e.currentTarget.style.background = "var(--color-background-primary)"}>
+                          <td style={{ padding: "11px 14px", color: "var(--color-text-tertiary)", width: 36 }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
+                          <td style={{ padding: "11px 14px", color: "#185FA5", maxWidth: 240 }}>
+                            <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "underline" }}>{row.title}</div>
+                          </td>
+                          <td style={{ padding: "11px 14px" }}>
+                            {(row.mode || "story") === "epic"
+                              ? <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: "#EDE9FE", color: "#5B21B6", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                  <i className="ti ti-map" style={{ fontSize: 10 }} /> Epic
+                                </span>
+                              : <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: "#E6F1FB", color: "#185FA5", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                  <i className="ti ti-sparkles" style={{ fontSize: 10 }} /> User Story
+                                </span>
+                            }
+                          </td>
+                          <td style={{ padding: "11px 14px", color: "var(--color-text-tertiary)", fontSize: 12 }}>
+                            {row.epic || <span style={{ fontStyle: "italic" }}>—</span>}
+                          </td>
+                          <td style={{ padding: "11px 14px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <div style={{ height: 5, width: 60, background: "var(--color-background-secondary)", borderRadius: 99 }}>
+                                <div style={{ height: "100%", width: `${row.score}%`, borderRadius: 99, background: scoreColor(row.score) }} />
+                              </div>
+                              <span style={{ fontWeight: 500, color: scoreColor(row.score), fontSize: 12 }}>{row.score}/100</span>
+                            </div>
+                          </td>
+                          <td style={{ padding: "11px 14px" }}>
+                            <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: rc.bg, color: rc.color }}>{row.readiness_level}</span>
+                          </td>
+                          <td style={{ padding: "11px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>{row.checked_at}</td>
+                          <td style={{ padding: "11px 14px" }} onClick={e => e.stopPropagation()}>
+                            <button onClick={e => deleteRow(row.id, e)}
+                              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-tertiary)", padding: "2px 4px", borderRadius: 4 }}
+                              onMouseEnter={e => e.currentTarget.style.color = "#A32D2D"}
+                              onMouseLeave={e => e.currentTarget.style.color = "var(--color-text-tertiary)"}>
+                              <i className="ti ti-trash" style={{ fontSize: 14 }} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {totalPages > 1 && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 2px" }}>
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                    style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid var(--color-border-secondary)",
+                      borderRadius: "var(--border-radius-md)", background: "none", cursor: page === 1 ? "default" : "pointer",
+                      color: page === 1 ? "var(--color-text-tertiary)" : "var(--color-text-primary)" }}>‹ Prev</button>
+                  {Array.from({ length: totalPages }, (_, ii) => ii + 1).map(p => (
+                    <button key={p} onClick={() => setPage(p)}
+                      style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid var(--color-border-secondary)",
+                        borderRadius: "var(--border-radius-md)", cursor: "pointer",
+                        background: p === page ? "#185FA5" : "none",
+                        color: p === page ? "#fff" : "var(--color-text-primary)" }}>{p}</button>
+                  ))}
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                    style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid var(--color-border-secondary)",
+                      borderRadius: "var(--border-radius-md)", background: "none", cursor: page === totalPages ? "default" : "pointer",
+                      color: page === totalPages ? "var(--color-text-tertiary)" : "var(--color-text-primary)" }}>Next ›</button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      );
+    }
+
+    /* ── Board Selector (Batch Screen 1) ── */
+    function BoardSelector({ onSelect }) {
+      const [boards, setBoards] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [error, setError]   = useState("");
+
+      useEffect(() => {
+        fetch("/api/jira/board-overview")
+          .then(r => r.json())
+          .then(d => { setBoards(Array.isArray(d) ? d : []); setLoading(false); })
+          .catch(e => { setError(e.message); setLoading(false); });
+      }, []);
+
+      const AVATAR_COLORS = ["#0052CC","#5B21B6","#065F46","#92400E","#1E40AF","#7C3AED","#0F766E","#B45309"];
+      function avatarColor(key) {
+        let h = 0;
+        for (let i = 0; i < (key || "").length; i++) h = (h * 31 + key.charCodeAt(i)) & 0xFFFFFF;
+        return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+      }
+      function initials(name) {
+        return (name || "?").split(/\s+/).slice(0,2).map(w => w[0]).join("").toUpperCase();
+      }
+
+      if (loading) return (
+        <div style={{ padding: "48px 24px", textAlign: "center", color: "#5a6675", fontSize: 13 }}>
+          <i className="ti ti-loader-2" style={{ fontSize: 28, display: "block", marginBottom: 10, animation: "spin 1s linear infinite", color: "#0052CC" }} />
+          Loading boards from Jira…
+        </div>
+      );
+      if (error) return (
+        <div style={{ padding: "48px 24px", textAlign: "center", color: "#A32D2D", fontSize: 13 }}>
+          <i className="ti ti-alert-triangle" style={{ fontSize: 28, display: "block", marginBottom: 10 }} />
+          {error}
+        </div>
+      );
+
+      return (
+        <div style={{ padding: "24px 20px", background: "#fff", minHeight: 400 }}>
+          <h2 style={{ fontSize: 17, fontWeight: 600, color: "#1a2230", margin: "0 0 4px" }}>Select a project and board</h2>
+          <p style={{ fontSize: 13, color: "#5a6675", margin: "0 0 22px" }}>Choose the sprint or backlog you want to analyse.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
+            {boards.map(board => {
+              const color = avatarColor(board.projectKey || board.name);
+              return (
+                <div key={board.id} style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", background: "#fff" }}>
+                  <div style={{ padding: "13px 15px 10px", borderBottom: "1px solid #f0f4f8", display: "flex", alignItems: "center", gap: 9 }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 7, background: color, flexShrink: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 11, fontWeight: 700, color: "#fff" }}>{initials(board.projectName || board.name)}</div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2230", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{board.projectName || board.name}</span>
+                  </div>
+                  <div style={{ padding: "8px" }}>
+                    {board.backlogCount > 0 && (
+                      <div onClick={() => onSelect({ board, type: "backlog", label: "Backlog", sprintId: null })}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+                          padding: "9px 10px", borderRadius: 7, cursor: "pointer", marginBottom: 4,
+                          border: "1px solid #e2e8f0", transition: "background 120ms" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                          <i className="ti ti-stack-2" style={{ fontSize: 13, color: "#5a6675" }} />
+                          <span style={{ fontSize: 13, color: "#1a2230" }}>Backlog</span>
+                        </div>
+                        <span style={{ fontSize: 11, color: "#9aabb6" }}>{board.backlogCount} {board.backlogCount === 1 ? "story" : "stories"}</span>
+                      </div>
+                    )}
+                    {board.sprints.map(sprint => {
+                      const isActive = sprint.state === "active";
+                      return (
+                        <div key={sprint.id} onClick={() => onSelect({ board, type: "sprint", label: sprint.name, sprintId: sprint.id })}
+                          style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+                            padding: "9px 10px", borderRadius: 7, cursor: "pointer", marginBottom: 4,
+                            border: isActive ? "1.5px solid #0052CC" : "1px solid #e2e8f0",
+                            background: isActive ? "#EFF4FF" : "transparent", transition: "background 120ms" }}
+                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#f8fafc"; }}
+                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = isActive ? "#EFF4FF" : "transparent"; }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+                            <i className="ti ti-refresh" style={{ fontSize: 13, color: isActive ? "#0052CC" : "#5a6675", flexShrink: 0 }} />
+                            <span style={{ fontSize: 13, color: isActive ? "#0052CC" : "#1a2230", fontWeight: isActive ? 500 : 400,
+                              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sprint.name}</span>
+                            {isActive && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 99, flexShrink: 0,
+                              background: "#0052CC", color: "#fff", fontWeight: 600, letterSpacing: "0.05em" }}>Active</span>}
+                          </div>
+                          <span style={{ fontSize: 11, color: "#9aabb6", flexShrink: 0, marginLeft: 8 }}>{sprint.count} {sprint.count === 1 ? "story" : "stories"}</span>
+                        </div>
+                      );
+                    })}
+                    {board.backlogCount === 0 && board.sprints.length === 0 && (
+                      <div style={{ padding: "10px", fontSize: 12, color: "#c8d3da", textAlign: "center" }}>No stories</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Batch Analysis (Batch Screen 2) ── */
+    function BatchAnalysis({ selection, onChangeBoard }) {
+      const { board, type, label, sprintId } = selection;
+      const [issues,      setIssues]      = useState([]);
+      const [loading,     setLoading]     = useState(true);
+      const [selected,    setSelected]    = useState(new Set());
+      const [results,     setResults]     = useState({});
+      const [statuses,    setStatuses]    = useState({});
+      const [running,     setRunning]     = useState(false);
+      const [expandedKey, setExpandedKey] = useState(null);
+      const runningRef = useRef(false);
+
+      useEffect(() => {
+        const url = sprintId
+          ? `/api/jira/board-issues?sprintId=${sprintId}`
+          : `/api/jira/board-issues?boardId=${board.id}&backlog=true`;
+        fetch(url)
+          .then(r => r.json())
+          .then(d => {
+            const iss = d.issues || [];
+            setIssues(iss);
+            setSelected(new Set(iss.map(i => i.key)));
+            setLoading(false);
+          })
+          .catch(e => { console.error(e); setLoading(false); });
+      }, []);
+
+      async function runBatch() {
+        if (running) return;
+        runningRef.current = true;
+        setRunning(true);
+        const toRun = issues.filter(i => selected.has(i.key) && statuses[i.key] !== "done");
+        for (let idx = 0; idx < toRun.length; idx++) {
+          if (!runningRef.current) break;
+          const issue = toRun[idx];
+          setStatuses(s => ({ ...s, [issue.key]: "running" }));
+          try {
+            const mode = (issue.type || "").toLowerCase() === "epic" ? "epic" : "story";
+            const res  = await fetch("/api/analyze", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ story: issue.text, mode }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+              setResults(r => ({ ...r, [issue.key]: data }));
+              setStatuses(s => ({ ...s, [issue.key]: "done" }));
+            } else {
+              setStatuses(s => ({ ...s, [issue.key]: "error" }));
+            }
+          } catch {
+            setStatuses(s => ({ ...s, [issue.key]: "error" }));
+          }
+        }
+        runningRef.current = false;
+        setRunning(false);
+      }
+
+      function toggleSelect(key) {
+        setSelected(s => { const n = new Set(s); n.has(key) ? n.delete(key) : n.add(key); return n; });
+      }
+      function toggleAll() {
+        setSelected(selected.size === issues.length ? new Set() : new Set(issues.map(i => i.key)));
+      }
+
+      /* ── derived stats ── */
+      const selectedCount    = issues.filter(i => selected.has(i.key)).length;
+      const doneCount        = Object.values(statuses).filter(s => s === "done").length;
+      const activeIssue      = issues.find(i => statuses[i.key] === "running");
+      const activeIdx        = activeIssue ? issues.filter(i => selected.has(i.key)).indexOf(activeIssue) + 1 : 0;
+      const sprintReadyCount = Object.values(results).filter(r => r.readiness_level === "Sprint Ready").length;
+      const criticalGaps     = Object.values(results).reduce((n, r) => n + (r.gaps?.filter(g => g.severity === "critical").length || 0), 0);
+      const progressPct      = selectedCount > 0 ? Math.round((doneCount / selectedCount) * 100) : 0;
+      const batchStarted     = running || doneCount > 0;
+
+      /* ── helpers ── */
+      const RC2 = { "Not Ready": { color: "#A32D2D", bg: "#FCEBEB" }, "Needs Work": { color: "#854F0B", bg: "#FAEEDA" }, "Almost Ready": { color: "#185FA5", bg: "#E6F1FB" }, "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" } };
+      const sc2 = v => v >= 80 ? "#1D9E75" : v >= 60 ? "#378ADD" : v >= 40 ? "#EF9F27" : "#E24B4A";
+      const SEV2 = { critical: { color: "#A32D2D", bg: "#FCEBEB", border: "#F09595" }, warning: { color: "#854F0B", bg: "#FAEEDA", border: "#EF9F27" }, info: { color: "#185FA5", bg: "#E6F1FB", border: "#85B7EB" } };
+      const DIM_LABELS = { completeness: "Completeness", clarity: "Clarity", testability: "Testability", size: "Size", dependency_risk: "Dependencies" };
+
+      /* ── SVG score rings ── */
+      function DoneRing({ score }) {
+        const S = 40, r = 16, circ = 2 * Math.PI * r;
+        const arc = (score / 100) * circ;
+        const c = sc2(score);
+        return (
+          <svg width={S} height={S} style={{ display: "block", margin: "0 auto" }}>
+            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#eef1f4" strokeWidth={3} />
+            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke={c} strokeWidth={3}
+              strokeDasharray={`${arc} ${circ - arc}`} strokeLinecap="round"
+              transform={`rotate(-90 ${S/2} ${S/2})`} />
+            <text x={S/2} y={S/2 + 4} textAnchor="middle" fontSize="11" fontWeight="600" fill={c}>{score}</text>
+          </svg>
+        );
+      }
+      function SpinnerRing() {
+        const S = 40, r = 16, circ = 2 * Math.PI * r;
+        return (
+          <svg width={S} height={S} style={{ display: "block", margin: "0 auto", animation: "spin 0.9s linear infinite" }}>
+            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#dde4ea" strokeWidth={3} />
+            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#0052CC" strokeWidth={3}
+              strokeDasharray={`${circ * 0.28} ${circ * 0.72}`} strokeLinecap="round"
+              transform={`rotate(-90 ${S/2} ${S/2})`} />
+          </svg>
+        );
+      }
+      function DashedRing() {
+        const S = 40, r = 16;
+        return (
+          <svg width={S} height={S} style={{ display: "block", margin: "0 auto", opacity: 0.3 }}>
+            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#8fa3b1" strokeWidth={2.5} strokeDasharray="3.5 4" />
+          </svg>
+        );
+      }
+      function ErrorRing() {
+        const S = 40, r = 16;
+        return (
+          <svg width={S} height={S} style={{ display: "block", margin: "0 auto" }}>
+            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#F09595" strokeWidth={2.5} />
+            <text x={S/2} y={S/2 + 4} textAnchor="middle" fontSize="11" fill="#A32D2D">!</text>
+          </svg>
+        );
+      }
+
+      if (loading) return (
+        <div style={{ padding: "48px 24px", textAlign: "center", color: "#5a6675", fontSize: 13 }}>
+          <i className="ti ti-loader-2" style={{ fontSize: 28, display: "block", marginBottom: 10, animation: "spin 1s linear infinite", color: "#0052CC" }} />
+          Loading issues from {label}…
+        </div>
+      );
+
+      return (
+        <div style={{ background: "#fff", minHeight: 400 }}>
+
+          {/* ── Top header ── */}
+          <div style={{ padding: "12px 20px", borderBottom: "1px solid #e2e8f0",
+            display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2230" }}>{board.projectName || board.name}</span>
+              <span style={{ color: "#d0d9e0" }}>·</span>
+              <span style={{ fontSize: 13, color: "#5a6675" }}>{label}</span>
+              <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, fontWeight: 500,
+                background: "#E1F5EE", color: "#0F6E56", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <i className="ti ti-circle-filled" style={{ fontSize: 7 }} /> Jira connected
+              </span>
+            </div>
+            <button onClick={onChangeBoard}
+              style={{ fontSize: 12, padding: "5px 11px", border: "1px solid #e2e8f0", borderRadius: 6,
+                background: "none", cursor: "pointer", color: "#5a6675", display: "flex", alignItems: "center", gap: 5 }}>
+              <i className="ti ti-arrow-left" style={{ fontSize: 12 }} /> Change board
+            </button>
+          </div>
+
+          {/* ── Live progress banner (replaces plain selection bar when running) ── */}
+          {batchStarted ? (
+            <div style={{ background: running ? "#EFF4FF" : "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+              {/* Progress bar */}
+              <div style={{ height: 3, background: "#dde4ea" }}>
+                <div style={{ height: "100%", width: `${progressPct}%`, transition: "width 0.5s ease",
+                  background: running ? "linear-gradient(90deg,#0052CC,#2684FF)" : "#1D9E75" }} />
+              </div>
+              <div style={{ padding: "11px 20px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                {/* Left: check + count */}
+                <label style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", userSelect: "none" }}>
+                  <input type="checkbox"
+                    checked={selected.size === issues.length && issues.length > 0}
+                    onChange={toggleAll} disabled={running}
+                    style={{ width: 14, height: 14, accentColor: "#0052CC" }} />
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "#1a2230" }}>
+                    {selectedCount} of {issues.length} selected
+                  </span>
+                </label>
+                {/* Middle: live status text */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {running && (
+                    <span style={{ fontSize: 12, fontWeight: 500, color: "#0052CC",
+                      display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <svg width="14" height="14" style={{ animation: "spin 0.9s linear infinite", flexShrink: 0 }}>
+                        <circle cx="7" cy="7" r="5" fill="none" stroke="#dde4ea" strokeWidth="2.5" />
+                        <circle cx="7" cy="7" r="5" fill="none" stroke="#0052CC" strokeWidth="2.5"
+                          strokeDasharray="8 23" strokeLinecap="round" transform="rotate(-90 7 7)" />
+                      </svg>
+                      Analysing {activeIdx}/{selectedCount}…
+                    </span>
+                  )}
+                  {!running && doneCount > 0 && (
+                    <span style={{ fontSize: 12, fontWeight: 500, color: "#0F6E56",
+                      display: "inline-flex", alignItems: "center", gap: 5 }}>
+                      <i className="ti ti-circle-check" style={{ fontSize: 14 }} />
+                      Batch complete — {doneCount}/{selectedCount} analysed
+                    </span>
+                  )}
+                </div>
+                {/* Right: run button */}
+                <div style={{ marginLeft: "auto" }}>
+                  <button onClick={runBatch} disabled={running || selectedCount === 0}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 500,
+                      padding: "7px 16px", borderRadius: 7, border: "none",
+                      cursor: running || selectedCount === 0 ? "not-allowed" : "pointer",
+                      background: running ? "#85B7EB" : "#0052CC", color: "#fff" }}>
+                    {running
+                      ? <><i className="ti ti-loader-2" style={{ fontSize: 13, animation: "spin 1s linear infinite" }} /> Running batch…</>
+                      : <><i className="ti ti-refresh" style={{ fontSize: 13 }} /> Re-run</>}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* ── Pre-run selection bar ── */
+            <div style={{ padding: "11px 20px", borderBottom: "1px solid #e2e8f0",
+              display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", userSelect: "none" }}>
+                <input type="checkbox"
+                  checked={selected.size === issues.length && issues.length > 0}
+                  onChange={toggleAll}
+                  style={{ width: 14, height: 14, accentColor: "#0052CC" }} />
+                <span style={{ fontSize: 13, fontWeight: 500, color: "#1a2230" }}>
+                  {selectedCount} of {issues.length} selected
+                </span>
+              </label>
+              <div style={{ marginLeft: "auto" }}>
+                <button onClick={runBatch} disabled={selectedCount === 0}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 500,
+                    padding: "8px 18px", borderRadius: 8, border: "none",
+                    cursor: selectedCount === 0 ? "not-allowed" : "pointer",
+                    background: selectedCount === 0 ? "#85B7EB" : "#0052CC", color: "#fff" }}>
+                  <i className="ti ti-sparkles" style={{ fontSize: 13 }} /> Run batch
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Real-time summary strip ── */}
+          {batchStarted && (
+            <div style={{ display: "flex", background: "#fafbfc", borderBottom: "1px solid #e2e8f0" }}>
+              {[
+                { val: `${doneCount}/${selectedCount}`, sub: "Analysed",     color: "#185FA5", icon: "ti-chart-bar" },
+                { val: sprintReadyCount,                sub: "Sprint ready",  color: "#0F6E56", icon: "ti-circle-check" },
+                { val: criticalGaps,                    sub: "Critical gaps", color: criticalGaps > 0 ? "#A32D2D" : "#8fa3b1", icon: "ti-alert-circle" },
+              ].map((s, i) => (
+                <div key={i} style={{ flex: 1, textAlign: "center", padding: "14px 0",
+                  borderRight: i < 2 ? "1px solid #e2e8f0" : "none" }}>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.val}</div>
+                  <div style={{ fontSize: 11, color: "#8fa3b1", marginTop: 4, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                    <i className={`ti ${s.icon}`} style={{ fontSize: 11 }} />{s.sub}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── Table ── */}
+          {issues.length === 0 ? (
+            <div style={{ padding: "48px 24px", textAlign: "center", color: "#9aabb6", fontSize: 13 }}>
+              No issues found in this {type}.
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: "#f8fafc" }}>
+                  <th style={{ width: 42, padding: "9px 16px", borderBottom: "1px solid #e2e8f0" }} />
+                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#8fa3b1", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>ID</th>
+                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#8fa3b1", borderBottom: "1px solid #e2e8f0" }}>TITLE</th>
+                  <th style={{ textAlign: "right", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#8fa3b1", borderBottom: "1px solid #e2e8f0", width: 60, whiteSpace: "nowrap" }}>PTS</th>
+                  <th style={{ textAlign: "center", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#8fa3b1", borderBottom: "1px solid #e2e8f0", width: 60 }}>SCORE</th>
+                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#8fa3b1", borderBottom: "1px solid #e2e8f0", width: 130 }}>STATUS</th>
+                  <th style={{ width: 36, borderBottom: "1px solid #e2e8f0" }} />
+                </tr>
+              </thead>
+              <tbody>
+                {issues.map(issue => {
+                  const st     = statuses[issue.key] || "pending";
+                  const result = results[issue.key];
+                  const rc     = result ? (RC2[result.readiness_level] || RC2["Needs Work"]) : null;
+                  const isExp  = expandedKey === issue.key;
+                  const isSel  = selected.has(issue.key);
+                  const isEpic = (issue.type || "").toLowerCase() === "epic";
+                  const queued = isSel && !batchStarted ? false : (isSel && batchStarted && st === "pending");
+
+                  const rows = [
+                    <tr key={issue.key}
+                      style={{ borderBottom: isExp ? "none" : "1px solid #f4f6f8",
+                        background: st === "running" ? "#EFF4FF" : isExp ? "#f8fafc" : "transparent",
+                        transition: "background 200ms" }}>
+                      {/* Checkbox */}
+                      <td style={{ padding: "10px 16px", textAlign: "center" }}>
+                        <input type="checkbox" checked={isSel} disabled={running}
+                          onChange={() => toggleSelect(issue.key)}
+                          style={{ width: 14, height: 14, accentColor: "#0052CC" }} />
+                      </td>
+                      {/* Key + type */}
+                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "#0052CC", background: "#EFF4FF", padding: "2px 7px", borderRadius: 5 }}>{issue.key}</span>
+                        <span style={{ display: "inline-block", marginLeft: 5 }}>
+                          {isEpic
+                            ? <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: "#EDE9FE", color: "#5B21B6" }}>epic</span>
+                            : <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: "#E6F1FB", color: "#185FA5" }}>story</span>}
+                        </span>
+                      </td>
+                      {/* Title */}
+                      <td style={{ padding: "10px 12px", color: "#1a2230", maxWidth: 280 }}>
+                        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{issue.summary}</div>
+                        {issue.assignee && <div style={{ fontSize: 11, color: "#9aabb6", marginTop: 1 }}>{issue.assignee}</div>}
+                      </td>
+                      {/* Points */}
+                      <td style={{ padding: "10px 12px", textAlign: "right", color: "#8fa3b1", fontSize: 12, whiteSpace: "nowrap" }}>
+                        {issue.points != null ? `${issue.points} pts` : "—"}
+                      </td>
+                      {/* Score ring */}
+                      <td style={{ padding: "6px 12px", textAlign: "center", verticalAlign: "middle" }}>
+                        {st === "done" && result ? <DoneRing score={result.total} />
+                          : st === "running"     ? <SpinnerRing />
+                          : st === "error"       ? <ErrorRing />
+                          : queued               ? <DashedRing />
+                          : <DashedRing />}
+                      </td>
+                      {/* Status */}
+                      <td style={{ padding: "10px 12px" }}>
+                        {st === "done" && result ? (
+                          <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 99,
+                            background: rc.bg, color: rc.color, whiteSpace: "nowrap" }}>
+                            {result.readiness_level}
+                          </span>
+                        ) : st === "running" ? (
+                          <span style={{ fontSize: 11, color: "#0052CC", fontWeight: 500 }}>Analysing…</span>
+                        ) : st === "error" ? (
+                          <span style={{ fontSize: 11, color: "#A32D2D" }}>Error</span>
+                        ) : isSel ? (
+                          <span style={{ fontSize: 11, color: "#b0bec5" }}>Queued</span>
+                        ) : (
+                          <span style={{ fontSize: 11, color: "#d0d9e0" }}>Skipped</span>
+                        )}
+                      </td>
+                      {/* Expand */}
+                      <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                        {st === "done" && (
+                          <button onClick={() => setExpandedKey(isExp ? null : issue.key)}
+                            style={{ background: "none", border: "none", cursor: "pointer",
+                              color: "#8fa3b1", padding: "2px 4px", borderRadius: 4,
+                              transition: "color 120ms" }}
+                            onMouseEnter={e => e.currentTarget.style.color = "#1a2230"}
+                            onMouseLeave={e => e.currentTarget.style.color = "#8fa3b1"}>
+                            <i className={`ti ti-chevron-${isExp ? "up" : "right"}`} style={{ fontSize: 14 }} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ];
+
+                  if (isExp && result) {
+                    rows.push(
+                      <tr key={issue.key + "-exp"}>
+                        <td colSpan={7} style={{ padding: "0 16px 14px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                          <div style={{ borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff",
+                            padding: "16px 18px", maxHeight: 400, overflowY: "auto" }}>
+                            {/* Summary + score */}
+                            <div style={{ display: "flex", gap: 16, marginBottom: 14, alignItems: "flex-start" }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: "#1a2230", marginBottom: 5 }}>{issue.summary}</div>
+                                <p style={{ margin: 0, fontSize: 13, color: "#5a6675", lineHeight: 1.65 }}>{result.summary}</p>
+                              </div>
+                              <div style={{ flexShrink: 0, textAlign: "center" }}>
+                                <DoneRing score={result.total} />
+                                <div style={{ fontSize: 10, color: "#8fa3b1", marginTop: 4 }}>{result.readiness_level}</div>
+                              </div>
+                            </div>
+                            {/* Original story / epic text */}
+                            {issue.text && (
+                              <div style={{ marginBottom: 14 }}>
+                                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase",
+                                  color: "#8fa3b1", marginBottom: 6 }}>
+                                  {isEpic ? "Epic text" : "Story text"}
+                                </div>
+                                <pre style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.75,
+                                  whiteSpace: "pre-wrap", wordBreak: "break-word",
+                                  background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6,
+                                  padding: "10px 13px", color: "#314550", maxHeight: 180, overflowY: "auto" }}>
+                                  {issue.text}
+                                </pre>
+                              </div>
+                            )}
+                            {/* Dimension bars */}
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "7px 20px", marginBottom: 14 }}>
+                              {Object.entries(result.scores || {}).map(([k, v]) => (
+                                <div key={k}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#5a6675", marginBottom: 3 }}>
+                                    <span>{DIM_LABELS[k] || k}</span>
+                                    <span style={{ color: sc2(v / 20 * 100), fontWeight: 600 }}>{v}/20</span>
+                                  </div>
+                                  <div style={{ height: 4, background: "#eef1f4", borderRadius: 99 }}>
+                                    <div style={{ height: "100%", width: `${(v/20)*100}%`, background: sc2(v/20*100), borderRadius: 99 }} />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            {/* Gaps */}
+                            {(result.gaps || []).slice(0, 5).map((g, i) => {
+                              const c = SEV2[g.severity] || SEV2.info;
+                              return (
+                                <div key={i} style={{ border: `1px solid ${c.border}`, borderRadius: 6,
+                                  padding: "8px 11px", marginBottom: 6, background: c.bg }}>
+                                  <div style={{ marginBottom: 3 }}>
+                                    <span style={{ fontSize: 11, fontWeight: 600, color: c.color, textTransform: "capitalize" }}>{g.severity}</span>
+                                    <span style={{ fontSize: 11, color: c.color, opacity: 0.7 }}> · {g.area}</span>
+                                  </div>
+                                  <p style={{ margin: 0, fontSize: 12, color: "#1a2230", lineHeight: 1.55 }}>{g.issue}</p>
+                                </div>
+                              );
+                            })}
+                            {(result.gaps || []).length > 5 && (
+                              <p style={{ fontSize: 12, color: "#9aabb6", margin: "6px 0 0" }}>+{result.gaps.length - 5} more gaps</p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }
+                  return rows;
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      );
+    }
+
+    /* ── Main App ── */
+    function App() {
+      const [activeNav, setActiveNav]     = useState("checker");
+      const [checkerMode, setCheckerMode] = useState("story"); // "story" | "epic"
+      const [story, setStory]             = useState("");
+      const [epic, setEpic]               = useState("");
+      const [dor, setDor]                 = useState("");
+
+      // "idle" | "loading" | "done" | "error"
+      const [uiState, setUiState]     = useState("idle");
+      const [loadStep, setLoadStep]   = useState(0);
+      const [result, setResult]       = useState(null);
+      const [errorMsg, setErrorMsg]   = useState("");
+      const [history, setHistory]     = useState([]);
+      const [selectedStory, setSelectedStory] = useState(null);
+
+      useEffect(() => {
+        fetch("/api/history").then(r => r.json()).then(setHistory).catch(() => {});
+      }, []);
+
+      const resultRef = useRef(null);
+      const timerRef  = useRef(null);
+
+      // Advance loading steps every ~1.8s
+      useEffect(() => {
+        if (uiState === "loading") {
+          setLoadStep(0);
+          timerRef.current = setInterval(() => {
+            setLoadStep(s => Math.min(s + 1, LOADING_STEPS.length - 1));
+          }, 1800);
+        } else {
+          clearInterval(timerRef.current);
+        }
+        return () => clearInterval(timerRef.current);
+      }, [uiState]);
+
+      async function analyzeStory() {
+        if (!story.trim()) return;
+        setUiState("loading");
+        setResult(null);
+        setErrorMsg("");
+
+        try {
+          const res = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ story, epic, dor, mode: checkerMode }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || `Request failed (${res.status})`);
+          }
+          setResult(data);
+          setUiState("done");
+          fetch("/api/history").then(r => r.json()).then(setHistory).catch(() => {});
+          setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+        } catch (e) {
+          setErrorMsg(e.message || "");
+          setUiState("error");
+        }
+      }
+
+      const [jiraStatus, setJiraStatus]     = useState(null); // null | {connected,project,base_url}
+      const [jiraSearch, setJiraSearch]     = useState("");
+      const [jiraIssues, setJiraIssues]     = useState([]);
+      const [jiraLoading, setJiraLoading]   = useState(false);
+      const [jiraSearched, setJiraSearched] = useState(false);
+      const jiraSearchRef = useRef(null);
+
+      useEffect(() => {
+        fetch("/api/jira/status").then(r => r.json()).then(setJiraStatus).catch(() => {});
+      }, []);
+
+      function searchJira(q) {
+        setJiraLoading(true);
+        setJiraSearched(true);
+        fetch(`/api/jira/issues?q=${encodeURIComponent(q)}&max=20`)
+          .then(r => r.json())
+          .then(d => { setJiraIssues(d.issues || []); setJiraLoading(false); })
+          .catch(() => setJiraLoading(false));
+      }
+
+      function importJiraIssue(key) {
+        fetch(`/api/jira/issue/${key}`)
+          .then(r => r.json())
+          .then(d => {
+            setStory(d.text || "");
+            setCheckerMode(d.type === "Epic" ? "epic" : "story");
+            setUiState("idle"); setResult(null);
+            setJiraIssues([]); setJiraSearch(""); setJiraSearched(false);
+          })
+          .catch(e => console.error(e));
+      }
+
+      const [batchSelection, setBatchSelection] = useState(null);
+
+      const navTabs = [
+        { id: "checker",   label: "Readiness Checker", icon: "ti-sparkles" },
+        { id: "batch",     label: "Batch Analysis",    icon: "ti-stack-2" },
+        { id: "dashboard", label: "Dashboard",         icon: "ti-layout-dashboard" },
+        { id: "panel",     label: "Story Panel",       icon: "ti-file-analytics" },
+      ];
+
+      return (
+        <div style={{ fontFamily: "var(--font-sans)", background: "var(--color-background-primary)",
+          border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-lg)",
+          overflow: "hidden" }}>
+          <h2 className="sr-only">User story readiness checker</h2>
+
+          {/* Top nav */}
+          <div style={{ display: "flex", alignItems: "center", borderBottom: "0.5px solid var(--color-border-tertiary)" }}>
+            {/* Home link */}
+            <a href="/" style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 16px",
+              fontSize: 13, color: "var(--color-text-secondary)", textDecoration: "none",
+              borderRight: "0.5px solid var(--color-border-tertiary)", flexShrink: 0 }}
+              title="Back to home">
+              <i className="ti ti-home" style={{ fontSize: 14 }} aria-hidden="true" />
+              Home
+            </a>
+            {navTabs.map(t => (
+              <button key={t.id} onClick={() => setActiveNav(t.id)}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 18px",
+                  fontSize: 13, fontWeight: activeNav === t.id ? 500 : 400,
+                  color: activeNav === t.id ? "#185FA5" : "var(--color-text-secondary)",
+                  background: activeNav === t.id ? "#E6F1FB" : "none",
+                  border: "none", borderRight: "0.5px solid var(--color-border-tertiary)", cursor: "pointer" }}>
+                <i className={`ti ${t.icon}`} style={{ fontSize: 14 }} aria-hidden="true" />
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Checker view */}
+          {activeNav === "checker" && (
+            <div style={{ padding: "24px 20px", background: "var(--color-background-secondary)" }}>
+
+              {/* Jira card */}
+              <div style={{ marginBottom: 20, borderRadius: "var(--border-radius-lg)",
+                border: "1px solid #0052CC33", background: "linear-gradient(135deg, #f0f5ff 0%, #e8f0fe 100%)",
+                overflow: "hidden" }}>
+                <div style={{ height: 3, background: "linear-gradient(90deg, #0052CC, #2684FF)" }} />
+                <div style={{ padding: "14px 18px 16px", display: "flex", gap: 14, alignItems: "flex-start" }}>
+                  {/* Logo */}
+                  <div style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 9, background: "#0052CC",
+                    display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,82,204,0.25)" }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path d="M11.571 11.392L6.188 6l-1.6 1.555 4.207 4.164L6.188 16.44 7.787 18l5.383-5.392a1.1 1.1 0 000-1.216z" fill="white"/>
+                      <path d="M17.812 11.392L12.429 6l-1.6 1.555 4.207 4.164-4.207 4.721 1.6 1.56 5.383-5.392a1.1 1.1 0 000-1.216z" fill="rgba(255,255,255,0.55)"/>
+                    </svg>
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Header row */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "#0052CC" }}>Jira</span>
+                      {jiraStatus?.connected
+                        ? <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99,
+                            background: "#E1F5EE", color: "#0F6E56", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <i className="ti ti-circle-filled" style={{ fontSize: 7 }} /> Connected · {jiraStatus.project}
+                          </span>
+                        : <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99,
+                            background: "#0052CC1A", color: "#0052CC", fontWeight: 500 }}>Not connected</span>
+                      }
+                    </div>
+
+                    {jiraStatus?.connected ? (
+                      /* ── Connected: search + import ── */
+                      <div>
+                        <div style={{ display: "flex", gap: 8, marginBottom: jiraSearched ? 10 : 0 }}>
+                          <input
+                            ref={jiraSearchRef}
+                            value={jiraSearch}
+                            onChange={e => setJiraSearch(e.target.value)}
+                            onKeyDown={e => e.key === "Enter" && searchJira(jiraSearch)}
+                            placeholder="Search issues by key or summary… (e.g. ASPPO-12)"
+                            style={{ flex: 1, fontSize: 12, padding: "7px 11px",
+                              border: "0.5px solid #0052CC55", borderRadius: "var(--border-radius-md)",
+                              background: "#fff", color: "#1a2230" }}
+                          />
+                          <button onClick={() => searchJira(jiraSearch)} disabled={jiraLoading}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 500,
+                              padding: "7px 14px", borderRadius: "var(--border-radius-md)", border: "none",
+                              background: "#0052CC", color: "#fff", cursor: "pointer" }}>
+                            {jiraLoading
+                              ? <i className="ti ti-loader-2" style={{ fontSize: 13, animation: "spin 1s linear infinite" }} />
+                              : <i className="ti ti-search" style={{ fontSize: 13 }} />}
+                            {jiraLoading ? "Searching…" : "Search"}
+                          </button>
+                        </div>
+
+                        {/* Results */}
+                        {jiraSearched && !jiraLoading && (
+                          <div style={{ maxHeight: 220, overflowY: "auto", borderRadius: "var(--border-radius-md)",
+                            border: "0.5px solid #0052CC22", background: "#fff" }}>
+                            {jiraIssues.length === 0
+                              ? <div style={{ padding: "14px 14px", fontSize: 12, color: "#5a6675" }}>No issues found.</div>
+                              : jiraIssues.map(iss => (
+                                <div key={iss.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+                                  padding: "9px 14px", borderBottom: "0.5px solid #0052CC11", gap: 10 }}>
+                                  <div style={{ minWidth: 0 }}>
+                                    <span style={{ fontSize: 11, fontWeight: 600, color: "#0052CC", marginRight: 8 }}>{iss.key}</span>
+                                    <span style={{ fontSize: 12, color: "#1a2230" }}
+                                      style={{ fontSize: 12, color: "#1a2230", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", maxWidth: 340 }}>
+                                      {iss.summary}
+                                    </span>
+                                    <div style={{ display: "flex", gap: 6, marginTop: 3 }}>
+                                      {iss.type && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: "#EDE9FE", color: "#5B21B6" }}>{iss.type}</span>}
+                                      {iss.status && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: "#F4F3F0", color: "#314550" }}>{iss.status}</span>}
+                                      {iss.points && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: "#E6F1FB", color: "#185FA5" }}>{iss.points} pts</span>}
+                                    </div>
+                                  </div>
+                                  <button onClick={() => importJiraIssue(iss.key)}
+                                    style={{ flexShrink: 0, fontSize: 11, fontWeight: 500, padding: "5px 11px",
+                                      borderRadius: "var(--border-radius-md)", border: "0.5px solid #0052CC",
+                                      background: "none", color: "#0052CC", cursor: "pointer", whiteSpace: "nowrap" }}>
+                                    Import
+                                  </button>
+                                </div>
+                              ))
+                            }
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* ── Not connected: info bullets ── */
+                      <div>
+                        <p style={{ fontSize: 12, color: "#314550", margin: "0 0 10px", lineHeight: 1.55 }}>
+                          Add your Jira credentials to <code style={{ fontSize: 11, background: "#fff", padding: "1px 5px", borderRadius: 4 }}>.env</code> to enable live import.
+                        </p>
+                        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
+                          {[
+                            { icon: "ti-download",  text: "Import issues directly — no copy-paste" },
+                            { icon: "ti-message-2", text: "Push readiness scores back as Jira comments" },
+                            { icon: "ti-filter",    text: "Filter dashboard by project or sprint" },
+                          ].map((item, i) => (
+                            <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 7 }}>
+                              <i className={`ti ${item.icon}`} style={{ fontSize: 12, color: "#0052CC", marginTop: 1, flexShrink: 0 }} />
+                              <span style={{ fontSize: 12, color: "#314550", lineHeight: 1.5 }}>{item.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                {/* Mode toggle */}
+                <div style={{ display: "inline-flex", border: "0.5px solid var(--color-border-secondary)",
+                  borderRadius: "var(--border-radius-md)", overflow: "hidden", marginBottom: 14 }}>
+                  {[{ id: "story", label: "User Story", icon: "ti-sparkles" },
+                    { id: "epic",  label: "Epic",       icon: "ti-map" }].map(m => (
+                    <button key={m.id} onClick={() => { setCheckerMode(m.id); setUiState("idle"); setResult(null); }}
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 16px",
+                        fontSize: 12, border: "none", cursor: "pointer",
+                        background: checkerMode === m.id ? "#185FA5" : "none",
+                        color: checkerMode === m.id ? "#fff" : "var(--color-text-secondary)" }}>
+                      <i className={`ti ${m.icon}`} style={{ fontSize: 13 }} />
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                <h1 style={{ fontSize: 20, fontWeight: 500, color: "#185FA5", margin: "0 0 4px" }}>
+                  {checkerMode === "epic" ? "Check an Epic" : "Check a User Story"}
+                </h1>
+                <p style={{ fontSize: 13, color: "rgb(24, 95, 165)", margin: "0 0 4px" }}>
+                  {checkerMode === "epic"
+                    ? "Paste your epic below and get a readiness score, flagged gaps, and an improved version in seconds."
+                    : "Paste your story below and get a readiness score, flagged gaps, and an improved version in seconds."}
+                </p>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.55fr) minmax(0,0.45fr)", gap: 16, alignItems: "start" }}>
+
+                {/* Left column */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+                  {/* Input card — always visible */}
+                  <div style={cardStyle}>
+                    <div style={{ padding: "16px 18px 0" }}>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 500,
+                        color: "var(--color-text-primary)", marginBottom: 7 }}>
+                        {checkerMode === "epic" ? "Paste Epic here below:" : "Paste User Story here below:"}
+                      </label>
+                      <textarea
+                        value={story}
+                        onChange={e => setStory(e.target.value)}
+                        rows={9}
+                        placeholder={checkerMode === "epic"
+                          ? `Epic title: [title]\n\nDescription: [what this epic covers]\n\nGoal: [business outcome]\n\nScope:\n- …`
+                          : `As a [persona], I want [goal] so that [reason].\n\nAcceptance Criteria:\n- …`}
+                        style={{ width: "100%", resize: "vertical", fontSize: 13,
+                          fontFamily: "var(--font-mono)", lineHeight: 1.7,
+                          background: "var(--color-background-secondary)",
+                          border: "0.5px solid var(--color-border-secondary)",
+                          borderRadius: "var(--border-radius-md)", padding: "10px 12px",
+                          color: "rgb(24, 95, 165)", boxSizing: "border-box" }}
+                      />
+                      <div style={{ fontSize: 11, color: "var(--color-text-primary)", textAlign: "right", marginTop: 3, marginBottom: 12 }}>
+                        {story.length} chars
+                      </div>
+
+                      <div style={{ borderTop: "0.5px solid var(--color-border-tertiary)", paddingTop: 13, marginBottom: 13 }}>
+                        <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 9 }}>
+                          Context <span style={{ fontWeight: 400, color: "var(--color-text-tertiary)" }}>(optional - COMING SOON)</span>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 11, color: "var(--color-text-primary)", marginBottom: 5 }}>Parent epic</label>
+                            <input value={epic} onChange={e => setEpic(e.target.value)}
+                              placeholder="e.g. Auth & security epic"
+                              style={{ width: "100%", fontSize: 12, padding: "7px 10px", boxSizing: "border-box",
+                                background: "var(--color-background-secondary)",
+                                border: "0.5px solid var(--color-border-secondary)",
+                                borderRadius: "var(--border-radius-md)", color: "var(--color-text-primary)" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 11, color: "var(--color-text-primary)", marginBottom: 5 }}>Definition of Ready</label>
+                            <input value={dor} onChange={e => setDor(e.target.value)}
+                              placeholder="e.g. GWT ACs, max 8 pts…"
+                              style={{ width: "100%", fontSize: 12, padding: "7px 10px", boxSizing: "border-box",
+                                background: "var(--color-background-secondary)",
+                                border: "0.5px solid var(--color-border-secondary)",
+                                borderRadius: "var(--border-radius-md)", color: "var(--color-text-primary)" }} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ borderTop: "0.5px solid var(--color-border-tertiary)", padding: "12px 18px",
+                      display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <button onClick={() => { setStory(EXAMPLE_STORY); setEpic(""); setDor(""); setUiState("idle"); setResult(null); }}
+                        style={{ fontSize: 12, padding: "7px 13px", background: "none", cursor: "pointer",
+                          border: "0.5px solid var(--color-border-secondary)",
+                          borderRadius: "var(--border-radius-md)", color: "var(--color-text-primary)" }}>
+                        Load example
+                      </button>
+                      <button onClick={analyzeStory}
+                        disabled={uiState === "loading" || !story.trim()}
+                        style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500,
+                          padding: "9px 20px", cursor: uiState === "loading" || !story.trim() ? "not-allowed" : "pointer",
+                          background: uiState === "loading" || !story.trim() ? "#85B7EB" : "#185FA5",
+                          color: "#fff", border: "none", borderRadius: "var(--border-radius-md)" }}>
+                        {uiState === "loading"
+                          ? <><i className="ti ti-loader-2" style={{ fontSize: 15, animation: "spin 0.9s linear infinite" }} aria-hidden="true" /> Analysing…</>
+                          : <><i className="ti ti-sparkles" style={{ fontSize: 15 }} aria-hidden="true" /> Check Readiness</>}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Dynamic result area */}
+                  <div ref={resultRef}>
+                    {uiState === "loading" && <LoadingState step={loadStep} />}
+                    {uiState === "error"   && <ErrorState message={errorMsg} onRetry={analyzeStory} onEdit={() => setUiState("idle")} />}
+                    {uiState === "done" && result && (
+                      <ResultState result={result} onRecheck={() => { setUiState("idle"); setResult(null); }} />
+                    )}
+                  </div>
+                </div>
+
+                {/* Right side panel */}
+                <SidePanel />
+              </div>
+            </div>
+          )}
+
+          {activeNav === "batch" && (
+            batchSelection
+              ? <BatchAnalysis selection={batchSelection} onChangeBoard={() => setBatchSelection(null)} />
+              : <BoardSelector onSelect={sel => { setBatchSelection(sel); }} />
+          )}
+
+          {activeNav === "dashboard" && (
+            <Dashboard history={history} setHistory={setHistory}
+              onRowClick={row => { setSelectedStory(row); setActiveNav("panel"); }} />
+          )}
+          {activeNav === "panel" && (
+            <StoryPanel
+              selectedStory={selectedStory}
+              onBack={() => { setSelectedStory(null); setActiveNav("dashboard"); }}
+              onRecheck={() => { setActiveNav("checker"); setStory(selectedStory?.story_text || ""); setCheckerMode(selectedStory?.mode || "story"); }}
+            />
+          )}
+
+          <style>{`
+            @keyframes spin  { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+            @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
+            textarea:focus, input:focus { outline: none; border-color: #378ADD !important; box-shadow: 0 0 0 3px rgba(55,138,221,0.15); }
+            button:not(:disabled):hover { opacity: 0.88; }
+          `}</style>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+
+  <!-- Compile the JSX above with the classic runtime, then run it -->
+  <script>
+    (function () {
+      try {
+        var src = document.getElementById("app-src").textContent;
+        var out = Babel.transform(src, {
+          presets: [["react", { runtime: "classic" }]],
+        }).code;
+        (0, eval)(out);
+      } catch (err) {
+        showError("Failed to compile the UI", (err && err.message) || String(err));
+      }
+    })();
+  </script>
+</body>
+</html>

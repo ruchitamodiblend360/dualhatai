@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jira Boards — PM's Delivery Assistant</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css" />
+  <style>
+    :root {
+      --washed-blue:    #053057;
+      --cool-gray:      #314550;
+      --dark-gray:      #0B0D0E;
+      --gray:           #1A1A1A;
+      --neon-turquoise: #00EDED;
+      --light-turquoise:#A2F3F3;
+      --off-white:      #F4F3F0;
+      --white:          #FFFFFF;
+      --jira-blue:      #0052CC;
+      --jira-light:     #2684FF;
+      --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      font-weight: 400;
+      background: var(--washed-blue);
+      color: var(--white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(49,69,80,0.6);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 14px; }
+
+    .blend-logo svg { height: 24px; width: auto; }
+
+    .breadcrumb {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: rgba(255,255,255,0.45);
+    }
+    .breadcrumb a { color: rgba(255,255,255,0.45); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--neon-turquoise); }
+    .breadcrumb .sep { font-size: 10px; }
+    .breadcrumb .current { color: var(--white); }
+
+    .jira-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; padding: 4px 10px; border-radius: 99px;
+      background: rgba(0,82,204,0.18); color: #66B2FF;
+      border: 1px solid rgba(0,82,204,0.35);
+    }
+
+    /* ── Page body ── */
+    main { flex: 1; padding: 28px 32px 48px; max-width: 1280px; margin: 0 auto; width: 100%; }
+
+    /* ── Page title row ── */
+    .page-title-row {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      margin-bottom: 24px; gap: 16px; flex-wrap: wrap;
+    }
+    .page-title { font-size: 22px; color: var(--white); margin-bottom: 4px; }
+    .page-sub { font-size: 13px; color: rgba(255,255,255,0.45); }
+
+    .refresh-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; padding: 7px 14px; border-radius: 8px;
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.7); cursor: pointer; transition: all 150ms;
+    }
+    .refresh-btn:hover { background: rgba(255,255,255,0.12); color: var(--white); }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 18px;
+    }
+
+    /* ── Project card ── */
+    .card {
+      background: var(--cool-gray);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 200ms, box-shadow 200ms;
+    }
+    .card:hover { border-color: rgba(0,237,237,0.25); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+
+    .card-head {
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    .project-avatar {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 600; flex-shrink: 0;
+      color: var(--white);
+    }
+
+    .project-info { min-width: 0; }
+    .project-name { font-size: 14px; color: var(--white); margin-bottom: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .project-key  { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+    .open-btn {
+      margin-left: auto; flex-shrink: 0;
+      background: none; border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.5); border-radius: 7px;
+      padding: 5px 9px; cursor: pointer; font-size: 11px;
+      display: inline-flex; align-items: center; gap: 5px;
+      transition: all 150ms; text-decoration: none;
+    }
+    .open-btn:hover { border-color: var(--neon-turquoise); color: var(--neon-turquoise); }
+
+    /* ── Card body ── */
+    .card-body { padding: 14px 18px 16px; }
+
+    /* ── Backlog row ── */
+    .backlog-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 12px; border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      margin-bottom: 10px; cursor: pointer;
+      transition: background 150ms;
+      text-decoration: none; color: inherit;
+    }
+    .backlog-row:hover { background: rgba(255,255,255,0.08); }
+
+    .backlog-label { display: flex; align-items: center; gap: 7px; font-size: 12px; color: rgba(255,255,255,0.7); }
+    .count-chip {
+      font-size: 11px; padding: 2px 8px; border-radius: 99px;
+      background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6);
+    }
+
+    /* ── Sprint rows ── */
+    .sprint-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: rgba(255,255,255,0.3); margin-bottom: 7px; }
+
+    .sprint-row {
+      display: flex; align-items: center; gap: 10; padding: 10px 12px;
+      border-radius: 8px; border: 1px solid rgba(255,255,255,0.07);
+      margin-bottom: 7px; cursor: pointer; transition: all 150ms;
+      text-decoration: none; color: inherit;
+    }
+    .sprint-row:last-child { margin-bottom: 0; }
+    .sprint-row:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); }
+
+    /* Active sprint gets blue accent */
+    .sprint-row.active {
+      border-color: var(--jira-blue);
+      background: rgba(0,82,204,0.10);
+      box-shadow: inset 3px 0 0 var(--jira-blue);
+    }
+    .sprint-row.active:hover { background: rgba(0,82,204,0.16); }
+
+    .sprint-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .sprint-dot.active { background: var(--jira-light); box-shadow: 0 0 6px rgba(38,132,255,0.6); }
+    .sprint-dot.future { background: rgba(255,255,255,0.25); }
+
+    .sprint-info { flex: 1; min-width: 0; }
+    .sprint-name {
+      font-size: 12px; color: var(--white);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    .sprint-dates { font-size: 10px; color: rgba(255,255,255,0.35); }
+
+    .sprint-count {
+      font-size: 12px; color: rgba(255,255,255,0.5); flex-shrink: 0;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .sprint-count i { font-size: 11px; }
+
+    .active-badge {
+      font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 2px 6px; border-radius: 99px;
+      background: rgba(38,132,255,0.2); color: var(--jira-light);
+      border: 1px solid rgba(38,132,255,0.35); flex-shrink: 0;
+    }
+
+    /* ── No sprints ── */
+    .no-sprints { font-size: 12px; color: rgba(255,255,255,0.25); padding: 10px 0; text-align: center; }
+
+    /* ── States ── */
+    .state-loading, .state-error, .state-empty {
+      text-align: center; padding: 80px 24px; color: rgba(255,255,255,0.4);
+    }
+    .state-loading i { font-size: 32px; display: block; margin-bottom: 14px; animation: spin 1s linear infinite; color: var(--neon-turquoise); }
+    .state-error i { font-size: 32px; display: block; margin-bottom: 14px; color: #E24B4A; }
+    .state-loading p, .state-error p { font-size: 14px; }
+
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* ── Footer ── */
+    footer { padding: 16px 32px; border-top: 1px solid rgba(49,69,80,0.5); }
+    footer p { font-size: 11px; color: rgba(255,255,255,0.2); text-align: center; }
+
+    @media (max-width: 640px) {
+      header, main, footer { padding-left: 16px; padding-right: 16px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="blend-logo">
+      <svg width="572" height="110" viewBox="0 0 572 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 90.2812V25.1138H48.9904C64.5239 25.1138 70.3146 32.0074 70.3146 41.3827C70.3146 48.552 66.2703 53.8831 59.2848 56.4567C67.4652 58.3869 74.0831 62.9826 74.0831 72.5417C74.0831 83.2957 67.1895 90.2812 53.1265 90.2812H0ZM12.3165 81.0898H49.2661C56.895 81.0898 61.307 78.1485 61.307 71.163C61.307 63.626 55.4244 61.4201 49.2661 61.4201H12.3165V81.0898ZM12.3165 53.5154H45.5896C52.2074 53.5154 58.0899 51.2176 58.0899 43.7725C58.0899 37.1546 53.6781 34.3053 45.5896 34.3053H12.3165V53.5154Z" fill="#1DF4F4"/>
+        <path d="M79.532 90.2812V16.7496H91.6647V90.2812H79.532Z" fill="#1DF4F4"/>
+        <path d="M136.308 92.1195C112.778 92.1195 98.4392 81.3655 98.4392 63.1664C98.4392 44.9674 113.054 34.1215 135.665 34.1215C158.459 34.1215 172.338 45.335 172.338 67.5783H111.583C113.421 77.2293 122.245 82.3766 136.676 82.3766C148.533 82.3766 156.529 78.7 158.919 72.4498H171.511C168.202 84.7663 156.161 92.1195 136.308 92.1195ZM111.767 58.1111H159.195C156.989 48.1844 148.9 43.7725 135.756 43.7725C122.521 43.7725 113.973 48.3682 111.767 58.1111Z" fill="#1DF4F4"/>
+        <path d="M178.454 90.2812V35.9598H191.322V47.7248C198.308 38.9929 209.062 34.1215 223.033 34.1215C240.497 34.1215 251.159 41.1989 251.159 62.6149V90.2812H238.291V66.9349C238.291 50.9418 232.041 44.8755 217.242 44.8755C201.893 44.8755 191.322 53.2397 191.322 67.3945V90.2812H178.454Z" fill="#1DF4F4"/>
+        <path d="M320.105 90.2812V78.8838C314.499 87.248 304.02 92.2114 290.969 92.2114C270.747 92.2114 257.696 80.814 257.696 63.2584C257.696 45.7027 270.747 34.2134 290.969 34.2134C304.02 34.2134 314.499 39.1768 320.105 47.6329V16.7496H332.146V90.2812H320.105ZM271.023 63.2584C271.023 74.2881 280.123 81.4574 294.829 81.4574C310.546 81.4574 320.105 74.2881 320.105 63.2584C320.105 52.1367 310.546 44.9674 294.829 44.9674C280.123 44.9674 271.023 52.1367 271.023 63.2584Z" fill="#1DF4F4"/>
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M376.721 38.4246L377.453 70.7405V70.7954C377.453 73.5764 378.918 76.7865 382.79 80.2687C386.661 83.7495 392.535 87.1073 400.207 90.0269C415.518 95.8532 436.998 99.5604 460.962 99.5604C484.927 99.5604 506.407 95.8571 521.718 90.0327C529.39 87.1141 535.264 83.7569 539.134 80.2758C543.006 76.7936 544.471 73.5815 544.471 70.7954C544.471 68.0093 543.006 64.7972 539.134 61.315C538.755 60.9742 538.357 60.6346 537.94 60.2964C534.002 62.7133 529.45 64.8787 524.445 66.7828C507.772 73.1253 485.067 76.9463 460.23 76.9463C443.553 76.9463 431.366 76.155 419.477 73.4774C407.647 70.8131 396.352 66.3348 381.399 59.2518C380.588 58.9102 379.132 58.0424 378.58 56.0822C377.99 53.9875 378.978 52.4263 379.22 52.0653C379.567 51.5473 379.934 51.219 380.072 51.0985C380.251 50.9431 380.406 50.8309 380.498 50.7667C380.796 50.5596 381.07 50.4209 381.138 50.3862L381.144 50.3829C381.353 50.2767 381.578 50.1762 381.754 50.0999C382.139 49.9321 382.671 49.7141 383.316 49.4598C384.619 48.946 386.508 48.2339 388.87 47.3915C393.596 45.7059 400.276 43.4784 408.03 41.2557C423.442 36.8383 443.497 32.3222 460.962 32.3222C485.799 32.3222 508.504 36.1431 525.177 42.4856C529.827 44.2543 534.085 46.2485 537.823 48.4602C538.021 48.2916 538.214 48.1226 538.402 47.9534C542.273 44.4712 543.739 41.2591 543.739 38.473C543.739 35.6869 542.273 32.4748 538.402 28.9926C534.531 25.5115 528.658 22.1543 520.985 19.2357C505.674 13.4113 484.195 9.70798 460.23 9.70798C436.265 9.70798 414.785 13.4113 399.474 19.2357C391.802 22.1543 385.928 25.5115 382.058 28.9926C378.209 32.4546 376.738 35.6497 376.721 38.4246ZM545.848 54.2904C550.404 49.8901 553.459 44.5618 553.459 38.473C553.459 31.9738 549.979 26.3409 544.906 21.7785C539.832 17.215 532.764 13.3281 524.445 10.1632C507.772 3.82068 485.067 -0.000244141 460.23 -0.000244141C435.393 -0.000244141 412.688 3.82068 396.015 10.1632C387.695 13.3281 380.627 17.215 375.554 21.7785C370.481 26.3409 367.001 31.9738 367.001 38.473V38.5279L367.733 70.8546C367.755 77.3259 371.23 82.9365 376.286 87.4835C381.36 92.0458 388.427 95.9331 396.747 99.099C413.42 105.444 436.125 109.269 460.962 109.269C485.799 109.269 508.504 105.448 525.177 99.1052C533.497 95.9403 540.565 92.0534 545.639 87.4899C550.711 82.9275 554.191 77.2946 554.191 70.7954C554.191 64.3859 550.806 58.819 545.848 54.2904ZM528.461 54.4536C526.398 53.4511 524.148 52.4826 521.718 51.5581C506.407 45.7337 484.927 42.0304 460.962 42.0304C444.879 42.0304 425.87 46.2422 410.711 50.5873C405.077 52.2024 400.029 53.8196 395.934 55.2128C405.589 59.4149 413.53 62.186 421.615 64.007C432.467 66.4511 443.82 67.238 460.23 67.238C484.195 67.238 505.674 63.5347 520.985 57.7103C523.706 56.6752 526.201 55.5849 528.461 54.4536Z" fill="#1DF4F4"/>
+        <path d="M552.196 12.7756V1.42922H547.943V-0.000244141H558.056V1.42922H553.804V12.7756H552.196Z" fill="#1DF4F4"/>
+        <path d="M558.982 12.7756V-0.000244141H561.18L565.183 10.6135H565.218L569.221 -0.000244141H571.419V12.7756H569.81V2.26903H569.775L565.915 12.7756H564.486L560.626 2.26903H560.59V12.7756H558.982Z" fill="#1DF4F4"/>
+      </svg>
+    </div>
+    <div class="breadcrumb">
+      <a href="/">Home</a>
+      <span class="sep">›</span>
+      <span class="current">Jira Boards</span>
+    </div>
+  </div>
+  <div class="jira-badge">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <path d="M11.571 11.392L6.188 6l-1.6 1.555 4.207 4.164L6.188 16.44 7.787 18l5.383-5.392a1.1 1.1 0 000-1.216z" fill="#66B2FF"/>
+      <path d="M17.812 11.392L12.429 6l-1.6 1.555 4.207 4.164-4.207 4.721 1.6 1.56 5.383-5.392a1.1 1.1 0 000-1.216z" fill="rgba(102,178,255,0.5)"/>
+    </svg>
+    blend360.atlassian.net · ASPPO
+  </div>
+</header>
+
+<main>
+  <div class="page-title-row">
+    <div>
+      <div class="page-title">Jira Boards</div>
+      <div class="page-sub" id="subtitle">Loading your projects…</div>
+    </div>
+    <button class="refresh-btn" onclick="loadBoards()">
+      <i class="ti ti-refresh"></i> Refresh
+    </button>
+  </div>
+
+  <div id="content">
+    <div class="state-loading">
+      <i class="ti ti-loader-2"></i>
+      <p>Fetching boards and sprints from Jira…</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>Blend 360 · PM Delivery Tools · Internal use only</p>
+</footer>
+
+<script>
+  // Palette for project avatars (cycles through)
+  const AVATAR_COLORS = [
+    "#0052CC", "#5B21B6", "#065F46", "#92400E",
+    "#1E40AF", "#7C3AED", "#0F766E", "#B45309",
+    "#1D4ED8", "#6D28D9", "#047857", "#D97706",
+  ];
+
+  function avatarColor(key) {
+    let h = 0;
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) & 0xFFFFFF;
+    return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+  }
+
+  function initials(name) {
+    return name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+  }
+
+  function formatDate(iso) {
+    if (!iso) return "";
+    try {
+      return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    } catch { return ""; }
+  }
+
+  function renderBoard(b) {
+    const active  = b.sprints.filter(s => s.state === "active");
+    const future  = b.sprints.filter(s => s.state === "future");
+    const hasAny  = b.sprints.length > 0 || b.backlogCount > 0;
+    const color   = avatarColor(b.projectKey || b.name);
+
+    const backlogRow = `
+      <a class="backlog-row" href="${b.url}" target="_blank" rel="noopener">
+        <span class="backlog-label">
+          <i class="ti ti-stack-2" style="font-size:13px; color:rgba(255,255,255,0.4)"></i>
+          Backlog
+        </span>
+        <span class="count-chip">${b.backlogCount} issue${b.backlogCount !== 1 ? "s" : ""}</span>
+      </a>`;
+
+    function sprintRow(s) {
+      const isActive = s.state === "active";
+      const dateRange = s.startDate && s.endDate
+        ? `${formatDate(s.startDate)} – ${formatDate(s.endDate)}`
+        : "";
+      return `
+        <a class="sprint-row ${isActive ? "active" : ""}" href="${b.url}" target="_blank" rel="noopener">
+          <span class="sprint-dot ${isActive ? "active" : "future"}"></span>
+          <span style="width:10px; flex-shrink:0"></span>
+          <span class="sprint-info">
+            <div class="sprint-name">${s.name}</div>
+            ${dateRange ? `<div class="sprint-dates">${dateRange}</div>` : ""}
+          </span>
+          ${isActive ? `<span class="active-badge">Active</span>` : ""}
+          <span class="sprint-count">
+            <i class="ti ti-file-text"></i> ${s.count}
+          </span>
+        </a>`;
+    }
+
+    const sprintSection = !hasAny ? `<div class="no-sprints">No sprints or backlog data</div>` : `
+      ${b.backlogCount > 0 ? backlogRow : ""}
+      ${b.sprints.length > 0 ? `
+        <div class="sprint-label" style="margin-top:${b.backlogCount > 0 ? '12px' : '0'}">
+          Sprints
+        </div>
+        ${b.sprints.map(sprintRow).join("")}
+      ` : ""}
+    `;
+
+    return `
+      <div class="card">
+        <div class="card-head">
+          <div class="project-avatar" style="background:${color}">${initials(b.projectName || b.name)}</div>
+          <div class="project-info">
+            <div class="project-name">${b.projectName || b.name}</div>
+            <div class="project-key">${b.projectKey} · ${b.type}</div>
+          </div>
+          <a class="open-btn" href="${b.url}" target="_blank" rel="noopener">
+            Open <i class="ti ti-external-link" style="font-size:11px"></i>
+          </a>
+        </div>
+        <div class="card-body">
+          ${sprintSection}
+        </div>
+      </div>`;
+  }
+
+  async function loadBoards() {
+    document.getElementById("content").innerHTML = `
+      <div class="state-loading">
+        <i class="ti ti-loader-2"></i>
+        <p>Fetching boards and sprints from Jira…</p>
+      </div>`;
+    document.getElementById("subtitle").textContent = "Loading your projects…";
+
+    try {
+      const res = await fetch("/api/jira/board-overview");
+      if (!res.ok) throw new Error(await res.text());
+      const boards = await res.json();
+
+      if (!boards.length) {
+        document.getElementById("content").innerHTML = `
+          <div class="state-empty">
+            <i class="ti ti-layout-board" style="font-size:32px; display:block; margin-bottom:12px; color:rgba(255,255,255,0.2)"></i>
+            <p>No boards found in your Jira workspace.</p>
+          </div>`;
+        document.getElementById("subtitle").textContent = "0 projects";
+        return;
+      }
+
+      const activeCount  = boards.reduce((n, b) => n + b.sprints.filter(s => s.state === "active").length, 0);
+      document.getElementById("subtitle").textContent =
+        `${boards.length} project${boards.length !== 1 ? "s" : ""} · ${activeCount} active sprint${activeCount !== 1 ? "s" : ""}`;
+
+      document.getElementById("content").innerHTML =
+        `<div class="grid">${boards.map(renderBoard).join("")}</div>`;
+
+    } catch (err) {
+      document.getElementById("content").innerHTML = `
+        <div class="state-error">
+          <i class="ti ti-alert-triangle"></i>
+          <p>Could not load boards: ${err.message}</p>
+        </div>`;
+      document.getElementById("subtitle").textContent = "Error loading projects";
+    }
+  }
+
+  loadBoards();
+</script>
+</body>
+</html>
