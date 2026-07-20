@@ -1690,6 +1690,366 @@ Acceptance Criteria:
       );
     }
 
+    /* ── Status Generator ── */
+    function StatusGenerator() {
+      const [boards, setBoards]               = useState([]);
+      const [loading, setLoading]             = useState(true);
+      const [error, setError]                 = useState("");
+      const [selectedBoard, setSelectedBoard] = useState(null);
+      const [selectedSprint, setSelectedSprint] = useState(null);
+      const [generating, setGenerating]       = useState(false);
+      const [deck, setDeck]                   = useState(null);
+      const [genError, setGenError]           = useState("");
+
+      useEffect(() => {
+        fetch("/api/jira/board-overview")
+          .then(r => r.json())
+          .then(d => { setBoards(Array.isArray(d) ? d : []); setLoading(false); })
+          .catch(e => { setError(e.message); setLoading(false); });
+      }, []);
+
+      const AVATAR_COLORS = ["#053057","#5B21B6","#065F46","#92400E","#1E40AF","#7C3AED","#0F766E","#B45309"];
+      function avatarColor(key) {
+        let h = 0;
+        for (let i = 0; i < (key || "").length; i++) h = (h * 31 + key.charCodeAt(i)) & 0xFFFFFF;
+        return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+      }
+      function initials(name) {
+        return (name || "?").split(/\s+/).slice(0,2).map(w => w[0]).join("").toUpperCase();
+      }
+
+      function generate() {
+        if (!selectedBoard || !selectedSprint) return;
+        setGenerating(true); setGenError(""); setDeck(null);
+        fetch("/api/status-deck", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            boardId: selectedBoard.id,
+            sprintId: selectedSprint.id || null,
+            isBacklog: selectedSprint.type === "backlog",
+            projectName: selectedBoard.projectName || selectedBoard.name,
+            sprintName: selectedSprint.name,
+          })
+        })
+        .then(r => r.json())
+        .then(d => { if (d.error) setGenError(d.error); else setDeck(d); setGenerating(false); })
+        .catch(e => { setGenError(e.message); setGenerating(false); });
+      }
+
+      const HEALTH_CFG = {
+        "On Track":  { bg: "#D1FAE5", color: "#065F46", icon: "ti-circle-check" },
+        "At Risk":   { bg: "#FEF3C7", color: "#B45309", icon: "ti-alert-triangle" },
+        "Off Track": { bg: "#FEE2E2", color: "#A32D2D", icon: "ti-circle-x" },
+      };
+      const IMPACT_CFG = {
+        "High":   { color: "#A32D2D", bg: "#FEE2E2" },
+        "Medium": { color: "#B45309", bg: "#FEF3C7" },
+        "Low":    { color: "#065F46", bg: "#D1FAE5" },
+      };
+      const PRIORITY_CFG = {
+        "high":   { color: "#A32D2D" },
+        "medium": { color: "#B45309" },
+        "low":    { color: "#314550" },
+      };
+      const TYPE_COLORS = { blocker: "#A32D2D", risk: "#B45309", dependency: "#053057" };
+
+      /* Sprint selector bar */
+      function SprintBar() {
+        if (!selectedBoard) return null;
+        const sprints = selectedBoard.sprints || [];
+        return (
+          <div style={{ padding: "16px 20px", background: "#F4F3F0", borderBottom: "1px solid #e2e8f0" }}>
+            <div style={{ maxWidth: 800, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#053057", flexShrink: 0 }}>
+                {selectedBoard.projectName || selectedBoard.name}:
+              </span>
+              {sprints.map(sprint => {
+                const isActive = sprint.state === "active";
+                const isSel = selectedSprint?.id === sprint.id;
+                return (
+                  <button key={sprint.id} onClick={() => { setSelectedSprint({ ...sprint, type: "sprint" }); setDeck(null); }}
+                    style={{ padding: "6px 13px", borderRadius: 99, fontSize: 12, cursor: "pointer",
+                      border: isSel ? "2px solid #053057" : "1px solid #c8d3da",
+                      background: isSel ? "#053057" : isActive ? "#e8fafa" : "#fff",
+                      color: isSel ? "#fff" : isActive ? "#053057" : "#314550", fontWeight: isSel ? 600 : 400 }}>
+                    {isActive && !isSel && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 99, background: "#053057", color: "#fff", marginRight: 5, fontWeight: 700 }}>Active</span>}
+                    {sprint.name}
+                  </button>
+                );
+              })}
+              {selectedBoard.backlogCount > 0 && (
+                <button onClick={() => { setSelectedSprint({ type: "backlog", name: "Backlog", id: null }); setDeck(null); }}
+                  style={{ padding: "6px 13px", borderRadius: 99, fontSize: 12, cursor: "pointer",
+                    border: selectedSprint?.type === "backlog" ? "2px solid #053057" : "1px solid #c8d3da",
+                    background: selectedSprint?.type === "backlog" ? "#053057" : "#fff",
+                    color: selectedSprint?.type === "backlog" ? "#fff" : "#314550" }}>
+                  <i className="ti ti-stack-2" style={{ fontSize: 11, marginRight: 4 }} />Backlog
+                </button>
+              )}
+              {selectedSprint && (
+                <button onClick={generate} disabled={generating}
+                  style={{ marginLeft: 8, padding: "7px 16px", borderRadius: 8, border: "none",
+                    background: generating ? "#A2F3F3" : "#00EDED", color: "#053057",
+                    fontSize: 13, fontWeight: 700, cursor: generating ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", gap: 6 }}>
+                  {generating
+                    ? <><i className="ti ti-loader-2" style={{ animation: "spin 1s linear infinite" }} />Generating…</>
+                    : <><i className="ti ti-sparkles" />Generate Status Deck</>}
+                </button>
+              )}
+              {deck && !generating && (
+                <button onClick={() => setDeck(null)}
+                  style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid #c8d3da", background: "#fff",
+                    color: "#314550", fontSize: 12, cursor: "pointer" }}>
+                  <i className="ti ti-arrow-left" style={{ marginRight: 4 }} />Change Board
+                </button>
+              )}
+            </div>
+            {genError && (
+              <div style={{ marginTop: 10, padding: "9px 14px", background: "#FEE2E2", borderRadius: 8, fontSize: 13, color: "#A32D2D" }}>
+                <i className="ti ti-alert-circle" style={{ marginRight: 6 }} />{genError}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      /* Board grid */
+      function BoardGrid() {
+        if (loading) return (
+          <div style={{ padding: "48px 24px", textAlign: "center", color: "#5a6675", fontSize: 13 }}>
+            <i className="ti ti-loader-2" style={{ fontSize: 28, display: "block", marginBottom: 10, animation: "spin 1s linear infinite", color: "#053057" }} />
+            Loading boards from Jira…
+          </div>
+        );
+        if (error) return (
+          <div style={{ padding: "48px 24px", textAlign: "center", color: "#A32D2D", fontSize: 13 }}>
+            <i className="ti ti-alert-triangle" style={{ fontSize: 28, display: "block", marginBottom: 10 }} />{error}
+          </div>
+        );
+        return (
+          <div style={{ padding: "20px 20px 24px" }}>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: "#1a2230", margin: "0 0 4px" }}>Select a project board</h2>
+            <p style={{ fontSize: 13, color: "#5a6675", margin: "0 0 16px" }}>Pick a board to generate a weekly executive status deck from its Jira sprint data.</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
+              {boards.map(board => {
+                const color = avatarColor(board.projectKey || board.name);
+                const isSel = selectedBoard?.id === board.id;
+                return (
+                  <div key={board.id} onClick={() => { setSelectedBoard(board); setSelectedSprint(null); setDeck(null); }}
+                    style={{ border: isSel ? "2px solid #053057" : "1px solid #e2e8f0", borderRadius: 10,
+                      background: isSel ? "#e8fafa" : "#fff", cursor: "pointer", transition: "all 120ms",
+                      padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: color, flexShrink: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 12, fontWeight: 700, color: "#fff" }}>{initials(board.projectName || board.name)}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: isSel ? "#053057" : "#1a2230",
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {board.projectName || board.name}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#9aabb6", marginTop: 2 }}>
+                        {board.sprints.length} sprint{board.sprints.length !== 1 ? "s" : ""} · {board.backlogCount} backlog
+                      </div>
+                    </div>
+                    {isSel && <i className="ti ti-check" style={{ marginLeft: "auto", color: "#053057", fontSize: 15 }} />}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
+
+      /* Status deck display */
+      function DeckView({ d }) {
+        const hcfg = HEALTH_CFG[d.healthStatus] || HEALTH_CFG["At Risk"];
+        const m = d.metrics || {};
+        return (
+          <div style={{ padding: "20px", background: "#fff" }}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
+              <div>
+                <div style={{ fontSize: 11, color: "#9aabb6", fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 4 }}>Weekly Status Update</div>
+                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#1a2230" }}>{d.projectName || selectedBoard?.projectName}</h2>
+                <div style={{ fontSize: 13, color: "#5a6675", marginTop: 3 }}>{d.sprintName} · {d.weekOf}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 16px", borderRadius: 99,
+                background: hcfg.bg, color: hcfg.color, fontWeight: 700, fontSize: 13 }}>
+                <i className={`ti ${hcfg.icon}`} />{d.healthStatus}
+              </div>
+            </div>
+
+            {/* Executive Summary */}
+            <div style={{ background: "#F4F3F0", border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 18px", marginBottom: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#053057", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Executive Summary</div>
+              <p style={{ margin: 0, fontSize: 14, color: "#1a2230", lineHeight: 1.65 }}>{d.executiveSummary}</p>
+            </div>
+
+            {/* Metrics */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8, marginBottom: 16 }}>
+              {[
+                { label: "Total Issues",  value: m.totalIssues,       icon: "ti-list",         color: "#1a2230" },
+                { label: "Completed",     value: m.doneIssues,        icon: "ti-circle-check", color: "#065F46" },
+                { label: "In Progress",   value: m.inProgressIssues,  icon: "ti-loader-2",     color: "#B45309" },
+                { label: "Completion %",  value: (m.completionPct || 0) + "%", icon: "ti-chart-pie",
+                  color: m.completionPct >= 60 ? "#065F46" : m.completionPct >= 40 ? "#B45309" : "#A32D2D" },
+                { label: "Points Done",   value: `${m.storyPointsDone || 0}/${m.storyPointsPlanned || 0}`, icon: "ti-bolt", color: "#053057" },
+              ].map(stat => (
+                <div key={stat.label} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px" }}>
+                  <div style={{ fontSize: 11, color: "#9aabb6", marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}>
+                    <i className={`ti ${stat.icon}`} style={{ fontSize: 12 }} />{stat.label}
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: stat.color }}>{stat.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Accomplishments + Next Steps */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
+              {/* Accomplishments */}
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ padding: "11px 15px", background: "#053057", display: "flex", alignItems: "center", gap: 8 }}>
+                  <i className="ti ti-circle-check" style={{ color: "#A2F3F3", fontSize: 14 }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Key Accomplishments</span>
+                  <span style={{ marginLeft: "auto", fontSize: 11, color: "#A2F3F3" }}>{(d.accomplishments || []).length}</span>
+                </div>
+                <div style={{ padding: "6px" }}>
+                  {(d.accomplishments || []).length === 0
+                    ? <div style={{ padding: "16px", fontSize: 13, color: "#9aabb6", textAlign: "center" }}>No completed items</div>
+                    : (d.accomplishments || []).map((a, i) => (
+                      <div key={i} style={{ display: "flex", gap: 8, padding: "8px 10px", borderRadius: 6, marginBottom: 2, background: i % 2 === 0 ? "#f8fafc" : "#fff" }}>
+                        <i className="ti ti-check" style={{ color: "#065F46", fontSize: 12, flexShrink: 0, marginTop: 2 }} />
+                        <div>
+                          <div style={{ fontSize: 13, color: "#1a2230" }}>{a.title}</div>
+                          {(a.key || a.assignee) && (
+                            <div style={{ fontSize: 11, color: "#9aabb6", marginTop: 2 }}>
+                              {a.key && <span style={{ color: "#053057", marginRight: 6 }}>{a.key}</span>}{a.assignee}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+
+              {/* Next Steps */}
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ padding: "11px 15px", background: "#053057", display: "flex", alignItems: "center", gap: 8 }}>
+                  <i className="ti ti-arrow-right-circle" style={{ color: "#A2F3F3", fontSize: 14 }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Next Steps / Action Items</span>
+                  <span style={{ marginLeft: "auto", fontSize: 11, color: "#A2F3F3" }}>{(d.nextSteps || []).length}</span>
+                </div>
+                <div style={{ padding: "6px" }}>
+                  {(d.nextSteps || []).length === 0
+                    ? <div style={{ padding: "16px", fontSize: 13, color: "#9aabb6", textAlign: "center" }}>No action items</div>
+                    : (d.nextSteps || []).map((s, i) => {
+                      const pc = PRIORITY_CFG[s.priority] || PRIORITY_CFG["medium"];
+                      return (
+                        <div key={i} style={{ padding: "8px 10px", borderRadius: 6, marginBottom: 2, background: i % 2 === 0 ? "#f8fafc" : "#fff" }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 7 }}>
+                            <i className="ti ti-arrow-right" style={{ color: pc.color, fontSize: 12, flexShrink: 0, marginTop: 2 }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, color: "#1a2230" }}>{s.action}</div>
+                              <div style={{ fontSize: 11, color: "#9aabb6", marginTop: 2 }}>
+                                {s.owner}{s.dueDate ? ` · ${s.dueDate}` : ""}
+                              </div>
+                            </div>
+                            {s.priority && (
+                              <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 99, fontWeight: 700, flexShrink: 0,
+                                background: pc.color + "18", color: pc.color, textTransform: "uppercase" }}>
+                                {s.priority}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  }
+                </div>
+              </div>
+            </div>
+
+            {/* Blockers */}
+            {(d.blockers || []).length > 0 && (
+              <div style={{ border: "1px solid #FECACA", borderRadius: 10, overflow: "hidden", marginBottom: 16 }}>
+                <div style={{ padding: "11px 15px", background: "#7F1D1D", display: "flex", alignItems: "center", gap: 8 }}>
+                  <i className="ti ti-alert-triangle" style={{ color: "#FCA5A5", fontSize: 14 }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Issues, Blockers & Risks</span>
+                  <span style={{ marginLeft: "auto", fontSize: 11, color: "#FCA5A5" }}>{d.blockers.length}</span>
+                </div>
+                <div style={{ padding: "8px" }}>
+                  {d.blockers.map((b, i) => {
+                    const ic = IMPACT_CFG[b.impact] || IMPACT_CFG["Medium"];
+                    return (
+                      <div key={i} style={{ padding: "12px 14px", borderRadius: 8, marginBottom: 6,
+                        background: ic.bg, border: `1px solid ${ic.color}30` }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <i className="ti ti-circle-x" style={{ color: ic.color, fontSize: 14 }} />
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2230", flex: 1 }}>{b.title}</span>
+                          <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 99, fontWeight: 700, background: ic.color, color: "#fff" }}>{b.impact}</span>
+                          {b.type && <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 99, fontWeight: 600,
+                            background: (TYPE_COLORS[b.type] || "#314550") + "20", color: TYPE_COLORS[b.type] || "#314550" }}>{b.type}</span>}
+                        </div>
+                        {b.mitigation && <div style={{ fontSize: 12, color: "#314550", marginLeft: 22 }}>Mitigation: {b.mitigation}</div>}
+                        {b.owner && <div style={{ fontSize: 11, color: "#9aabb6", marginLeft: 22, marginTop: 3 }}>Owner: {b.owner}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Milestones */}
+            {(d.milestones || []).length > 0 && (
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", marginBottom: 16 }}>
+                <div style={{ padding: "11px 15px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 8 }}>
+                  <i className="ti ti-flag" style={{ color: "#053057", fontSize: 14 }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2230" }}>Milestones</span>
+                </div>
+                <div style={{ padding: "6px" }}>
+                  {d.milestones.map((ms, i) => {
+                    const sc = { complete: { icon: "ti-circle-check", color: "#065F46" }, in_progress: { icon: "ti-loader-2", color: "#B45309" }, upcoming: { icon: "ti-clock", color: "#9aabb6" } }[ms.status] || { icon: "ti-clock", color: "#9aabb6" };
+                    return (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 6, marginBottom: 2, background: i % 2 === 0 ? "#f8fafc" : "#fff" }}>
+                        <i className={`ti ${sc.icon}`} style={{ color: sc.color, fontSize: 14 }} />
+                        <span style={{ fontSize: 13, color: "#1a2230" }}>{ms.name}</span>
+                        {ms.date && <span style={{ marginLeft: "auto", fontSize: 11, color: "#9aabb6" }}>{ms.date}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+              <button onClick={generate} disabled={generating}
+                style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#053057",
+                  color: "#fff", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                <i className="ti ti-refresh" />Regenerate
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div style={{ background: "#fff", minHeight: 500 }}>
+          <SprintBar />
+          {!deck && !generating && <BoardGrid />}
+          {generating && (
+            <div style={{ padding: "60px 24px", textAlign: "center", color: "#5a6675", fontSize: 13 }}>
+              <i className="ti ti-loader-2" style={{ fontSize: 32, display: "block", marginBottom: 12, animation: "spin 1s linear infinite", color: "#053057" }} />
+              Fetching Jira data and generating status deck…
+            </div>
+          )}
+          {deck && !generating && <DeckView d={deck} />}
+        </div>
+      );
+    }
+
     /* ── Main App ── */
     function App() {
       const [activeNav, setActiveNav]     = useState("checker");
@@ -1757,6 +2117,7 @@ Acceptance Criteria:
 
       const navTabs = [
         { id: "checker",   label: "Readiness Checker", icon: "ti-sparkles" },
+        { id: "status",    label: "Status Generator",  icon: "ti-presentation-analytics" },
         { id: "dashboard", label: "Dashboard",         icon: "ti-layout-dashboard" },
         { id: "panel",     label: "Story Panel",       icon: "ti-file-analytics" },
       ];
@@ -1945,6 +2306,8 @@ Acceptance Criteria:
               )}
             </div>
           )}
+
+          {activeNav === "status" && <StatusGenerator />}
 
           {activeNav === "dashboard" && (
             <Dashboard history={history} setHistory={setHistory}

@@ -16,6 +16,7 @@ import urllib.request
 import urllib.error
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import datetime
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 HISTORY_FILE = os.path.join(ROOT, "history.json")
@@ -239,6 +240,33 @@ If the user provides team context (Definition of Ready, parent epic, story point
 10. Return valid JSON only. Any deviation breaks the application."""
 
 
+# ── Status Deck prompt ──────────────────────────────────────────────────────
+STATUS_DECK_SYSTEM_PROMPT = """You are an executive project status generator. Given Jira sprint issue data, synthesize a concise, stakeholder-ready weekly status deck.
+
+You receive issue data grouped by status (Done / In Progress / To Do) with keys, summaries, assignees, priorities, labels, and story points.
+
+Output rules:
+1. executiveSummary: 2-3 sentences. State overall health, primary focus this week, and any critical concern or win.
+2. accomplishments: Extract from Done issues. Focus on business value and deliverables. 4-8 items max.
+3. nextSteps: Extract from In Progress + high-priority To Do. Make them action-oriented. Include owner and estimated due date if derivable. 4-8 items max.
+4. blockers: Items labeled "blocked" or "risk", unassigned critical items, or issues with no progress. 5 max.
+5. healthStatus: "On Track" if >60% complete and no critical blockers, "At Risk" if 40-60% or has blockers, "Off Track" if <40% or multiple critical blockers.
+6. milestones: Extract sprint goals or milestone-labeled issues. Return [] if none found.
+
+Return ONLY valid JSON in exactly this format, no markdown:
+{
+  "projectName": "string",
+  "sprintName": "string",
+  "weekOf": "string",
+  "healthStatus": "On Track | At Risk | Off Track",
+  "executiveSummary": "string",
+  "accomplishments": [{"key": "string", "title": "string", "assignee": "string"}],
+  "nextSteps": [{"action": "string", "owner": "string", "dueDate": "string", "priority": "high|medium|low"}],
+  "blockers": [{"title": "string", "impact": "High|Medium|Low", "type": "blocker|risk|dependency", "mitigation": "string", "owner": "string"}],
+  "milestones": [{"name": "string", "status": "complete|in_progress|upcoming", "date": "string"}]
+}"""
+
+
 def load_env():
     path = os.path.join(ROOT, ".env")
     cfg = {}
@@ -259,7 +287,6 @@ GROQ_API_KEY   = _ENV.get("GROQ_API_KEY")
 JIRA_BASE_URL  = _ENV.get("JIRA_BASE_URL", "").rstrip("/")
 JIRA_EMAIL     = _ENV.get("JIRA_EMAIL", "")
 JIRA_API_TOKEN = _ENV.get("JIRA_API_TOKEN", "")
-JIRA_PROJECT   = _ENV.get("JIRA_PROJECT", "")
 
 import base64 as _b64
 JIRA_AUTH = _b64.b64encode(f"{JIRA_EMAIL}:{JIRA_API_TOKEN}".encode()).decode() if JIRA_EMAIL and JIRA_API_TOKEN else None
@@ -419,8 +446,15 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(503, json.dumps({"error": "Jira not configured"}))
                 return
             try:
-                boards_data = jira_agile_get("board?maxResults=50")
-                raw_boards = boards_data.get("values", [])
+                raw_boards = []
+                start = 0
+                while True:
+                    page = jira_agile_get(f"board?maxResults=50&startAt={start}")
+                    values = page.get("values", [])
+                    raw_boards.extend(values)
+                    if page.get("isLast", True) or len(values) < 50:
+                        break
+                    start += 50
                 results = []
                 with ThreadPoolExecutor(max_workers=min(len(raw_boards), 8)) as ex:
                     futures = {ex.submit(fetch_board_detail, b): b for b in raw_boards}
@@ -436,10 +470,9 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if self.path == "/api/jira/status":
-            connected = bool(JIRA_AUTH and JIRA_BASE_URL and JIRA_PROJECT)
+            connected = bool(JIRA_AUTH and JIRA_BASE_URL)
             self._send(200, json.dumps({
                 "connected": connected,
-                "project": JIRA_PROJECT,
                 "base_url": JIRA_BASE_URL,
             }))
             return
@@ -453,9 +486,9 @@ class Handler(BaseHTTPRequestHandler):
             search = qs.get("q", [""])[0].strip()
             max_results = int(qs.get("max", ["25"])[0])
             if search:
-                jql = f'project = {JIRA_PROJECT} AND (summary ~ "{search}" OR text ~ "{search}") ORDER BY updated DESC'
+                jql = f'(summary ~ "{search}" OR text ~ "{search}") ORDER BY updated DESC'
             else:
-                jql = f"project = {JIRA_PROJECT} ORDER BY cf[10019] ASC"
+                jql = "ORDER BY updated DESC"
             try:
                 params = urlencode({"jql": jql, "maxResults": max_results,
                                     "fields": "summary,issuetype,status,priority,assignee,customfield_10016,description"})
@@ -574,6 +607,118 @@ class Handler(BaseHTTPRequestHandler):
             self._send(404, "Not found", "text/plain")
 
     def do_POST(self):
+        if self.path == "/api/status-deck":
+            if not GROQ_API_KEY:
+                self._send(500, json.dumps({"error": "GROQ_API_KEY not found in .env"})); return
+            if not JIRA_AUTH:
+                self._send(503, json.dumps({"error": "Jira not configured"})); return
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                payload = json.loads(self.rfile.read(length) or "{}")
+            except Exception as e:
+                self._send(400, json.dumps({"error": f"Bad request: {e}"})); return
+
+            board_id    = payload.get("boardId")
+            sprint_id   = payload.get("sprintId")
+            is_backlog  = payload.get("isBacklog", False)
+            project_name = payload.get("projectName", "Project")
+            sprint_name  = payload.get("sprintName", "Sprint")
+
+            try:
+                fields = "summary,issuetype,status,priority,assignee,customfield_10016,labels"
+                if sprint_id:
+                    data = jira_agile_get(f"sprint/{sprint_id}/issue?maxResults=100&fields={fields}")
+                elif is_backlog and board_id:
+                    data = jira_agile_get(f"board/{board_id}/backlog?maxResults=50&fields={fields}")
+                else:
+                    self._send(400, json.dumps({"error": "Need sprintId or boardId+isBacklog=true"})); return
+
+                issues = data.get("issues", [])
+                done_issues, in_progress_issues, todo_issues = [], [], []
+                sp_planned, sp_done = 0, 0
+
+                for iss in issues:
+                    f = iss.get("fields", {})
+                    status = f.get("status") or {}
+                    cat = (status.get("statusCategory") or {}).get("key", "new")
+                    points = f.get("customfield_10016") or 0
+                    sp_planned += points or 0
+                    entry = {
+                        "key": iss["key"],
+                        "summary": f.get("summary", ""),
+                        "type": (f.get("issuetype") or {}).get("name", ""),
+                        "status": status.get("name", ""),
+                        "priority": (f.get("priority") or {}).get("name", ""),
+                        "assignee": ((f.get("assignee") or {}).get("displayName") or "Unassigned"),
+                        "points": points,
+                        "labels": f.get("labels") or [],
+                    }
+                    if cat == "done":
+                        sp_done += points or 0
+                        done_issues.append(entry)
+                    elif cat == "indeterminate":
+                        in_progress_issues.append(entry)
+                    else:
+                        todo_issues.append(entry)
+
+                total = len(issues)
+                done_count = len(done_issues)
+                completion_pct = round((done_count / total * 100) if total else 0)
+
+                today = datetime.date.today()
+                week_start = today - datetime.timedelta(days=today.weekday())
+                week_end   = week_start + datetime.timedelta(days=6)
+                week_of    = f"{week_start.strftime('%B %d')}–{week_end.strftime('%d, %Y')}"
+
+                def fmt(iss):
+                    pts = f"| Points: {iss['points']}" if iss['points'] else ""
+                    lbl = f"| Labels: {', '.join(iss['labels'])}" if iss['labels'] else ""
+                    return f"- [{iss['key']}] {iss['summary']} | Type: {iss['type']} | Assignee: {iss['assignee']} | Priority: {iss['priority']} {pts} {lbl}"
+
+                lines = [
+                    f"PROJECT: {project_name}", f"SPRINT: {sprint_name}", f"DATE: {week_of}",
+                    f"TOTAL: {total} | DONE: {done_count} | IN PROGRESS: {len(in_progress_issues)} | TO DO: {len(todo_issues)}",
+                    f"STORY POINTS: Planned={int(sp_planned)} Done={int(sp_done)}",
+                    "", "COMPLETED (Done):",
+                ] + ([fmt(i) for i in done_issues] if done_issues else ["(none)"]) + [
+                    "", "IN PROGRESS:",
+                ] + ([fmt(i) for i in in_progress_issues] if in_progress_issues else ["(none)"]) + [
+                    "", "TO DO / NOT STARTED:",
+                ] + ([fmt(i) for i in todo_issues] if todo_issues else ["(none)"])
+
+                groq_body = json.dumps({
+                    "model": MODEL, "max_tokens": 2000, "temperature": 0.3,
+                    "response_format": {"type": "json_object"},
+                    "messages": [
+                        {"role": "system", "content": STATUS_DECK_SYSTEM_PROMPT},
+                        {"role": "user",   "content": "\n".join(lines)},
+                    ],
+                }).encode("utf-8")
+
+                req = urllib.request.Request(GROQ_URL, data=groq_body, headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) story-readiness-checker/1.0",
+                    "Accept": "application/json",
+                }, method="POST")
+
+                with urllib.request.urlopen(req, timeout=90) as resp:
+                    groq_data = json.loads(resp.read().decode("utf-8"))
+
+                text = groq_data["choices"][0]["message"]["content"]
+                text = text.replace("```json", "").replace("```", "").strip()
+                parsed = json.loads(text)
+                parsed["metrics"] = {
+                    "totalIssues": total, "doneIssues": done_count,
+                    "inProgressIssues": len(in_progress_issues), "toDoIssues": len(todo_issues),
+                    "completionPct": completion_pct,
+                    "storyPointsPlanned": int(sp_planned), "storyPointsDone": int(sp_done),
+                }
+                self._send(200, json.dumps(parsed))
+            except Exception as e:
+                self._send(502, json.dumps({"error": str(e)}))
+            return
+
         if self.path != "/api/analyze":
             self._send(404, json.dumps({"error": "Not found"}))
             return
