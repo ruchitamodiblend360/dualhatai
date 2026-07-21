@@ -2052,7 +2052,10 @@ Acceptance Criteria:
 
     /* ── Main App ── */
     function App() {
-      const [activeNav, setActiveNav]     = useState("checker");
+      const [activeNav, setActiveNav]     = useState(() => {
+        const hash = window.location.hash.replace("#", "");
+        return ["checker","status","dashboard","panel"].includes(hash) ? hash : "checker";
+      });
       const [checkerMode, setCheckerMode] = useState("story"); // "story" | "epic"
       const [story, setStory]             = useState("");
       const [epic, setEpic]               = useState("");
