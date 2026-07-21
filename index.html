@@ -1768,27 +1768,27 @@ Acceptance Criteria:
           <h2 className="sr-only">User story readiness checker</h2>
 
           {/* Top nav */}
-          <div style={{ display: "flex", alignItems: "center", borderBottom: "0.5px solid var(--color-border-tertiary)" }}>
-            {/* Home link */}
-            <a href="/" style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 16px",
-              fontSize: 13, color: "var(--color-text-secondary)", textDecoration: "none",
-              borderRight: "0.5px solid var(--color-border-tertiary)", flexShrink: 0 }}
-              title="Back to home">
-              <i className="ti ti-home" style={{ fontSize: 14 }} aria-hidden="true" />
-              Home
+          <nav style={{ display: "flex", alignItems: "center", background: "#053057", borderBottom: "1px solid #314550" }}>
+            <a href="/" style={{ display: "flex", alignItems: "center", gap: 7, padding: "12px 18px",
+              fontSize: 13, color: "#A2F3F3", textDecoration: "none",
+              borderRight: "1px solid #314550", flexShrink: 0 }}>
+              <i className="ti ti-home" style={{ fontSize: 15 }} /> Home
             </a>
             {navTabs.map(t => (
               <button key={t.id} onClick={() => setActiveNav(t.id)}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 18px",
-                  fontSize: 13, fontWeight: activeNav === t.id ? 500 : 400,
-                  color: activeNav === t.id ? "#053057" : "var(--color-text-secondary)",
-                  background: activeNav === t.id ? "#A2F3F3" : "none",
-                  border: "none", borderRight: "0.5px solid var(--color-border-tertiary)", cursor: "pointer" }}>
-                <i className={`ti ${t.icon}`} style={{ fontSize: 14 }} aria-hidden="true" />
+                style={{ display: "flex", alignItems: "center", gap: 7,
+                  padding: activeNav === t.id ? "10px 18px" : "10px 18px",
+                  fontSize: 13, fontWeight: activeNav === t.id ? 700 : 400,
+                  color: activeNav === t.id ? "#053057" : "#A2F3F3",
+                  background: activeNav === t.id ? "#00EDED" : "transparent",
+                  border: "none", borderRadius: activeNav === t.id ? 7 : 0,
+                  margin: activeNav === t.id ? "4px 0 4px 8px" : "0",
+                  cursor: "pointer" }}>
+                <i className={`ti ${t.icon}`} style={{ fontSize: 15 }} />
                 {t.label}
               </button>
             ))}
-          </div>
+          </nav>
 
           {/* Checker view */}
           {activeNav === "checker" && (

@@ -10,8 +10,8 @@
   <script src="/vendor/babel.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0B0D0E; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #fff; }
-    #root { min-height: 100vh; }
+    body { background: #eef1f4; padding: 24px; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #fff; }
+    #root { max-width: 1100px; margin: 0 auto; }
     @keyframes spin  { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
     button:not(:disabled):hover { opacity: 0.88; }
     ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #0B0D0E; } ::-webkit-scrollbar-thumb { background: #314550; border-radius: 3px; }
@@ -419,7 +419,7 @@
 
     function App() {
       return (
-        <div style={{ minHeight: "100vh", background: "#0B0D0E" }}>
+        <div style={{ background: "#053057", border: "0.5px solid #314550", borderRadius: 12, overflow: "hidden" }}>
           <nav style={{ display: "flex", alignItems: "center", background: "#053057", borderBottom: "1px solid #314550" }}>
             <a href="/"
               style={{ display: "flex", alignItems: "center", gap: 7, padding: "12px 18px",
@@ -433,9 +433,7 @@
               <i className="ti ti-presentation-analytics" style={{ fontSize: 15 }} /> Status Generator
             </div>
           </nav>
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-            <StatusGenerator />
-          </div>
+          <StatusGenerator />
         </div>
       );
     }
