@@ -243,24 +243,30 @@ If the user provides team context (Definition of Ready, parent epic, story point
 # ── Status Deck prompt ──────────────────────────────────────────────────────
 STATUS_DECK_SYSTEM_PROMPT = """You are an executive project status generator. Given Jira sprint issue data, synthesize a concise, stakeholder-ready weekly status deck.
 
-You receive issue data grouped by status (Done / In Progress / To Do) with keys, summaries, assignees, priorities, labels, and story points.
-
 Output rules:
-1. executiveSummary: 2-3 sentences. State overall health, primary focus this week, and any critical concern or win.
-2. accomplishments: Extract from Done issues. Focus on business value and deliverables. 4-8 items max.
-3. nextSteps: Extract from In Progress + high-priority To Do. Make them action-oriented. Include owner and estimated due date if derivable. 4-8 items max.
-4. blockers: Items labeled "blocked" or "risk", unassigned critical items, or issues with no progress. 5 max.
-5. healthStatus: "On Track" if >60% complete and no critical blockers, "At Risk" if 40-60% or has blockers, "Off Track" if <40% or multiple critical blockers.
-6. milestones: Extract sprint goals or milestone-labeled issues. Return [] if none found.
 
-Return ONLY valid JSON in exactly this format, no markdown:
+1. executiveSummary: 2-3 sentences. State overall project health, the primary focus/win this week, and any critical concern or blocker.
+
+2. accomplishments: Extract from Done issues. For each item the "sentence" field MUST be a past-tense sentence YOU COMPOSE (8-15 words) starting with a strong action verb — do NOT copy the Jira summary verbatim. Use the "Description:" text to build a specific, meaningful sentence about what was actually delivered. If no description, craft the best sentence from the summary.
+   Strong verbs: Implemented, Deployed, Resolved, Delivered, Launched, Fixed, Migrated, Integrated, Optimized, Shipped, Automated, Configured, Built, Enabled, Completed, Released, Refactored.
+   Examples: summary 'User auth API' + desc 'JWT auth with refresh tokens' -> sentence 'Implemented JWT-based user authentication with automatic token refresh'. Summary 'Fix login bug' + desc 'Fixed redirect loop' -> sentence 'Resolved OAuth callback redirect loop causing login failures'. 4-8 items max.
+
+3. nextSteps: Extract from In Progress + high-priority To Do. Action-oriented, starting with a verb. Include owner and due date where derivable. 4-8 items max.
+
+4. blockers: Items labeled blocked or risk, unassigned critical items, issues with no progress. 5 max.
+
+5. healthStatus: On Track if >60% complete and no critical blockers. At Risk if 40-60% or has blockers. Off Track if <40% or multiple critical blockers.
+
+6. milestones: Extract sprint goals or milestone-labeled issues. Return [] if none.
+
+Return ONLY valid JSON, no markdown:
 {
   "projectName": "string",
   "sprintName": "string",
   "weekOf": "string",
   "healthStatus": "On Track | At Risk | Off Track",
   "executiveSummary": "string",
-  "accomplishments": [{"key": "string", "title": "string", "assignee": "string"}],
+  "accomplishments": [{"sentence": "string (past-tense, AI-composed, NOT the raw Jira summary)"}],
   "nextSteps": [{"action": "string", "owner": "string", "dueDate": "string", "priority": "high|medium|low"}],
   "blockers": [{"title": "string", "impact": "High|Medium|Low", "type": "blocker|risk|dependency", "mitigation": "string", "owner": "string"}],
   "milestones": [{"name": "string", "status": "complete|in_progress|upcoming", "date": "string"}]
@@ -419,6 +425,200 @@ def fetch_board_detail(board):
     }
 
 
+def build_pptx(deck):
+    """Build a Blend-branded PPTX from a status deck dict. Returns bytes."""
+    from pptx import Presentation
+    from pptx.util import Inches, Pt, Emu
+    from pptx.dml.color import RGBColor
+    from pptx.enum.text import PP_ALIGN
+    from pptx.util import Inches, Pt
+    import io
+
+    def rgb(hex6):
+        h = hex6.lstrip("#")
+        return RGBColor(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+    C = dict(
+        wb="#053057", nt="#00EDED", lt="#A2F3F3",
+        cg="#314550", gr="#1A1A1A", dg="#0B0D0E",
+        wh="#FFFFFF", ow="#F4F3F0",
+    )
+
+    W, H = Inches(13.33), Inches(7.5)   # 16:9 widescreen
+
+    prs = Presentation()
+    prs.slide_width  = W
+    prs.slide_height = H
+
+    blank_layout = prs.slide_layouts[6]  # completely blank
+
+    def add_rect(slide, x, y, w, h, fill_hex, alpha=None):
+        shape = slide.shapes.add_shape(1, Inches(x), Inches(y), Inches(w), Inches(h))
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = rgb(fill_hex)
+        shape.line.fill.background()
+        return shape
+
+    def add_text(slide, text, x, y, w, h, size=14, color="#FFFFFF", bold=False,
+                 align="left", valign="top", wrap=True):
+        txb = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
+        txb.word_wrap = wrap
+        tf = txb.text_frame
+        tf.word_wrap = wrap
+        p = tf.paragraphs[0]
+        p.alignment = {"left": PP_ALIGN.LEFT, "center": PP_ALIGN.CENTER,
+                       "right": PP_ALIGN.RIGHT}.get(align, PP_ALIGN.LEFT)
+        run = p.add_run()
+        run.text = str(text)
+        run.font.size = Pt(size)
+        run.font.color.rgb = rgb(color)
+        run.font.bold = bold
+        return txb
+
+    def bottom_bar(slide):
+        add_rect(slide, 0, 7.25, 13.33, 0.25, C["nt"])
+
+    def side_strip(slide, color=None):
+        add_rect(slide, 0, 0, 0.22, 7.5, color or C["cg"])
+
+    def section_label(slide, text, y=0.3):
+        add_text(slide, text, 0.5, y, 12.5, 0.3, size=8, color=C["nt"], bold=True)
+        add_rect(slide, 0.5, y + 0.33, 12.5, 0.02, C["nt"])
+
+    m  = deck.get("metrics") or {}
+    pn = deck.get("projectName") or "Project"
+    sn = deck.get("sprintName") or ""
+    wo = deck.get("weekOf") or ""
+    hs = deck.get("healthStatus") or "At Risk"
+
+    # ── Slide 1: Cover ──────────────────────────────────────────────────────
+    sl = prs.slides.add_slide(blank_layout)
+    add_rect(sl, 0, 0, 13.33, 7.5, C["wb"])
+    side_strip(sl)
+    bottom_bar(sl)
+    add_text(sl, "WEEKLY STATUS UPDATE", 0.5, 0.6, 12.5, 0.35, size=9, color=C["nt"], bold=True)
+    add_text(sl, pn, 0.5, 1.1, 12.5, 2.0, size=52, color=C["wh"], bold=True)
+    add_text(sl, sn, 0.5, 3.2, 12.5, 0.55, size=24, color=C["lt"])
+    add_text(sl, "Week of " + wo, 0.5, 3.9, 9, 0.45, size=16, color=C["lt"])
+    h_clr = {"On Track": "#065F46", "At Risk": "#B45309", "Off Track": "#7F1D1D"}.get(hs, "#B45309")
+    add_rect(sl, 0.5, 4.55, 2.4, 0.5, h_clr)
+    add_text(sl, hs, 0.5, 4.55, 2.4, 0.5, size=14, color=C["wh"], bold=True, align="center")
+
+    # ── Slide 2: Combined — Exec Summary + Metrics + Accomplishments + Next Steps + Blockers ──
+    sl = prs.slides.add_slide(blank_layout)
+    add_rect(sl, 0, 0, 13.33, 7.5, C["dg"])
+    side_strip(sl)
+
+    blockers = deck.get("blockers") or []
+    has_blockers = len(blockers) > 0
+
+    # Determine vertical budget
+    # Rows: exec summary (0.18–1.05), metrics (1.1–1.85), columns (1.95–bottom), blockers strip at bottom
+    blocker_strip_h = 1.0 if has_blockers else 0.0
+    col_bottom      = 7.5 - 0.25 - blocker_strip_h  # leave room for bottom bar + blockers
+
+    # Executive Summary
+    add_text(sl, "EXECUTIVE SUMMARY", 0.4, 0.15, 12.5, 0.25, size=7, color=C["nt"], bold=True)
+    add_rect(sl, 0.4, 0.4, 12.5, 0.018, C["nt"])
+    add_text(sl, deck.get("executiveSummary") or "", 0.4, 0.45, 12.5, 0.72, size=12, color=C["wh"])
+
+    # Metrics row
+    stats = [
+        ("Total",       str(m.get("totalIssues",      0))),
+        ("Completed",   str(m.get("doneIssues",       0))),
+        ("In Progress", str(m.get("inProgressIssues", 0))),
+        ("Completion",  str(m.get("completionPct",    0)) + "%"),
+    ]
+    tw, sx, sy_m = 2.95, 0.4, 1.22
+    for i, (lbl, val) in enumerate(stats):
+        x = sx + i * (tw + 0.18)
+        add_rect(sl, x, sy_m, tw, 0.72, C["cg"])
+        add_text(sl, val, x, sy_m + 0.04, tw, 0.42, size=22, color=C["nt"], bold=True, align="center")
+        add_text(sl, lbl, x, sy_m + 0.5, tw, 0.2, size=8, color=C["lt"], align="center")
+
+    # Two-column section: Accomplishments (left) | Next Steps (right)
+    col_top  = 2.05
+    col_h    = col_bottom - col_top
+    col_w    = 6.1
+    left_x   = 0.4
+    right_x  = 6.83
+
+    # Column headers
+    add_text(sl, "KEY ACCOMPLISHMENTS", left_x,  col_top, col_w, 0.22, size=7, color=C["nt"], bold=True)
+    add_rect(sl, left_x,  col_top + 0.22, col_w, 0.015, C["nt"])
+    add_text(sl, "NEXT STEPS",          right_x, col_top, col_w, 0.22, size=7, color=C["nt"], bold=True)
+    add_rect(sl, right_x, col_top + 0.22, col_w, 0.015, C["nt"])
+
+    row_h    = 0.44
+    max_rows = max(1, int((col_h - 0.3) / row_h))
+
+    accomplishments = (deck.get("accomplishments") or [])[:max_rows]
+    steps           = (deck.get("nextSteps")       or [])[:max_rows]
+
+    for i, item in enumerate(accomplishments):
+        ry = col_top + 0.28 + i * row_h
+        add_rect(sl, left_x, ry + 0.06, 0.2, 0.2, C["nt"])
+        add_text(sl, "✓", left_x, ry + 0.05, 0.22, 0.22, size=8, color=C["wb"], bold=True, align="center")
+        sentence = item.get("sentence") or item.get("title") or ""
+        add_text(sl, sentence, left_x + 0.28, ry, col_w - 0.3, 0.4, size=11, color=C["wh"])
+
+    for i, s in enumerate(steps):
+        ry = col_top + 0.28 + i * row_h
+        if i % 2 == 0:
+            add_rect(sl, right_x, ry, col_w, row_h, "#111827")
+        add_text(sl, "→", right_x + 0.05, ry + 0.06, 0.24, 0.28, size=10, color=C["lt"], bold=True)
+        add_text(sl, s.get("action") or "", right_x + 0.3, ry + 0.04, col_w - 0.35, 0.38, size=11, color=C["wh"])
+
+    # Bottom bar
+    add_rect(sl, 0, 7.25, 13.33, 0.25, C["nt"])
+
+    # Blockers strip at bottom (above bar)
+    if has_blockers:
+        bsy = 7.25 - blocker_strip_h
+        add_rect(sl, 0, bsy, 13.33, blocker_strip_h, "#2a0505")
+        add_rect(sl, 0.22, bsy, 0.06, blocker_strip_h, "#7F1D1D")
+        add_text(sl, "ISSUES / BLOCKERS", 0.35, bsy + 0.08, 2.2, 0.22, size=7, color="#FCA5A5", bold=True)
+        i_clr = {"High": "#F87171", "Medium": "#FCD34D", "Low": "#6EE7B7"}
+        bw = 10.5 / max(len(blockers[:4]), 1)
+        for i, b in enumerate(blockers[:4]):
+            bx = 2.65 + i * (bw + 0.1)
+            ic = i_clr.get(b.get("impact") or "", "#FCD34D")
+            add_rect(sl, bx, bsy + 0.06, bw, 0.82, C["cg"])
+            add_text(sl, (b.get("impact") or "").upper(), bx + 0.06, bsy + 0.08, 0.7, 0.2, size=6, color=ic, bold=True)
+            add_text(sl, b.get("title") or "", bx + 0.06, bsy + 0.28, bw - 0.12, 0.54, size=9, color=C["wh"])
+
+    # ── Milestones (conditional) ──────────────────────────────────
+    milestones = deck.get("milestones") or []
+    if milestones:
+        sl = prs.slides.add_slide(blank_layout)
+        add_rect(sl, 0, 0, 13.33, 7.5, C["dg"])
+        side_strip(sl)
+        section_label(sl, "MILESTONES")
+        s_icon = {"complete": "✓", "in_progress": "◎", "upcoming": "○"}
+        s_clr  = {"complete": C["nt"], "in_progress": "#FCD34D", "upcoming": C["ow"]}
+        for i, ms in enumerate(milestones):
+            y = 1.0 + i * 0.95
+            st = ms.get("status") or "upcoming"
+            add_text(sl, s_icon.get(st, "○"), 0.5, y, 0.5, 0.55, size=22, bold=True, color=s_clr.get(st, C["ow"]))
+            add_text(sl, ms.get("name") or "", 1.1, y + 0.08, 10.0, 0.4, size=16, color=C["wh"])
+            if ms.get("date"):
+                add_text(sl, ms["date"], 11.5, y + 0.08, 1.7, 0.4, size=14, color=C["lt"], align="right")
+
+    # ── Closing slide ────────────────────────────────────────────────────────
+    sl = prs.slides.add_slide(blank_layout)
+    add_rect(sl, 0, 0, 13.33, 7.5, C["wb"])
+    side_strip(sl)
+    bottom_bar(sl)
+    add_text(sl, "Thank you", 0.5, 1.8, 12.33, 1.5, size=66, bold=True, color=C["wh"], align="center")
+    add_text(sl, pn, 0.5, 3.5, 12.33, 0.65, size=26, color=C["lt"], align="center")
+    add_text(sl, f"Generated by Blend PM Tools  ·  {wo}",
+             0.5, 4.3, 12.33, 0.45, size=13, color=C["lt"], align="center")
+
+    buf = io.BytesIO()
+    prs.save(buf)
+    return buf.getvalue()
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print("  " + (fmt % args))
@@ -428,6 +628,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
         self.end_headers()
         self.wfile.write(data)
 
@@ -563,6 +764,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(502, json.dumps({"error": str(e)}))
             return
 
+        if self.path in ("/status", "/status.html"):
+            try:
+                with open(os.path.join(ROOT, "status.html"), "rb") as f:
+                    self._send(200, f.read(), "text/html; charset=utf-8")
+            except FileNotFoundError:
+                self._send(404, "status.html not found", "text/plain")
+            return
+
         # ── History endpoints ─────────────────────────────────────────────────
         if self.path == "/api/history":
             self._send(200, json.dumps(load_history()))
@@ -643,6 +852,13 @@ class Handler(BaseHTTPRequestHandler):
                     cat = (status.get("statusCategory") or {}).get("key", "new")
                     points = f.get("customfield_10016") or 0
                     sp_planned += points or 0
+                    desc_raw = f.get("description") or {}
+                    def _txt(n):
+                        if not n: return ""
+                        if isinstance(n, str): return n
+                        parts = [_txt(c) for c in n.get("content", [])]
+                        return ("; ".join(p for p in parts if p.strip()) if parts else n.get("text", ""))
+                    desc_text = _txt(desc_raw).strip()[:300] if isinstance(desc_raw, dict) else str(desc_raw or "").strip()[:300]
                     entry = {
                         "key": iss["key"],
                         "summary": f.get("summary", ""),
@@ -652,6 +868,7 @@ class Handler(BaseHTTPRequestHandler):
                         "assignee": ((f.get("assignee") or {}).get("displayName") or "Unassigned"),
                         "points": points,
                         "labels": f.get("labels") or [],
+                        "description": desc_text,
                     }
                     if cat == "done":
                         sp_done += points or 0
@@ -670,17 +887,18 @@ class Handler(BaseHTTPRequestHandler):
                 week_end   = week_start + datetime.timedelta(days=6)
                 week_of    = f"{week_start.strftime('%B %d')}–{week_end.strftime('%d, %Y')}"
 
-                def fmt(iss):
+                def fmt(iss, include_desc=False):
                     pts = f"| Points: {iss['points']}" if iss['points'] else ""
                     lbl = f"| Labels: {', '.join(iss['labels'])}" if iss['labels'] else ""
-                    return f"- [{iss['key']}] {iss['summary']} | Type: {iss['type']} | Assignee: {iss['assignee']} | Priority: {iss['priority']} {pts} {lbl}"
+                    desc = ("\n  Description: " + iss['description'] if include_desc and iss.get('description') else "")
+                    return f"- [{iss['key']}] {iss['summary']} | Type: {iss['type']} | Assignee: {iss['assignee']} | Priority: {iss['priority']} {pts} {lbl}{desc}"
 
                 lines = [
                     f"PROJECT: {project_name}", f"SPRINT: {sprint_name}", f"DATE: {week_of}",
                     f"TOTAL: {total} | DONE: {done_count} | IN PROGRESS: {len(in_progress_issues)} | TO DO: {len(todo_issues)}",
                     f"STORY POINTS: Planned={int(sp_planned)} Done={int(sp_done)}",
                     "", "COMPLETED (Done):",
-                ] + ([fmt(i) for i in done_issues] if done_issues else ["(none)"]) + [
+                ] + ([fmt(i, include_desc=True) for i in done_issues] if done_issues else ["(none)"]) + [
                     "", "IN PROGRESS:",
                 ] + ([fmt(i) for i in in_progress_issues] if in_progress_issues else ["(none)"]) + [
                     "", "TO DO / NOT STARTED:",
@@ -717,6 +935,28 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, json.dumps(parsed))
             except Exception as e:
                 self._send(502, json.dumps({"error": str(e)}))
+            return
+
+        if self.path == "/api/export-pptx":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                deck = json.loads(self.rfile.read(length) or "{}")
+            except Exception as e:
+                self._send(400, json.dumps({"error": str(e)})); return
+            try:
+                pptx_bytes = build_pptx(deck)
+                safe_name = (deck.get("projectName") or "status").replace(" ", "-")
+                fn = safe_name + "-status-deck.pptx"
+                self.send_response(200)
+                self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation")
+                self.send_header("Content-Disposition", f'attachment; filename="{fn}"')
+                self.send_header("Content-Length", str(len(pptx_bytes)))
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(pptx_bytes)
+            except Exception as e:
+                import traceback
+                self._send(500, json.dumps({"error": str(e), "trace": traceback.format_exc()}))
             return
 
         if self.path != "/api/analyze":
