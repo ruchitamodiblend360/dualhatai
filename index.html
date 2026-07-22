@@ -1737,7 +1737,7 @@ Acceptance Criteria:
                     <span style={{ fontSize: 12, fontWeight: 500, color: "#0F6E56",
                       display: "inline-flex", alignItems: "center", gap: 5 }}>
                       <i className="ti ti-circle-check" style={{ fontSize: 14 }} />
-                      Batch complete — {doneCount}/{selectedCount} analysed
+                      Batch complete — {doneCount}/{selectedCount} analyzed
                     </span>
                   )}
                 </div>
@@ -1795,7 +1795,7 @@ Acceptance Criteria:
           {batchStarted && (
             <div style={{ display: "flex", background: "#F4F3F0", borderBottom: "1px solid #314550" }}>
               {[
-                { val: `${doneCount}/${selectedCount}`, sub: "Analysed",     color: "#053057", icon: "ti-chart-bar" },
+                { val: `${doneCount}/${selectedCount}`, sub: "Analyzed",     color: "#053057", icon: "ti-chart-bar" },
                 { val: sprintReadyCount,                sub: "Sprint ready",  color: "#0F6E56", icon: "ti-circle-check" },
                 { val: criticalGaps,                    sub: "Critical gaps", color: criticalGaps > 0 ? "#A32D2D" : "#1A1A1A", icon: "ti-alert-circle" },
               ].map((s, i) => (
