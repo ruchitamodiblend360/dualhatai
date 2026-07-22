@@ -647,7 +647,6 @@ Acceptance Criteria:
     /* ── Single Story Panel ── */
     function StoryPanel({ selectedStory, onBack, onRecheck }) {
       const [copied, setCopied] = useState(false);
-      const [panelTab, setPanelTab] = useState("overview");
       const [improvedCopied, setImprovedCopied] = useState(false);
       if (!selectedStory) return (
         <div style={{ padding: "48px 24px", textAlign: "center" }}>
@@ -733,192 +732,136 @@ Acceptance Criteria:
             </div>
           </div>
 
-          {/* Tab strip */}
-          {(() => {
-            const PANEL_TABS = [
-              { id: "overview",  label: "Overview",       icon: "ti-layout-grid" },
-              { id: "improved",  label: "Improved Story",  icon: "ti-sparkles" },
-              { id: "summary",   label: "Summary",         icon: "ti-file-text" },
-            ];
-            return (
-              <div style={{ display: "flex", borderBottom: "0.5px solid var(--color-border-tertiary)",
-                padding: "0 6px", background: "var(--color-background-secondary)" }}>
-                {PANEL_TABS.map(t => (
-                  <button key={t.id} onClick={() => setPanelTab(t.id)}
-                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "9px 14px",
-                      fontSize: 12, fontWeight: panelTab === t.id ? 600 : 400,
-                      color: panelTab === t.id ? "#053057" : "var(--color-text-secondary)",
-                      background: "none", border: "none", cursor: "pointer",
-                      borderBottom: panelTab === t.id ? "2px solid #053057" : "2px solid transparent",
-                      marginBottom: -1 }}>
-                    <i className={`ti ${t.icon}`} style={{ fontSize: 13 }} />
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            );
-          })()}
+          {/* Body — single scrollable layout, no tabs */}
+          <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* Overview tab — two-column layout */}
-          {panelTab === "overview" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, padding: "20px", alignItems: "start" }}>
-            {/* LEFT */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 10 }}>
-                  {(selectedStory.mode || "story") === "epic" ? "EPIC TEXT" : "STORY TEXT"}
+            {/* ── Summary banner ── */}
+            {r.summary && (
+              <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px", display: "flex", gap: 14, alignItems: "flex-start" }}>
+                <div style={{ flexShrink: 0, marginTop: 2 }}>
+                  <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 99, background: rc.bg, color: rc.color, whiteSpace: "nowrap" }}>{r.readiness_level}</span>
                 </div>
-                <div style={{ fontSize: 13, color: "var(--color-text-primary)", fontFamily: "var(--font-mono)", lineHeight: 1.8 }}>
-                  {annotatedText(selectedStory.story_text)}
+                <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.8 }}>{r.summary}</p>
+              </div>
+            )}
+
+            {/* ── Two-column: story text + score breakdown ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+              {/* LEFT — story text → improved story → ambiguities → suggested ACs */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 10 }}>
+                    {(selectedStory.mode || "story") === "epic" ? "EPIC TEXT" : "STORY TEXT"}
+                  </div>
+                  <div style={{ fontSize: 13, color: "var(--color-text-primary)", fontFamily: "var(--font-mono)", lineHeight: 1.8 }}>
+                    {annotatedText(selectedStory.story_text)}
+                  </div>
+                  {(r.ambiguities || []).length > 0 && (
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "0.5px solid var(--color-border-tertiary)" }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 8 }}>AMBIGUITIES</div>
+                      {r.ambiguities.map((a, i) => (
+                        <div key={i} style={{ fontSize: 12, color: "#854F0B", background: "#FAEEDA", borderRadius: 6, padding: "6px 10px", marginBottom: 6 }}>
+                          <strong>"{a.phrase}"</strong> — {a.question}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {(r.ambiguities || []).length > 0 && (
-                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: "0.5px solid var(--color-border-tertiary)" }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 8 }}>AMBIGUITIES</div>
-                    {r.ambiguities.map((a, i) => (
-                      <div key={i} style={{ fontSize: 12, color: "#854F0B", background: "#FAEEDA", borderRadius: 6, padding: "6px 10px", marginBottom: 6 }}>
-                        <strong>"{a.phrase}"</strong> — {a.question}
+
+                {/* Improved story */}
+                {r.improved_story && (
+                  <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em" }}>IMPROVED STORY</div>
+                      <button onClick={() => { navigator.clipboard.writeText(r.improved_story); setImprovedCopied(true); setTimeout(() => setImprovedCopied(false), 2000); }}
+                        style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11,
+                          color: "var(--color-text-secondary)", background: "none", cursor: "pointer",
+                          border: "0.5px solid var(--color-border-secondary)",
+                          borderRadius: "var(--border-radius-md)", padding: "3px 8px" }}>
+                        <i className={`ti ${improvedCopied ? "ti-check" : "ti-copy"}`} style={{ fontSize: 12 }} />
+                        {improvedCopied ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+                    <pre style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 12,
+                      lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word",
+                      background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)",
+                      padding: "12px 14px", color: "var(--color-text-primary)" }}>
+                      {r.improved_story}
+                    </pre>
+                    {(r.split_suggestions || []).length > 0 && (
+                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: "0.5px solid var(--color-border-tertiary)" }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+                          <i className="ti ti-scissors" style={{ fontSize: 11, color: "#EF9F27" }} />SUGGESTED SPLIT
+                        </div>
+                        {r.split_suggestions.map((s, i) => (
+                          <div key={i} style={{ display: "flex", gap: 9, padding: "6px 0", borderBottom: i < r.split_suggestions.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: "#EF9F27", minWidth: 20 }}>{i + 1}.</span>
+                            <span style={{ fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.6 }}>{s}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Suggested ACs */}
+                {(r.suggested_acs || []).length > 0 && (
+                  <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 10 }}>SUGGESTED ACS</div>
+                    {r.suggested_acs.map((ac, i) => (
+                      <div key={i} style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: i < r.suggested_acs.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                        <i className="ti ti-circle-check" style={{ fontSize: 16, color: "#1D9E75", flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
+                        <span style={{ fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.6 }}>{ac}</span>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-              {(r.suggested_acs || []).length > 0 && (
+
+              {/* RIGHT — score breakdown + gaps */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 10 }}>SUGGESTED ACS</div>
-                  {r.suggested_acs.map((ac, i) => (
-                    <div key={i} style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: i < r.suggested_acs.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
-                      <i className="ti ti-circle-check" style={{ fontSize: 16, color: "#1D9E75", flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
-                      <span style={{ fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.6 }}>{ac}</span>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 14 }}>SCORE BREAKDOWN</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 16 }}>
+                    <span style={{ fontSize: 44, fontWeight: 600, color: scoreColor(selectedStory.score) }}>{selectedStory.score}</span>
+                    <span style={{ fontSize: 18, color: "var(--color-text-tertiary)" }}>/100</span>
+                  </div>
+                  {Object.entries(sc).map(([k, v]) => (
+                    <div key={k} style={{ marginBottom: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--color-text-secondary)", marginBottom: 4 }}>
+                        <span>{SCORE_LABELS[k] || k}</span>
+                        <span style={{ fontWeight: 600, color: dimColor(v) }}>{v}/20</span>
+                      </div>
+                      <div style={{ height: 5, background: "var(--color-background-secondary)", borderRadius: 99 }}>
+                        <div style={{ height: "100%", width: `${(v / 20) * 100}%`, background: dimColor(v), borderRadius: 99 }} />
+                      </div>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-
-            {/* RIGHT */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 14 }}>SCORE BREAKDOWN</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 16 }}>
-                  <span style={{ fontSize: 44, fontWeight: 600, color: scoreColor(selectedStory.score) }}>{selectedStory.score}</span>
-                  <span style={{ fontSize: 18, color: "var(--color-text-tertiary)" }}>/100</span>
-                </div>
-                {Object.entries(sc).map(([k, v]) => (
-                  <div key={k} style={{ marginBottom: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--color-text-secondary)", marginBottom: 4 }}>
-                      <span>{SCORE_LABELS[k] || k}</span>
-                      <span style={{ fontWeight: 600, color: dimColor(v) }}>{v}/20</span>
-                    </div>
-                    <div style={{ height: 5, background: "var(--color-background-secondary)", borderRadius: 99 }}>
-                      <div style={{ height: "100%", width: `${(v / 20) * 100}%`, background: dimColor(v), borderRadius: 99 }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {(r.gaps || []).length > 0 && (
-                <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 12 }}>ISSUES TO FIX</div>
-                  {r.gaps.map((g, i) => {
-                    const s = SEV[g.severity] || SEV.info;
-                    return (
-                      <div key={i} style={{ border: `0.5px solid ${s.border}`, borderRadius: "var(--border-radius-md)", padding: "10px 12px", marginBottom: 8, background: s.bg }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                          <i className={`ti ${s.icon}`} style={{ fontSize: 13, color: s.color }} aria-hidden="true" />
-                          <span style={{ fontSize: 11, fontWeight: 600, color: s.color, textTransform: "capitalize" }}>{g.severity}</span>
-                          <span style={{ fontSize: 11, color: s.color, opacity: 0.7 }}>· {g.area}</span>
+                {(r.gaps || []).length > 0 && (
+                  <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 12 }}>ISSUES TO FIX</div>
+                    {r.gaps.map((g, i) => {
+                      const s = SEV[g.severity] || SEV.info;
+                      return (
+                        <div key={i} style={{ border: `0.5px solid ${s.border}`, borderRadius: "var(--border-radius-md)", padding: "10px 12px", marginBottom: 8, background: s.bg }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                            <i className={`ti ${s.icon}`} style={{ fontSize: 13, color: s.color }} aria-hidden="true" />
+                            <span style={{ fontSize: 11, fontWeight: 600, color: s.color, textTransform: "capitalize" }}>{g.severity}</span>
+                            <span style={{ fontSize: 11, color: s.color, opacity: 0.7 }}>· {g.area}</span>
+                          </div>
+                          <p style={{ margin: "0 0 4px", fontSize: 13, color: "#053057", lineHeight: 1.5 }}>{g.issue}</p>
+                          <p style={{ margin: 0, fontSize: 12, color: "#1A1A1A" }}>
+                            <i className="ti ti-arrow-right" style={{ fontSize: 11 }} aria-hidden="true" /> {g.fix}
+                          </p>
                         </div>
-                        <p style={{ margin: "0 0 4px", fontSize: 13, color: "#053057", lineHeight: 1.5 }}>{g.issue}</p>
-                        <p style={{ margin: 0, fontSize: 12, color: "#1A1A1A" }}>
-                          <i className="ti ti-arrow-right" style={{ fontSize: 11 }} aria-hidden="true" /> {g.fix}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          )}
-
-          {/* Improved Story tab */}
-          {panelTab === "improved" && (
-            <div style={{ padding: "20px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <span style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>AI-suggested rewrite — review before using</span>
-                <button onClick={() => { navigator.clipboard.writeText(r.improved_story || ""); setImprovedCopied(true); setTimeout(() => setImprovedCopied(false), 2000); }}
-                  style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12,
-                    color: "var(--color-text-primary)", background: "none", cursor: "pointer",
-                    border: "0.5px solid var(--color-border-secondary)",
-                    borderRadius: "var(--border-radius-md)", padding: "5px 10px" }}>
-                  <i className={`ti ${improvedCopied ? "ti-check" : "ti-copy"}`} style={{ fontSize: 13 }} />
-                  {improvedCopied ? "Copied" : "Copy"}
-                </button>
-              </div>
-              <pre style={{ margin: "0 0 16px", fontFamily: "var(--font-mono)", fontSize: 12,
-                lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word",
-                background: "var(--color-background-primary)", borderRadius: "var(--border-radius-md)",
-                padding: "14px 16px", color: "var(--color-text-primary)", border: "0.5px solid var(--color-border-tertiary)" }}>
-                {r.improved_story || "No improved story available."}
-              </pre>
-              {(r.suggested_acs || []).length > 0 && (
-                <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "14px 16px", marginBottom: 14 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 10 }}>SUGGESTED ACCEPTANCE CRITERIA</div>
-                  {r.suggested_acs.map((ac, i) => (
-                    <div key={i} style={{ display: "flex", gap: 9, padding: "7px 0",
-                      borderBottom: i < r.suggested_acs.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
-                      <i className="ti ti-circle-check" style={{ fontSize: 15, color: "#1D9E75", marginTop: 2, flexShrink: 0 }} />
-                      <span style={{ fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.6 }}>{ac}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {(r.split_suggestions || []).length > 0 && (
-                <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "14px 16px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-secondary)", letterSpacing: "0.07em", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                    <i className="ti ti-scissors" style={{ fontSize: 12, color: "#EF9F27" }} />
-                    SUGGESTED SPLIT
-                  </div>
-                  {r.split_suggestions.map((s, i) => (
-                    <div key={i} style={{ display: "flex", gap: 9, padding: "7px 0",
-                      borderBottom: i < r.split_suggestions.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "#EF9F27", minWidth: 20 }}>{i + 1}.</span>
-                      <span style={{ fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.6 }}>{s}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Summary tab */}
-          {panelTab === "summary" && (
-            <div style={{ padding: "20px" }}>
-              <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "18px 20px", marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                  <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: rc.bg, color: rc.color }}>{r.readiness_level}</span>
-                  <span style={{ fontSize: 28, fontWeight: 600, color: scoreColor(selectedStory.score) }}>{selectedStory.score}<span style={{ fontSize: 14, color: "var(--color-text-tertiary)", fontWeight: 400 }}>/100</span></span>
-                </div>
-                <p style={{ margin: 0, fontSize: 14, color: "var(--color-text-primary)", lineHeight: 1.8 }}>
-                  {r.summary || "No summary available."}
-                </p>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
-                {Object.entries(r.scores || {}).map(([k, v]) => {
-                  const LABELS = { completeness: "Completeness", clarity: "Clarity", testability: "Testability", size: "Story size", dependency_risk: "Dependencies" };
-                  const dimColor = v => v >= 16 ? "#1D9E75" : v >= 11 ? "#378ADD" : v >= 6 ? "#EF9F27" : "#E24B4A";
-                  return (
-                    <div key={k} style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-md)", padding: "12px 14px" }}>
-                      <div style={{ fontSize: 11, color: "var(--color-text-secondary)", marginBottom: 6 }}>{LABELS[k] || k}</div>
-                      <div style={{ fontSize: 22, fontWeight: 600, color: dimColor(v) }}>{v}<span style={{ fontSize: 11, color: "var(--color-text-tertiary)", fontWeight: 400 }}>/20</span></div>
-                      <div style={{ height: 4, background: "var(--color-background-secondary)", borderRadius: 99, marginTop: 6 }}>
-                        <div style={{ height: "100%", width: `${(v/20)*100}%`, background: dimColor(v), borderRadius: 99 }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       );
     }
