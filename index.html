@@ -788,11 +788,12 @@ Acceptance Criteria:
     }
 
     /* ── Dashboard ── */
-    function Dashboard({ history, setHistory, onRowClick }) {
+    function Dashboard({ history, setHistory, onRecheck }) {
       const PAGE_SIZE = 10;
       const RC = { "Not Ready": { color: "#A32D2D", bg: "#FCEBEB" }, "Needs Work": { color: "#854F0B", bg: "#FAEEDA" }, "Almost Ready": { color: "#053057", bg: "#A2F3F3" }, "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" } };
       const scoreColor = v => v >= 80 ? "#1D9E75" : v >= 60 ? "#378ADD" : v >= 40 ? "#EF9F27" : "#E24B4A";
 
+      const [expandedId, setExpandedId] = useState(null);
       const [titleFilter, setTitleFilter] = useState("");
       const [statusFilter, setStatusFilter] = useState("");
       const [typeFilter, setTypeFilter] = useState("");
@@ -918,11 +919,12 @@ Acceptance Criteria:
                   <tbody>
                     {pageRows.map((row, i) => {
                       const rc = RC[row.readiness_level] || RC["Needs Work"];
-                      return (
-                        <tr key={row.id} onClick={() => onRowClick(row)}
-                          style={{ background: "var(--color-background-primary)", cursor: "pointer" }}
-                          onMouseEnter={e => e.currentTarget.style.background = "#F4F3F0"}
-                          onMouseLeave={e => e.currentTarget.style.background = "var(--color-background-primary)"}>
+                      const isExp = expandedId === row.id;
+                      return [
+                        <tr key={row.id} onClick={() => setExpandedId(isExp ? null : row.id)}
+                          style={{ background: isExp ? "#F4F3F0" : "var(--color-background-primary)", cursor: "pointer", borderBottom: isExp ? "none" : undefined }}
+                          onMouseEnter={e => { if (!isExp) e.currentTarget.style.background = "#F4F3F0"; }}
+                          onMouseLeave={e => { if (!isExp) e.currentTarget.style.background = "var(--color-background-primary)"; }}>
                           <td style={{ padding: "11px 14px", color: "var(--color-text-tertiary)", width: 36 }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
                           <td style={{ padding: "11px 14px", color: "#053057", maxWidth: 240 }}>
                             <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "underline" }}>{row.title}</div>
@@ -952,16 +954,28 @@ Acceptance Criteria:
                             <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: rc.bg, color: rc.color }}>{row.readiness_level}</span>
                           </td>
                           <td style={{ padding: "11px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>{row.checked_at}</td>
-                          <td style={{ padding: "11px 14px" }} onClick={e => e.stopPropagation()}>
+                          <td style={{ padding: "11px 14px", display: "flex", alignItems: "center", gap: 6 }} onClick={e => e.stopPropagation()}>
                             <button onClick={e => deleteRow(row.id, e)}
                               style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-tertiary)", padding: "2px 4px", borderRadius: 4 }}
                               onMouseEnter={e => e.currentTarget.style.color = "#A32D2D"}
                               onMouseLeave={e => e.currentTarget.style.color = "var(--color-text-tertiary)"}>
                               <i className="ti ti-trash" style={{ fontSize: 14 }} />
                             </button>
+                            <i className={`ti ti-chevron-${isExp ? "up" : "down"}`} style={{ fontSize: 13, color: "var(--color-text-tertiary)" }} />
                           </td>
-                        </tr>
-                      );
+                        </tr>,
+                        isExp && (
+                          <tr key={row.id + "-exp"}>
+                            <td colSpan={8} style={{ padding: 0, background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                              <StoryPanel
+                                selectedStory={row}
+                                onBack={() => setExpandedId(null)}
+                                onRecheck={() => onRecheck(row)}
+                              />
+                            </td>
+                          </tr>
+                        )
+                      ];
                     })}
                   </tbody>
                 </table>
@@ -1015,46 +1029,51 @@ Acceptance Criteria:
       }
 
       if (loading) return (
-        <div style={{ padding: "48px 24px", textAlign: "center", color: "#5a6675", fontSize: 13 }}>
-          <i className="ti ti-loader-2" style={{ fontSize: 28, display: "block", marginBottom: 10, animation: "spin 1s linear infinite", color: "#053057" }} />
+        <div style={{ padding: "60px 24px", textAlign: "center", color: "#A2F3F3", fontSize: 14 }}>
+          <i className="ti ti-loader-2" style={{ fontSize: 32, display: "block", marginBottom: 12, animation: "spin 1s linear infinite", color: "#00EDED" }} />
           Loading boards from Jira…
         </div>
       );
       if (error) return (
-        <div style={{ padding: "48px 24px", textAlign: "center", color: "#A32D2D", fontSize: 13 }}>
-          <i className="ti ti-alert-triangle" style={{ fontSize: 28, display: "block", marginBottom: 10 }} />
+        <div style={{ padding: "60px 24px", textAlign: "center", color: "#FCA5A5", fontSize: 13 }}>
+          <i className="ti ti-alert-triangle" style={{ fontSize: 32, display: "block", marginBottom: 12, color: "#F87171" }} />
           {error}
         </div>
       );
 
       return (
-        <div style={{ padding: "24px 20px", background: "#fff", minHeight: 400 }}>
-          <h2 style={{ fontSize: 17, fontWeight: 600, color: "#1a2230", margin: "0 0 4px" }}>Select a project and board</h2>
-          <p style={{ fontSize: 13, color: "#5a6675", margin: "0 0 22px" }}>Choose the sprint or backlog you want to analyse.</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
+        <div style={{ padding: "24px 20px 28px", background: "#0B0D0E" }}>
+          <h2 style={{ fontSize: 17, fontWeight: 600, color: "#fff", margin: "0 0 5px" }}>Select a project and board</h2>
+          <p style={{ fontSize: 13, color: "#A2F3F3", opacity: 0.7, margin: "0 0 20px" }}>Choose the sprint or backlog you want to analyse.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
             {boards.map(board => {
               const color = avatarColor(board.projectKey || board.name);
               return (
-                <div key={board.id} style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", background: "#fff" }}>
-                  <div style={{ padding: "13px 15px 10px", borderBottom: "1px solid #f0f4f8", display: "flex", alignItems: "center", gap: 9 }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 7, background: color, flexShrink: 0,
+                <div key={board.id} style={{ border: "1px solid #314550", borderRadius: 10, overflow: "hidden", background: "#1A1A1A" }}>
+                  <div style={{ padding: "13px 15px 10px", borderBottom: "1px solid #314550", display: "flex", alignItems: "center", gap: 9 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: color, flexShrink: 0,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 11, fontWeight: 700, color: "#fff" }}>{initials(board.projectName || board.name)}</div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2230", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{board.projectName || board.name}</span>
+                      fontSize: 12, fontWeight: 700, color: "#fff" }}>{initials(board.projectName || board.name)}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{board.projectName || board.name}</div>
+                      <div style={{ fontSize: 11, color: "#4a6070", marginTop: 1 }}>
+                        {board.sprints.length} sprint{board.sprints.length !== 1 ? "s" : ""} · {board.backlogCount} backlog
+                      </div>
+                    </div>
                   </div>
                   <div style={{ padding: "8px" }}>
                     {board.backlogCount > 0 && (
                       <div onClick={() => onSelect({ board, type: "backlog", label: "Backlog", sprintId: null })}
                         style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
                           padding: "9px 10px", borderRadius: 7, cursor: "pointer", marginBottom: 4,
-                          border: "1px solid #e2e8f0", transition: "background 120ms" }}
-                        onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                          border: "1px solid #314550", transition: "background 120ms" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#0D2030"}
                         onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                          <i className="ti ti-stack-2" style={{ fontSize: 13, color: "#5a6675" }} />
-                          <span style={{ fontSize: 13, color: "#1a2230" }}>Backlog</span>
+                          <i className="ti ti-stack-2" style={{ fontSize: 13, color: "#A2F3F3" }} />
+                          <span style={{ fontSize: 13, color: "#cbd5e1" }}>Backlog</span>
                         </div>
-                        <span style={{ fontSize: 11, color: "#9aabb6" }}>{board.backlogCount} {board.backlogCount === 1 ? "story" : "stories"}</span>
+                        <span style={{ fontSize: 11, color: "#4a6070" }}>{board.backlogCount} {board.backlogCount === 1 ? "story" : "stories"}</span>
                       </div>
                     )}
                     {board.sprints.map(sprint => {
@@ -1063,23 +1082,23 @@ Acceptance Criteria:
                         <div key={sprint.id} onClick={() => onSelect({ board, type: "sprint", label: sprint.name, sprintId: sprint.id })}
                           style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
                             padding: "9px 10px", borderRadius: 7, cursor: "pointer", marginBottom: 4,
-                            border: isActive ? "1.5px solid #053057" : "1px solid #e2e8f0",
-                            background: isActive ? "#e8fafa" : "transparent", transition: "background 120ms" }}
-                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#f8fafc"; }}
-                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = isActive ? "#e8fafa" : "transparent"; }}>
+                            border: isActive ? "1.5px solid #00EDED" : "1px solid #314550",
+                            background: isActive ? "#0D2030" : "transparent", transition: "background 120ms" }}
+                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#0D2030"; }}
+                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = isActive ? "#0D2030" : "transparent"; }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-                            <i className="ti ti-refresh" style={{ fontSize: 13, color: isActive ? "#053057" : "#5a6675", flexShrink: 0 }} />
-                            <span style={{ fontSize: 13, color: isActive ? "#053057" : "#1a2230", fontWeight: isActive ? 500 : 400,
+                            <i className="ti ti-refresh" style={{ fontSize: 13, color: isActive ? "#00EDED" : "#A2F3F3", flexShrink: 0 }} />
+                            <span style={{ fontSize: 13, color: isActive ? "#00EDED" : "#cbd5e1", fontWeight: isActive ? 500 : 400,
                               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sprint.name}</span>
                             {isActive && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 99, flexShrink: 0,
-                              background: "#053057", color: "#fff", fontWeight: 600, letterSpacing: "0.05em" }}>Active</span>}
+                              background: "#00EDED", color: "#053057", fontWeight: 700, letterSpacing: "0.05em" }}>Active</span>}
                           </div>
-                          <span style={{ fontSize: 11, color: "#9aabb6", flexShrink: 0, marginLeft: 8 }}>{sprint.count} {sprint.count === 1 ? "story" : "stories"}</span>
+                          <span style={{ fontSize: 11, color: "#4a6070", flexShrink: 0, marginLeft: 8 }}>{sprint.count} {sprint.count === 1 ? "story" : "stories"}</span>
                         </div>
                       );
                     })}
                     {board.backlogCount === 0 && board.sprints.length === 0 && (
-                      <div style={{ padding: "10px", fontSize: 12, color: "#c8d3da", textAlign: "center" }}>No stories</div>
+                      <div style={{ padding: "10px", fontSize: 12, color: "#314550", textAlign: "center" }}>No stories</div>
                     )}
                   </div>
                 </div>
@@ -1762,7 +1781,6 @@ Acceptance Criteria:
       const [result, setResult]       = useState(null);
       const [errorMsg, setErrorMsg]   = useState("");
       const [history, setHistory]     = useState([]);
-      const [selectedStory, setSelectedStory] = useState(null);
 
       useEffect(() => {
         fetch("/api/history").then(r => r.json()).then(setHistory).catch(() => {});
@@ -1816,7 +1834,6 @@ Acceptance Criteria:
       const navTabs = [
         { id: "checker",   label: "Readiness Checker", icon: "ti-sparkles" },
         { id: "dashboard", label: "Dashboard",         icon: "ti-layout-dashboard" },
-        { id: "panel",     label: "Story Panel",       icon: "ti-file-analytics" },
       ];
 
       return (
@@ -2006,14 +2023,7 @@ Acceptance Criteria:
 
           {activeNav === "dashboard" && (
             <Dashboard history={history} setHistory={setHistory}
-              onRowClick={row => { setSelectedStory(row); setActiveNav("panel"); }} />
-          )}
-          {activeNav === "panel" && (
-            <StoryPanel
-              selectedStory={selectedStory}
-              onBack={() => { setSelectedStory(null); setActiveNav("dashboard"); }}
-              onRecheck={() => { setActiveNav("checker"); setStory(selectedStory?.story_text || ""); setCheckerMode(selectedStory?.mode || "story"); }}
-            />
+              onRecheck={row => { setActiveNav("checker"); setStory(row.story_text || ""); setCheckerMode(row.mode || "story"); }} />
           )}
 
           <style>{`
