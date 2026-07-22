@@ -1001,8 +1001,8 @@ Acceptance Criteria:
                       const isExp = expandedId === row.id;
                       return [
                         <tr key={row.id} onClick={() => setExpandedId(isExp ? null : row.id)}
-                          style={{ background: isExp ? "#F4F3F0" : "var(--color-background-primary)", cursor: "pointer", borderBottom: isExp ? "none" : undefined }}
-                          onMouseEnter={e => { if (!isExp) e.currentTarget.style.background = "#F4F3F0"; }}
+                          style={{ background: isExp ? "#1A2F4A" : "var(--color-background-primary)", cursor: "pointer", borderBottom: isExp ? "none" : undefined }}
+                          onMouseEnter={e => { if (!isExp) e.currentTarget.style.background = "#1A2F4A"; }}
                           onMouseLeave={e => { if (!isExp) e.currentTarget.style.background = "var(--color-background-primary)"; }}>
                           <td style={{ padding: "11px 14px", color: "#A2F3F3", width: 36 }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
                           <td style={{ padding: "11px 14px", color: "#FFFFFF", maxWidth: 240 }}>
@@ -1045,7 +1045,7 @@ Acceptance Criteria:
                         </tr>,
                         isExp && (
                           <tr key={row.id + "-exp"}>
-                            <td colSpan={8} style={{ padding: 0, background: "#F4F3F0", borderBottom: "1px solid #314550" }}>
+                            <td colSpan={8} style={{ padding: 0, background: "#1A2F4A", borderBottom: "1px solid #314550" }}>
                               <StoryPanel
                                 selectedStory={row}
                                 onBack={() => setExpandedId(null)}
