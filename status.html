@@ -184,6 +184,11 @@
             {loadErr}
           </div>
         );
+        const BOARD_PAGE_SIZE = 25;
+        const [boardPage, setBoardPage] = React.useState(1);
+        const totalBoardPages = Math.ceil(boards.length / BOARD_PAGE_SIZE);
+        const pagedBoards = boards.slice((boardPage - 1) * BOARD_PAGE_SIZE, boardPage * BOARD_PAGE_SIZE);
+
         return (
           <div style={{ padding: "24px 20px 28px" }}>
             <h2 style={{ fontSize: 17, fontWeight: 600, color: "#fff", margin: "0 0 5px" }}>Select a project board</h2>
@@ -191,7 +196,7 @@
               Pick a board, then select a sprint to generate an executive status deck with AI.
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
-              {boards.map(function(board) {
+              {pagedBoards.map(function(board) {
                 const color = avatarColor(board.projectKey || board.name);
                 const isSel = selectedBoard && selectedBoard.id === board.id;
                 return (
@@ -217,6 +222,26 @@
                 );
               })}
             </div>
+            {totalBoardPages > 1 && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, paddingTop: 20 }}>
+                <button onClick={function() { setBoardPage(function(p) { return Math.max(1, p - 1); }); }} disabled={boardPage === 1}
+                  style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
+                    background: "none", cursor: boardPage === 1 ? "default" : "pointer",
+                    color: boardPage === 1 ? "#314550" : "#A2F3F3" }}>‹ Prev</button>
+                {Array.from({ length: totalBoardPages }, function(_, ii) { return ii + 1; }).map(function(p) {
+                  return (
+                    <button key={p} onClick={function() { setBoardPage(p); }}
+                      style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
+                        cursor: "pointer", background: p === boardPage ? "#053057" : "#1A1A1A",
+                        color: p === boardPage ? "#FFFFFF" : "#A2F3F3" }}>{p}</button>
+                  );
+                })}
+                <button onClick={function() { setBoardPage(function(p) { return Math.min(totalBoardPages, p + 1); }); }} disabled={boardPage === totalBoardPages}
+                  style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
+                    background: "none", cursor: boardPage === totalBoardPages ? "default" : "pointer",
+                    color: boardPage === totalBoardPages ? "#314550" : "#A2F3F3" }}>Next ›</button>
+              </div>
+            )}
           </div>
         );
       }

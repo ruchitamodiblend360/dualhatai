@@ -1009,20 +1009,20 @@ Acceptance Criteria:
               {totalPages > 1 && (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 2px" }}>
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid var(--color-border-secondary)",
+                    style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550",
                       borderRadius: "var(--border-radius-md)", background: "none", cursor: page === 1 ? "default" : "pointer",
-                      color: page === 1 ? "var(--color-text-tertiary)" : "var(--color-text-primary)" }}>‹ Prev</button>
+                      color: page === 1 ? "#314550" : "#053057" }}>‹ Prev</button>
                   {Array.from({ length: totalPages }, (_, ii) => ii + 1).map(p => (
                     <button key={p} onClick={() => setPage(p)}
-                      style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid var(--color-border-secondary)",
+                      style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid #314550",
                         borderRadius: "var(--border-radius-md)", cursor: "pointer",
-                        background: p === page ? "#053057" : "none",
-                        color: p === page ? "#fff" : "var(--color-text-primary)" }}>{p}</button>
+                        background: p === page ? "#053057" : "#F4F3F0",
+                        color: p === page ? "#FFFFFF" : "#053057" }}>{p}</button>
                   ))}
                   <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid var(--color-border-secondary)",
+                    style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550",
                       borderRadius: "var(--border-radius-md)", background: "none", cursor: page === totalPages ? "default" : "pointer",
-                      color: page === totalPages ? "var(--color-text-tertiary)" : "var(--color-text-primary)" }}>Next ›</button>
+                      color: page === totalPages ? "#314550" : "#053057" }}>Next ›</button>
                 </div>
               )}
             </>
@@ -1067,12 +1067,17 @@ Acceptance Criteria:
         </div>
       );
 
+      const BOARD_PAGE_SIZE = 25;
+      const [boardPage, setBoardPage] = React.useState(1);
+      const totalBoardPages = Math.ceil(boards.length / BOARD_PAGE_SIZE);
+      const pagedBoards = boards.slice((boardPage - 1) * BOARD_PAGE_SIZE, boardPage * BOARD_PAGE_SIZE);
+
       return (
         <div style={{ padding: "24px 20px 28px", background: "#0B0D0E" }}>
           <h2 style={{ fontSize: 17, fontWeight: 600, color: "#fff", margin: "0 0 5px" }}>Select a project and board</h2>
           <p style={{ fontSize: 13, color: "#A2F3F3", opacity: 0.7, margin: "0 0 20px" }}>Choose the sprint or backlog you want to analyse.</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
-            {boards.map(board => {
+            {pagedBoards.map(board => {
               const color = avatarColor(board.projectKey || board.name);
               return (
                 <div key={board.id} style={{ border: "1px solid #314550", borderRadius: 10, overflow: "hidden", background: "#1A1A1A" }}>
@@ -1131,6 +1136,24 @@ Acceptance Criteria:
               );
             })}
           </div>
+          {totalBoardPages > 1 && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, paddingTop: 20 }}>
+              <button onClick={() => setBoardPage(p => Math.max(1, p - 1))} disabled={boardPage === 1}
+                style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
+                  background: "none", cursor: boardPage === 1 ? "default" : "pointer",
+                  color: boardPage === 1 ? "#314550" : "#A2F3F3" }}>‹ Prev</button>
+              {Array.from({ length: totalBoardPages }, (_, ii) => ii + 1).map(p => (
+                <button key={p} onClick={() => setBoardPage(p)}
+                  style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
+                    cursor: "pointer", background: p === boardPage ? "#053057" : "#1A1A1A",
+                    color: p === boardPage ? "#FFFFFF" : "#A2F3F3" }}>{p}</button>
+              ))}
+              <button onClick={() => setBoardPage(p => Math.min(totalBoardPages, p + 1))} disabled={boardPage === totalBoardPages}
+                style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
+                  background: "none", cursor: boardPage === totalBoardPages ? "default" : "pointer",
+                  color: boardPage === totalBoardPages ? "#314550" : "#A2F3F3" }}>Next ›</button>
+            </div>
+          )}
         </div>
       );
     }
