@@ -737,11 +737,14 @@ Acceptance Criteria:
 
             {/* ── Summary banner ── */}
             {r.summary && (
-              <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px", display: "flex", gap: 14, alignItems: "flex-start" }}>
-                <div style={{ flexShrink: 0, marginTop: 2 }}>
-                  <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 99, background: rc.bg, color: rc.color, whiteSpace: "nowrap" }}>{r.readiness_level}</span>
+              <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#A2F3F3", letterSpacing: "0.07em", marginBottom: 10 }}>SUMMARY</div>
+                <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                  <div style={{ flexShrink: 0, marginTop: 2 }}>
+                    <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 99, background: rc.bg, color: rc.color, whiteSpace: "nowrap" }}>{r.readiness_level}</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.8 }}>{r.summary}</p>
                 </div>
-                <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.8 }}>{r.summary}</p>
               </div>
             )}
 
