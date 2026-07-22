@@ -1401,7 +1401,9 @@ Acceptance Criteria:
       const [statuses,    setStatuses]    = useState({});
       const [running,     setRunning]     = useState(false);
       const [expandedKey, setExpandedKey] = useState(null);
+      const [storyPage,   setStoryPage]   = useState(1);
       const runningRef = useRef(false);
+      const STORY_PAGE_SIZE = 25;
 
       useEffect(() => {
         const url = sprintId
@@ -1659,7 +1661,7 @@ Acceptance Criteria:
                 </tr>
               </thead>
               <tbody>
-                {issues.map(issue => {
+                {issues.slice((storyPage - 1) * STORY_PAGE_SIZE, storyPage * STORY_PAGE_SIZE).map(issue => {
                   const st     = statuses[issue.key] || "pending";
                   const result = results[issue.key];
                   const rc     = result ? (RC2[result.readiness_level] || RC2["Needs Work"]) : null;
@@ -1832,6 +1834,23 @@ Acceptance Criteria:
                 })}
               </tbody>
             </table>
+            </div>
+          {Math.ceil(issues.length / STORY_PAGE_SIZE) > 1 && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 4px", background: "#fff", borderTop: "1px solid #314550" }}>
+              <button onClick={() => { setStoryPage(p => Math.max(1, p - 1)); setExpandedKey(null); }} disabled={storyPage === 1}
+                style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
+                  background: "none", cursor: storyPage === 1 ? "default" : "pointer",
+                  color: storyPage === 1 ? "#314550" : "#053057" }}>‹ Prev</button>
+              {Array.from({ length: Math.ceil(issues.length / STORY_PAGE_SIZE) }, (_, ii) => ii + 1).map(p => (
+                <button key={p} onClick={() => { setStoryPage(p); setExpandedKey(null); }}
+                  style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
+                    cursor: "pointer", background: p === storyPage ? "#053057" : "#F4F3F0",
+                    color: p === storyPage ? "#FFFFFF" : "#053057" }}>{p}</button>
+              ))}
+              <button onClick={() => { setStoryPage(p => Math.min(Math.ceil(issues.length / STORY_PAGE_SIZE), p + 1)); setExpandedKey(null); }} disabled={storyPage === Math.ceil(issues.length / STORY_PAGE_SIZE)}
+                style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
+                  background: "none", cursor: storyPage === Math.ceil(issues.length / STORY_PAGE_SIZE) ? "default" : "pointer",
+                  color: storyPage === Math.ceil(issues.length / STORY_PAGE_SIZE) ? "#314550" : "#053057" }}>Next ›</button>
             </div>
           )}
         </div>
