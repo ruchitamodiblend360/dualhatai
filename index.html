@@ -1696,89 +1696,28 @@ Acceptance Criteria:
                   if (isExp) {
                     rows.push(
                       <tr key={issue.key + "-exp"}>
-                        <td colSpan={7} style={{ padding: "0 16px 14px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                          <div style={{ borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff",
-                            padding: "16px 18px", maxHeight: 480, overflowY: "auto" }}>
-
-                            {/* ── Header: title + score (if done) ── */}
-                            <div style={{ display: "flex", gap: 16, marginBottom: 14, alignItems: "flex-start" }}>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: 13, fontWeight: 600, color: "#1a2230", marginBottom: 8 }}>{issue.summary}</div>
-                                {/* Jira meta pills */}
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: result ? 8 : 0 }}>
-                                  {issue.type && (
-                                    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99,
-                                      background: isEpic ? "#EDE9FE" : "#A2F3F3",
-                                      color: isEpic ? "#5B21B6" : "#053057", fontWeight: 500 }}>
-                                      <i className={`ti ${isEpic ? "ti-map" : "ti-sparkles"}`} style={{ fontSize: 10, marginRight: 3 }} />{issue.type}
-                                    </span>
-                                  )}
-                                  {issue.status && (
-                                    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, background: "#f4f6f8", color: "#314550", fontWeight: 500 }}>
-                                      <i className="ti ti-circle-dot" style={{ fontSize: 10, marginRight: 3 }} />{issue.status}
-                                    </span>
-                                  )}
-                                  {issue.priority && (
-                                    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, background: "#FFF8EC", color: "#854F0B", fontWeight: 500 }}>
-                                      <i className="ti ti-flag" style={{ fontSize: 10, marginRight: 3 }} />{issue.priority}
-                                    </span>
-                                  )}
-                                  {issue.points != null && (
-                                    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, background: "#A2F3F3", color: "#053057", fontWeight: 500 }}>
-                                      {issue.points} pts
-                                    </span>
-                                  )}
-                                  {issue.assignee && (
-                                    <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 99, background: "#f4f6f8", color: "#5a6675" }}>
-                                      <i className="ti ti-user" style={{ fontSize: 10, marginRight: 3 }} />{issue.assignee}
-                                    </span>
-                                  )}
-                                </div>
-                                {result && <p style={{ margin: 0, fontSize: 13, color: "#5a6675", lineHeight: 1.65 }}>{result.summary}</p>}
-                              </div>
-                              {result && (
-                                <div style={{ flexShrink: 0, textAlign: "center" }}>
-                                  <DoneRing score={result.total} />
-                                  <div style={{ fontSize: 10, color: "#8fa3b1", marginTop: 4 }}>{result.readiness_level}</div>
-                                </div>
-                              )}
-                              {st === "running" && (
-                                <div style={{ flexShrink: 0, textAlign: "center", paddingTop: 4 }}>
-                                  <SpinnerRing />
-                                  <div style={{ fontSize: 10, color: "#053057", marginTop: 4 }}>Analysing…</div>
-                                </div>
-                              )}
+                        <td colSpan={7} style={{ padding: 0, borderBottom: "1px solid #e2e8f0" }}>
+                          {result ? (
+                            <StoryPanel
+                              selectedStory={{
+                                mode:       isEpic ? "epic" : "story",
+                                title:      issue.summary,
+                                story_text: issue.text,
+                                score:      result.total,
+                                result,
+                              }}
+                              onBack={() => setExpandedKey(null)}
+                              onRecheck={() => {}}
+                            />
+                          ) : (
+                            <div style={{ padding: "18px 20px", background: "#f8fafc",
+                              display: "flex", alignItems: "center", gap: 10, color: "#9aabb6", fontSize: 13 }}>
+                              {st === "running"
+                                ? <><SpinnerRing /><span style={{ color: "#053057", fontWeight: 500 }}>Analysing…</span></>
+                                : <><i className="ti ti-sparkles" style={{ fontSize: 16 }} />
+                                    {isSel ? "Queued — run the batch to see readiness scores." : "Select this story and run the batch to analyse it."}</>}
                             </div>
-
-                            {/* ── Story / Epic description ── */}
-                            {issue.text && (
-                              <div style={{ marginBottom: 14 }}>
-                                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase",
-                                  color: "#8fa3b1", marginBottom: 6 }}>
-                                  {isEpic ? "Epic description" : "Story description"}
-                                </div>
-                                <pre style={{ margin: 0, fontFamily: "monospace", fontSize: 12, lineHeight: 1.75,
-                                  whiteSpace: "pre-wrap", wordBreak: "break-word",
-                                  background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6,
-                                  padding: "10px 13px", color: "#314550", maxHeight: 200, overflowY: "auto" }}>
-                                  {issue.text}
-                                </pre>
-                              </div>
-                            )}
-
-                            {/* ── Full analysis (when done) ── */}
-                            {result && <BatchResultDetail result={result} />}
-
-                            {/* ── Not yet analysed placeholder ── */}
-                            {!result && st !== "running" && (
-                              <div style={{ padding: "14px 0 4px", borderTop: "1px solid #f4f6f8", marginTop: 4,
-                                display: "flex", alignItems: "center", gap: 8, color: "#9aabb6", fontSize: 12 }}>
-                                <i className="ti ti-sparkles" style={{ fontSize: 14 }} />
-                                {isSel ? "This story is queued — run the batch to see readiness scores." : "Select this story and run the batch to analyse it."}
-                              </div>
-                            )}
-
-                          </div>
+                          )}
                         </td>
                       </tr>
                     );
