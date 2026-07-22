@@ -862,29 +862,31 @@ Acceptance Criteria:
                             onBlur={e => e.target.style.borderColor = "#314550"}
                           />
                         </div>
-                        {/* Key input + actions */}
-                        <div style={{ background: "#0B0D0E", padding: "12px 16px", borderTop: "1px solid #314550", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                          <input value={jiraKey} onChange={e => { setJiraKey(e.target.value.toUpperCase()); setPushStatus(null); }}
-                            placeholder="Jira key e.g. PROJ-123"
-                            style={{ flex: "1 1 160px", minWidth: 0, padding: "7px 10px", fontSize: 12,
-                              border: "1px solid #314550", borderRadius: 7, background: "#1A1A1A",
-                              color: "#F4F3F0", fontFamily: "var(--font-mono)", outline: "none" }}
-                            onFocus={e => e.target.style.borderColor = "#00EDED"}
-                            onBlur={e => e.target.style.borderColor = "#314550"} />
-                          <button onClick={() => { setShowJiraReview(false); setPushStatus(null); setPushMsg(""); }}
-                            style={{ padding: "7px 13px", fontSize: 12, border: "1px solid #314550",
-                              borderRadius: 7, background: "none", color: "#A2F3F3", cursor: "pointer" }}>
-                            Cancel
-                          </button>
-                          <button onClick={() => pushToJira()} disabled={pushing}
-                            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px",
-                              fontSize: 12, fontWeight: 600, border: "none", borderRadius: 7,
-                              background: pushing ? "#314550" : "#053057", color: "#FFFFFF",
-                              cursor: pushing ? "not-allowed" : "pointer" }}>
-                            <i className={`ti ${pushing ? "ti-loader-2" : "ti-upload"}`} style={{ fontSize: 13, animation: pushing ? "spin 1s linear infinite" : "none" }} />
-                            {pushing ? "Pushing…" : "Confirm & Push"}
-                          </button>
-                        </div>
+                        {/* Key input + actions — hidden after successful push */}
+                        {pushStatus !== "ok" && (
+                          <div style={{ background: "#0B0D0E", padding: "12px 16px", borderTop: "1px solid #314550", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                            <input value={jiraKey} onChange={e => { setJiraKey(e.target.value.toUpperCase()); setPushStatus(null); }}
+                              placeholder="Jira key e.g. PROJ-123"
+                              style={{ flex: "1 1 160px", minWidth: 0, padding: "7px 10px", fontSize: 12,
+                                border: "1px solid #314550", borderRadius: 7, background: "#1A1A1A",
+                                color: "#F4F3F0", fontFamily: "var(--font-mono)", outline: "none" }}
+                              onFocus={e => e.target.style.borderColor = "#00EDED"}
+                              onBlur={e => e.target.style.borderColor = "#314550"} />
+                            <button onClick={() => { setShowJiraReview(false); setPushStatus(null); setPushMsg(""); }}
+                              style={{ padding: "7px 13px", fontSize: 12, border: "1px solid #314550",
+                                borderRadius: 7, background: "none", color: "#A2F3F3", cursor: "pointer" }}>
+                              Cancel
+                            </button>
+                            <button onClick={() => pushToJira()} disabled={pushing}
+                              style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px",
+                                fontSize: 12, fontWeight: 600, border: "none", borderRadius: 7,
+                                background: pushing ? "#314550" : "#053057", color: "#FFFFFF",
+                                cursor: pushing ? "not-allowed" : "pointer" }}>
+                              <i className={`ti ${pushing ? "ti-loader-2" : "ti-upload"}`} style={{ fontSize: 13, animation: pushing ? "spin 1s linear infinite" : "none" }} />
+                              {pushing ? "Pushing…" : "Confirm & Push"}
+                            </button>
+                          </div>
+                        )}
                         {/* Status message */}
                         {pushStatus && (
                           <div style={{ padding: "10px 16px", background: pushStatus === "ok" ? "#0B0D0E" : "#1A1A1A",
