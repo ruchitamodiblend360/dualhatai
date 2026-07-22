@@ -1402,8 +1402,9 @@ Acceptance Criteria:
       const [running,     setRunning]     = useState(false);
       const [expandedKey, setExpandedKey] = useState(null);
       const [storyPage,   setStoryPage]   = useState(1);
+      const [pageSize,    setPageSize]    = useState(25);
       const runningRef = useRef(false);
-      const STORY_PAGE_SIZE = 25;
+      const PAGE_SIZE_OPTIONS = [10, 25, 50, "All"];
 
       useEffect(() => {
         const url = sprintId
@@ -1610,7 +1611,18 @@ Acceptance Criteria:
                   {selectedCount} of {issues.length} selected
                 </span>
               </label>
-              <div style={{ marginLeft: "auto" }}>
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ fontSize: 11, color: "#1A1A1A" }}>Show:</span>
+                  {PAGE_SIZE_OPTIONS.map(opt => (
+                    <button key={opt} onClick={() => { setPageSize(opt); setStoryPage(1); setExpandedKey(null); }}
+                      style={{ padding: "4px 9px", fontSize: 11, borderRadius: 5, cursor: "pointer",
+                        border: "1px solid #314550",
+                        background: pageSize === opt ? "#053057" : "#F4F3F0",
+                        color: pageSize === opt ? "#FFFFFF" : "#053057",
+                        fontWeight: pageSize === opt ? 600 : 400 }}>{opt}</button>
+                  ))}
+                </div>
                 <button onClick={runBatch} disabled={selectedCount === 0}
                   style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 500,
                     padding: "8px 18px", borderRadius: 8, border: "none",
@@ -1662,7 +1674,7 @@ Acceptance Criteria:
                 </tr>
               </thead>
               <tbody>
-                {issues.slice((storyPage - 1) * STORY_PAGE_SIZE, storyPage * STORY_PAGE_SIZE).map(issue => {
+                {(pageSize === "All" ? issues : issues.slice((storyPage - 1) * pageSize, storyPage * pageSize)).map(issue => {
                   const st     = statuses[issue.key] || "pending";
                   const result = results[issue.key];
                   const rc     = result ? (RC2[result.readiness_level] || RC2["Needs Work"]) : null;
@@ -1836,25 +1848,27 @@ Acceptance Criteria:
               </tbody>
             </table>
             </div>
-          {Math.ceil(issues.length / STORY_PAGE_SIZE) > 1 && (
-
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 4px", background: "#fff", borderTop: "1px solid #314550" }}>
-              <button onClick={() => { setStoryPage(p => Math.max(1, p - 1)); setExpandedKey(null); }} disabled={storyPage === 1}
-                style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
-                  background: "none", cursor: storyPage === 1 ? "default" : "pointer",
-                  color: storyPage === 1 ? "#314550" : "#053057" }}>‹ Prev</button>
-              {Array.from({ length: Math.ceil(issues.length / STORY_PAGE_SIZE) }, (_, ii) => ii + 1).map(p => (
-                <button key={p} onClick={() => { setStoryPage(p); setExpandedKey(null); }}
-                  style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
-                    cursor: "pointer", background: p === storyPage ? "#053057" : "#F4F3F0",
-                    color: p === storyPage ? "#FFFFFF" : "#053057" }}>{p}</button>
-              ))}
-              <button onClick={() => { setStoryPage(p => Math.min(Math.ceil(issues.length / STORY_PAGE_SIZE), p + 1)); setExpandedKey(null); }} disabled={storyPage === Math.ceil(issues.length / STORY_PAGE_SIZE)}
-                style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
-                  background: "none", cursor: storyPage === Math.ceil(issues.length / STORY_PAGE_SIZE) ? "default" : "pointer",
-                  color: storyPage === Math.ceil(issues.length / STORY_PAGE_SIZE) ? "#314550" : "#053057" }}>Next ›</button>
-            </div>
-          )}
+          {pageSize !== "All" && Math.ceil(issues.length / pageSize) > 1 && (() => {
+            const totalPages = Math.ceil(issues.length / pageSize);
+            return (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 4px", background: "#fff", borderTop: "1px solid #314550" }}>
+                <button onClick={() => { setStoryPage(p => Math.max(1, p - 1)); setExpandedKey(null); }} disabled={storyPage === 1}
+                  style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
+                    background: "none", cursor: storyPage === 1 ? "default" : "pointer",
+                    color: storyPage === 1 ? "#314550" : "#053057" }}>‹ Prev</button>
+                {Array.from({ length: totalPages }, (_, ii) => ii + 1).map(p => (
+                  <button key={p} onClick={() => { setStoryPage(p); setExpandedKey(null); }}
+                    style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
+                      cursor: "pointer", background: p === storyPage ? "#053057" : "#F4F3F0",
+                      color: p === storyPage ? "#FFFFFF" : "#053057" }}>{p}</button>
+                ))}
+                <button onClick={() => { setStoryPage(p => Math.min(totalPages, p + 1)); setExpandedKey(null); }} disabled={storyPage === totalPages}
+                  style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
+                    background: "none", cursor: storyPage === totalPages ? "default" : "pointer",
+                    color: storyPage === totalPages ? "#314550" : "#053057" }}>Next ›</button>
+              </div>
+            );
+          })()}
             </>
           )}
         </div>
