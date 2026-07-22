@@ -493,8 +493,8 @@ def build_pptx(deck):
 
     # ── Slide 1: Cover ──────────────────────────────────────────────────────
     sl = prs.slides.add_slide(blank_layout)
-    add_rect(sl, 0, 0, 13.33, 7.5, C["wb"])
-    side_strip(sl)
+    add_rect(sl, 0, 0, 13.33, 7.5, C["wb"])           # Washed Blue background (dark mode)
+    add_rect(sl, 0, 0, 0.06, 7.5, C["nt"])            # Thin neon-turquoise left accent (spark, not flood)
     bottom_bar(sl)
     add_text(sl, "WEEKLY STATUS UPDATE", 0.5, 0.6, 12.5, 0.35, size=9, color=C["nt"], bold=True)
     add_text(sl, pn, 0.5, 1.1, 12.5, 2.0, size=52, color=C["wh"], bold=True)
@@ -506,23 +506,21 @@ def build_pptx(deck):
 
     # ── Slide 2: Combined — Exec Summary + Metrics + Accomplishments + Next Steps + Blockers ──
     sl = prs.slides.add_slide(blank_layout)
-    add_rect(sl, 0, 0, 13.33, 7.5, C["dg"])
-    side_strip(sl)
+    add_rect(sl, 0, 0, 13.33, 7.5, C["dg"])          # Dark Gray background (dark mode)
+    add_rect(sl, 0, 0, 0.06, 7.5, C["nt"])            # Thin neon-turquoise accent strip (spark, not flood)
 
     blockers = deck.get("blockers") or []
     has_blockers = len(blockers) > 0
 
-    # Determine vertical budget
-    # Rows: exec summary (0.18–1.05), metrics (1.1–1.85), columns (1.95–bottom), blockers strip at bottom
-    blocker_strip_h = 1.0 if has_blockers else 0.0
-    col_bottom      = 7.5 - 0.25 - blocker_strip_h  # leave room for bottom bar + blockers
+    blocker_strip_h = 1.05 if has_blockers else 0.0
+    col_bottom      = 7.5 - 0.25 - blocker_strip_h
 
-    # Executive Summary
+    # Executive Summary — label in turquoise (small accent), body in Off White
     add_text(sl, "EXECUTIVE SUMMARY", 0.4, 0.15, 12.5, 0.25, size=7, color=C["nt"], bold=True)
     add_rect(sl, 0.4, 0.4, 12.5, 0.018, C["nt"])
-    add_text(sl, deck.get("executiveSummary") or "", 0.4, 0.45, 12.5, 0.72, size=12, color=C["wh"])
+    add_text(sl, deck.get("executiveSummary") or "", 0.4, 0.45, 12.5, 0.72, size=12, color=C["ow"])
 
-    # Metrics row
+    # Metrics row — Cool Gray tiles, Neon Turquoise values, Light Turquoise labels
     stats = [
         ("Total",       str(m.get("totalIssues",      0))),
         ("Completed",   str(m.get("doneIssues",       0))),
@@ -532,18 +530,17 @@ def build_pptx(deck):
     tw, sx, sy_m = 2.95, 0.4, 1.22
     for i, (lbl, val) in enumerate(stats):
         x = sx + i * (tw + 0.18)
-        add_rect(sl, x, sy_m, tw, 0.72, C["cg"])
-        add_text(sl, val, x, sy_m + 0.04, tw, 0.42, size=22, color=C["nt"], bold=True, align="center")
-        add_text(sl, lbl, x, sy_m + 0.5, tw, 0.2, size=8, color=C["lt"], align="center")
+        add_rect(sl, x, sy_m, tw, 0.72, C["cg"])                                         # Cool Gray surface
+        add_text(sl, val, x, sy_m + 0.04, tw, 0.42, size=22, color=C["nt"], bold=True, align="center")  # Neon Turquoise value
+        add_text(sl, lbl, x, sy_m + 0.50, tw, 0.20, size=8,  color=C["lt"], align="center")             # Light Turquoise label
 
-    # Two-column section: Accomplishments (left) | Next Steps (right)
-    col_top  = 2.05
-    col_h    = col_bottom - col_top
-    col_w    = 6.1
-    left_x   = 0.4
-    right_x  = 6.83
+    # Two-column section
+    col_top = 2.05
+    col_h   = col_bottom - col_top
+    col_w   = 6.1
+    left_x  = 0.4
+    right_x = 6.83
 
-    # Column headers
     add_text(sl, "KEY ACCOMPLISHMENTS", left_x,  col_top, col_w, 0.22, size=7, color=C["nt"], bold=True)
     add_rect(sl, left_x,  col_top + 0.22, col_w, 0.015, C["nt"])
     add_text(sl, "NEXT STEPS",          right_x, col_top, col_w, 0.22, size=7, color=C["nt"], bold=True)
@@ -557,57 +554,60 @@ def build_pptx(deck):
 
     for i, item in enumerate(accomplishments):
         ry = col_top + 0.28 + i * row_h
-        add_rect(sl, left_x, ry + 0.06, 0.2, 0.2, C["nt"])
-        add_text(sl, "✓", left_x, ry + 0.05, 0.22, 0.22, size=8, color=C["wb"], bold=True, align="center")
+        add_rect(sl, left_x, ry + 0.06, 0.2, 0.2, C["nt"])                               # Turquoise dot accent
+        add_text(sl, "✓", left_x, ry + 0.05, 0.22, 0.22, size=8, color=C["wb"], bold=True, align="center")  # Washed Blue on turquoise
         sentence = item.get("sentence") or item.get("title") or ""
         add_text(sl, sentence, left_x + 0.28, ry, col_w - 0.3, 0.4, size=11, color=C["wh"])
 
     for i, s in enumerate(steps):
         ry = col_top + 0.28 + i * row_h
         if i % 2 == 0:
-            add_rect(sl, right_x, ry, col_w, row_h, "#111827")
-        add_text(sl, "→", right_x + 0.05, ry + 0.06, 0.24, 0.28, size=10, color=C["lt"], bold=True)
+            add_rect(sl, right_x, ry, col_w, row_h, C["cg"])                             # Cool Gray alternating row (on-palette)
+        add_text(sl, "→", right_x + 0.05, ry + 0.06, 0.24, 0.28, size=10, color=C["nt"], bold=True)  # Neon Turquoise arrow
         add_text(sl, s.get("action") or "", right_x + 0.3, ry + 0.04, col_w - 0.35, 0.38, size=11, color=C["wh"])
 
-    # Bottom bar
+    # Bottom bar — Neon Turquoise accent strip
     add_rect(sl, 0, 7.25, 13.33, 0.25, C["nt"])
 
-    # Blockers strip at bottom (above bar)
+    # Blockers strip — Gray surface, Cool Gray cards, semantic impact colors
     if has_blockers:
         bsy = 7.25 - blocker_strip_h
-        add_rect(sl, 0, bsy, 13.33, blocker_strip_h, "#2a0505")
-        add_rect(sl, 0.22, bsy, 0.06, blocker_strip_h, "#7F1D1D")
-        add_text(sl, "ISSUES / BLOCKERS", 0.35, bsy + 0.08, 2.2, 0.22, size=7, color="#FCA5A5", bold=True)
+        add_rect(sl, 0, bsy, 13.33, blocker_strip_h, C["gr"])                            # Gray (#1A1A1A) surface
+        add_rect(sl, 0.06, bsy, 0.06, blocker_strip_h, C["cg"])                          # Cool Gray divider
+        add_text(sl, "ISSUES / BLOCKERS", 0.2, bsy + 0.08, 2.3, 0.22, size=7, color=C["lt"], bold=True)  # Light Turquoise label
         i_clr = {"High": "#F87171", "Medium": "#FCD34D", "Low": "#6EE7B7"}
-        bw = 10.5 / max(len(blockers[:4]), 1)
+        bw = 10.6 / max(len(blockers[:4]), 1)
         for i, b in enumerate(blockers[:4]):
-            bx = 2.65 + i * (bw + 0.1)
+            bx = 2.6 + i * (bw + 0.1)
             ic = i_clr.get(b.get("impact") or "", "#FCD34D")
-            add_rect(sl, bx, bsy + 0.06, bw, 0.82, C["cg"])
-            add_text(sl, (b.get("impact") or "").upper(), bx + 0.06, bsy + 0.08, 0.7, 0.2, size=6, color=ic, bold=True)
-            add_text(sl, b.get("title") or "", bx + 0.06, bsy + 0.28, bw - 0.12, 0.54, size=9, color=C["wh"])
+            add_rect(sl, bx, bsy + 0.08, bw, 0.85, C["cg"])                             # Cool Gray card
+            add_rect(sl, bx, bsy + 0.08, 0.05, 0.85, ic)                                # Semantic impact colour bar
+            add_text(sl, (b.get("impact") or "").upper(), bx + 0.10, bsy + 0.10, 0.8, 0.2, size=6, color=ic, bold=True)
+            add_text(sl, b.get("title") or "", bx + 0.10, bsy + 0.30, bw - 0.15, 0.54, size=9, color=C["ow"])
 
-    # ── Milestones (conditional) ──────────────────────────────────
+    # ── Milestones (conditional) ──────────────────────────────────────────────
     milestones = deck.get("milestones") or []
     if milestones:
         sl = prs.slides.add_slide(blank_layout)
         add_rect(sl, 0, 0, 13.33, 7.5, C["dg"])
-        side_strip(sl)
+        add_rect(sl, 0, 0, 0.06, 7.5, C["nt"])                                          # Thin turquoise strip
         section_label(sl, "MILESTONES")
         s_icon = {"complete": "✓", "in_progress": "◎", "upcoming": "○"}
         s_clr  = {"complete": C["nt"], "in_progress": "#FCD34D", "upcoming": C["ow"]}
         for i, ms in enumerate(milestones):
             y = 1.0 + i * 0.95
             st = ms.get("status") or "upcoming"
-            add_text(sl, s_icon.get(st, "○"), 0.5, y, 0.5, 0.55, size=22, bold=True, color=s_clr.get(st, C["ow"]))
-            add_text(sl, ms.get("name") or "", 1.1, y + 0.08, 10.0, 0.4, size=16, color=C["wh"])
+            add_rect(sl, 0.4, y + 0.05, 12.5, 0.72, C["cg"])                           # Cool Gray row surface
+            add_text(sl, s_icon.get(st, "○"), 0.55, y + 0.08, 0.5, 0.55, size=20, bold=True, color=s_clr.get(st, C["ow"]))
+            add_text(sl, ms.get("name") or "", 1.15, y + 0.18, 9.5, 0.4, size=15, color=C["wh"])
             if ms.get("date"):
-                add_text(sl, ms["date"], 11.5, y + 0.08, 1.7, 0.4, size=14, color=C["lt"], align="right")
+                add_text(sl, ms["date"], 11.3, y + 0.18, 1.5, 0.4, size=13, color=C["lt"], align="right")
+        bottom_bar(sl)
 
-    # ── Closing slide ────────────────────────────────────────────────────────
+    # ── Closing slide ─────────────────────────────────────────────────────────
     sl = prs.slides.add_slide(blank_layout)
-    add_rect(sl, 0, 0, 13.33, 7.5, C["wb"])
-    side_strip(sl)
+    add_rect(sl, 0, 0, 13.33, 7.5, C["wb"])                                             # Washed Blue background
+    add_rect(sl, 0, 0, 0.06, 7.5, C["nt"])                                              # Thin turquoise strip
     bottom_bar(sl)
     add_text(sl, "Thank you", 0.5, 1.8, 12.33, 1.5, size=66, bold=True, color=C["wh"], align="center")
     add_text(sl, pn, 0.5, 3.5, 12.33, 0.65, size=26, color=C["lt"], align="center")
