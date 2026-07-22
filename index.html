@@ -1004,8 +1004,8 @@ Acceptance Criteria:
                           style={{ background: isExp ? "#F4F3F0" : "var(--color-background-primary)", cursor: "pointer", borderBottom: isExp ? "none" : undefined }}
                           onMouseEnter={e => { if (!isExp) e.currentTarget.style.background = "#F4F3F0"; }}
                           onMouseLeave={e => { if (!isExp) e.currentTarget.style.background = "var(--color-background-primary)"; }}>
-                          <td style={{ padding: "11px 14px", color: "var(--color-text-tertiary)", width: 36 }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
-                          <td style={{ padding: "11px 14px", color: "#053057", maxWidth: 240 }}>
+                          <td style={{ padding: "11px 14px", color: "#A2F3F3", width: 36 }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
+                          <td style={{ padding: "11px 14px", color: "#FFFFFF", maxWidth: 240 }}>
                             <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "underline" }}>{row.title}</div>
                           </td>
                           <td style={{ padding: "11px 14px" }}>
@@ -1018,7 +1018,7 @@ Acceptance Criteria:
                                 </span>
                             }
                           </td>
-                          <td style={{ padding: "11px 14px", color: "var(--color-text-tertiary)", fontSize: 12 }}>
+                          <td style={{ padding: "11px 14px", color: "#A2F3F3", fontSize: 12 }}>
                             {row.epic || <span style={{ fontStyle: "italic" }}>—</span>}
                           </td>
                           <td style={{ padding: "11px 14px" }}>
@@ -1032,15 +1032,15 @@ Acceptance Criteria:
                           <td style={{ padding: "11px 14px" }}>
                             <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: rc.bg, color: rc.color }}>{row.readiness_level}</span>
                           </td>
-                          <td style={{ padding: "11px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>{row.checked_at}</td>
+                          <td style={{ padding: "11px 14px", color: "#A2F3F3", fontSize: 12 }}>{row.checked_at}</td>
                           <td style={{ padding: "11px 14px", display: "flex", alignItems: "center", gap: 6 }} onClick={e => e.stopPropagation()}>
                             <button onClick={e => deleteRow(row.id, e)}
-                              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-tertiary)", padding: "2px 4px", borderRadius: 4 }}
-                              onMouseEnter={e => e.currentTarget.style.color = "#A32D2D"}
-                              onMouseLeave={e => e.currentTarget.style.color = "var(--color-text-tertiary)"}>
+                              style={{ background: "none", border: "none", cursor: "pointer", color: "#F4F3F0", padding: "2px 4px", borderRadius: 4 }}
+                              onMouseEnter={e => e.currentTarget.style.color = "#F87171"}
+                              onMouseLeave={e => e.currentTarget.style.color = "#F4F3F0"}>
                               <i className="ti ti-trash" style={{ fontSize: 14 }} />
                             </button>
-                            <i className={`ti ti-chevron-${isExp ? "up" : "down"}`} style={{ fontSize: 13, color: "var(--color-text-tertiary)" }} />
+                            <i className={`ti ti-chevron-${isExp ? "up" : "down"}`} style={{ fontSize: 13, color: "#F4F3F0" }} />
                           </td>
                         </tr>,
                         isExp && (
