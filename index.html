@@ -645,9 +645,40 @@ Acceptance Criteria:
     }
 
     /* ── Single Story Panel ── */
-    function StoryPanel({ selectedStory, onBack, onRecheck }) {
+    function StoryPanel({ selectedStory, onBack, onRecheck, jiraKey: initialJiraKey }) {
       const [copied, setCopied] = useState(false);
       const [improvedCopied, setImprovedCopied] = useState(false);
+      const [showJiraReview, setShowJiraReview] = useState(false);
+      const [jiraKey, setJiraKey] = useState(initialJiraKey || "");
+      const [pushing, setPushing] = useState(false);
+      const [pushStatus, setPushStatus] = useState(null);
+      const [pushMsg, setPushMsg] = useState("");
+
+      function buildJiraDescription(r) {
+        let desc = r.improved_story || "";
+        if ((r.suggested_acs || []).length > 0) {
+          desc += "\n\nAcceptance Criteria:\n" + r.suggested_acs.map(ac => "• " + ac).join("\n");
+        }
+        return desc;
+      }
+
+      function pushToJira(r) {
+        const key = jiraKey.trim().toUpperCase();
+        if (!key) { setPushStatus("error"); setPushMsg("Enter a Jira issue key (e.g. PROJ-123)"); return; }
+        setPushing(true); setPushStatus(null); setPushMsg("");
+        fetch("/api/jira/update-description", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key, description: buildJiraDescription(r) }),
+        })
+        .then(r => r.json().then(d => ({ ok: r.ok, d })))
+        .then(({ ok, d }) => {
+          setPushStatus(ok ? "ok" : "error");
+          setPushMsg(ok ? "Jira updated successfully ✓" : (d.detail || d.error || "Update failed"));
+          setPushing(false);
+        })
+        .catch(e => { setPushStatus("error"); setPushMsg(e.message); setPushing(false); });
+      }
       if (!selectedStory) return (
         <div style={{ padding: "48px 24px", textAlign: "center" }}>
           <i className="ti ti-file-analytics" style={{ fontSize: 32, color: "var(--color-text-tertiary)", display: "block", marginBottom: 12 }} aria-hidden="true" />
@@ -776,14 +807,23 @@ Acceptance Criteria:
                   <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                       <div style={{ fontSize: 11, fontWeight: 600, color: "#A2F3F3", letterSpacing: "0.07em" }}>IMPROVED STORY</div>
-                      <button onClick={() => { navigator.clipboard.writeText(r.improved_story); setImprovedCopied(true); setTimeout(() => setImprovedCopied(false), 2000); }}
-                        style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11,
-                          color: "var(--color-text-secondary)", background: "none", cursor: "pointer",
-                          border: "0.5px solid var(--color-border-secondary)",
-                          borderRadius: "var(--border-radius-md)", padding: "3px 8px" }}>
-                        <i className={`ti ${improvedCopied ? "ti-check" : "ti-copy"}`} style={{ fontSize: 12 }} />
-                        {improvedCopied ? "Copied" : "Copy"}
-                      </button>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button onClick={() => { navigator.clipboard.writeText(r.improved_story); setImprovedCopied(true); setTimeout(() => setImprovedCopied(false), 2000); }}
+                          style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11,
+                            color: "#F4F3F0", background: "none", cursor: "pointer",
+                            border: "0.5px solid #314550",
+                            borderRadius: "var(--border-radius-md)", padding: "3px 8px" }}>
+                          <i className={`ti ${improvedCopied ? "ti-check" : "ti-copy"}`} style={{ fontSize: 12 }} />
+                          {improvedCopied ? "Copied" : "Copy"}
+                        </button>
+                        <button onClick={() => { setShowJiraReview(true); setPushStatus(null); setPushMsg(""); }}
+                          style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11,
+                            color: "#053057", background: "#A2F3F3", cursor: "pointer",
+                            border: "none", borderRadius: "var(--border-radius-md)", padding: "3px 9px", fontWeight: 600 }}>
+                          <i className="ti ti-brand-jira" style={{ fontSize: 12 }} />
+                          Update Jira
+                        </button>
+                      </div>
                     </div>
                     <pre style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 12,
                       lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word",
@@ -791,6 +831,67 @@ Acceptance Criteria:
                       padding: "12px 14px", color: "#1A1A1A" }}>
                       {r.improved_story}
                     </pre>
+
+                    {/* ── Jira review panel ── */}
+                    {showJiraReview && (
+                      <div style={{ marginTop: 14, border: "1px solid #314550", borderRadius: 10, overflow: "hidden" }}>
+                        {/* Warning header */}
+                        <div style={{ background: "#1A1A1A", padding: "12px 16px", display: "flex", alignItems: "flex-start", gap: 10 }}>
+                          <i className="ti ti-alert-circle" style={{ fontSize: 16, color: "#FCD34D", flexShrink: 0, marginTop: 1 }} />
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#FCD34D", marginBottom: 3 }}>Review before pushing to Jira</div>
+                            <div style={{ fontSize: 12, color: "#A2F3F3", lineHeight: 1.6 }}>
+                              The content below (improved story + suggested ACs) will overwrite the current Jira description.
+                              Please review carefully before confirming.
+                            </div>
+                          </div>
+                        </div>
+                        {/* Preview */}
+                        <div style={{ background: "#0B0D0E", padding: "14px 16px", borderTop: "1px solid #314550" }}>
+                          <div style={{ fontSize: 10, fontWeight: 600, color: "#A2F3F3", letterSpacing: "0.07em", marginBottom: 8 }}>CONTENT TO BE PUSHED</div>
+                          <pre style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.7,
+                            whiteSpace: "pre-wrap", wordBreak: "break-word", color: "#F4F3F0",
+                            background: "#1A1A1A", border: "1px solid #314550", borderRadius: 7,
+                            padding: "10px 13px", maxHeight: 180, overflowY: "auto" }}>
+                            {buildJiraDescription(r)}
+                          </pre>
+                        </div>
+                        {/* Key input + actions */}
+                        <div style={{ background: "#0B0D0E", padding: "12px 16px", borderTop: "1px solid #314550", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <input value={jiraKey} onChange={e => { setJiraKey(e.target.value.toUpperCase()); setPushStatus(null); }}
+                            placeholder="Jira key e.g. PROJ-123"
+                            style={{ flex: "1 1 160px", minWidth: 0, padding: "7px 10px", fontSize: 12,
+                              border: "1px solid #314550", borderRadius: 7, background: "#1A1A1A",
+                              color: "#F4F3F0", fontFamily: "var(--font-mono)", outline: "none" }}
+                            onFocus={e => e.target.style.borderColor = "#00EDED"}
+                            onBlur={e => e.target.style.borderColor = "#314550"} />
+                          <button onClick={() => { setShowJiraReview(false); setPushStatus(null); setPushMsg(""); }}
+                            style={{ padding: "7px 13px", fontSize: 12, border: "1px solid #314550",
+                              borderRadius: 7, background: "none", color: "#A2F3F3", cursor: "pointer" }}>
+                            Cancel
+                          </button>
+                          <button onClick={() => pushToJira(r)} disabled={pushing}
+                            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px",
+                              fontSize: 12, fontWeight: 600, border: "none", borderRadius: 7,
+                              background: pushing ? "#314550" : "#053057", color: "#FFFFFF",
+                              cursor: pushing ? "not-allowed" : "pointer" }}>
+                            <i className={`ti ${pushing ? "ti-loader-2" : "ti-upload"}`} style={{ fontSize: 13, animation: pushing ? "spin 1s linear infinite" : "none" }} />
+                            {pushing ? "Pushing…" : "Confirm & Push"}
+                          </button>
+                        </div>
+                        {/* Status message */}
+                        {pushStatus && (
+                          <div style={{ padding: "10px 16px", background: pushStatus === "ok" ? "#0B0D0E" : "#1A1A1A",
+                            borderTop: "1px solid #314550", fontSize: 12, fontWeight: 500,
+                            color: pushStatus === "ok" ? "#6EE7B7" : "#F87171",
+                            display: "flex", alignItems: "center", gap: 7 }}>
+                            <i className={`ti ${pushStatus === "ok" ? "ti-circle-check" : "ti-alert-circle"}`} style={{ fontSize: 14 }} />
+                            {pushMsg}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {(r.split_suggestions || []).length > 0 && (
                       <div style={{ marginTop: 12, paddingTop: 12, borderTop: "0.5px solid var(--color-border-tertiary)" }}>
                         <div style={{ fontSize: 11, fontWeight: 600, color: "#A2F3F3", letterSpacing: "0.07em", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
@@ -1878,6 +1979,7 @@ Acceptance Criteria:
                                 score:      result.total,
                                 result,
                               }}
+                              jiraKey={issue.key}
                               onBack={() => setExpandedKey(null)}
                               onRecheck={() => {}}
                             />
