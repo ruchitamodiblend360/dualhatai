@@ -517,41 +517,6 @@ Acceptance Criteria:
                   </>
                 )}
 
-                {/* ── Push to Jira ── */}
-                <div style={{ marginTop: 18, padding: "14px 16px", borderRadius: "var(--border-radius-md)",
-                  border: "0.5px solid var(--color-border-secondary)", background: "var(--color-background-secondary)" }}>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 10,
-                    display: "flex", alignItems: "center", gap: 6 }}>
-                    <i className="ti ti-brand-jira" style={{ fontSize: 14, color: "#2684FF" }} />
-                    Push improved description to Jira
-                  </div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                    <input
-                      value={jiraKey}
-                      onChange={function(e) { setJiraKey(e.target.value); setPushStatus(null); }}
-                      placeholder="Issue key e.g. PROJ-123"
-                      style={{ flex: "1 1 160px", minWidth: 0, padding: "7px 10px", fontSize: 13,
-                        border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-md)",
-                        background: "#fff", color: "#222", fontFamily: "var(--font-sans)" }}
-                    />
-                    <button onClick={pushToJira} disabled={pushing}
-                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px",
-                        fontSize: 13, fontWeight: 500, border: "none", borderRadius: "var(--border-radius-md)",
-                        background: pushing ? "#314550" : "#053057", color: "#fff",
-                        cursor: pushing ? "not-allowed" : "pointer", flexShrink: 0 }}>
-                      <i className={`ti ${pushing ? "ti-loader-2" : "ti-upload"}`}
-                        style={{ fontSize: 14, animation: pushing ? "spin 1s linear infinite" : "none" }} />
-                      {pushing ? "Updating..." : "Update in Jira"}
-                    </button>
-                  </div>
-                  {pushStatus && (
-                    <div style={{ marginTop: 9, fontSize: 12, display: "flex", alignItems: "center", gap: 6,
-                      color: pushStatus === "ok" ? "#1D9E75" : "#A32D2D" }}>
-                      <i className={`ti ${pushStatus === "ok" ? "ti-circle-check" : "ti-alert-circle"}`} style={{ fontSize: 14 }} />
-                      {pushMsg}
-                    </div>
-                  )}
-                </div>
               </div>
             )}
           </div>
