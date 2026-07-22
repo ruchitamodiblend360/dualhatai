@@ -650,6 +650,7 @@ Acceptance Criteria:
       const [improvedCopied, setImprovedCopied] = useState(false);
       const [showJiraReview, setShowJiraReview] = useState(false);
       const [jiraKey, setJiraKey] = useState(initialJiraKey || "");
+      const [editableDescription, setEditableDescription] = useState("");
       const [pushing, setPushing] = useState(false);
       const [pushStatus, setPushStatus] = useState(null);
       const [pushMsg, setPushMsg] = useState("");
@@ -662,14 +663,14 @@ Acceptance Criteria:
         return desc;
       }
 
-      function pushToJira(r) {
+      function pushToJira() {
         const key = jiraKey.trim().toUpperCase();
         if (!key) { setPushStatus("error"); setPushMsg("Enter a Jira issue key (e.g. PROJ-123)"); return; }
         setPushing(true); setPushStatus(null); setPushMsg("");
         fetch("/api/jira/update-description", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key, description: buildJiraDescription(r) }),
+          body: JSON.stringify({ key, description: editableDescription }),
         })
         .then(r => r.json().then(d => ({ ok: r.ok, d })))
         .then(({ ok, d }) => {
@@ -816,7 +817,7 @@ Acceptance Criteria:
                           <i className={`ti ${improvedCopied ? "ti-check" : "ti-copy"}`} style={{ fontSize: 12 }} />
                           {improvedCopied ? "Copied" : "Copy"}
                         </button>
-                        <button onClick={() => { setShowJiraReview(true); setPushStatus(null); setPushMsg(""); }}
+                        <button onClick={() => { setEditableDescription(buildJiraDescription(r)); setShowJiraReview(true); setPushStatus(null); setPushMsg(""); }}
                           style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11,
                             color: "#053057", background: "#A2F3F3", cursor: "pointer",
                             border: "none", borderRadius: "var(--border-radius-md)", padding: "3px 9px", fontWeight: 600 }}>
@@ -846,15 +847,20 @@ Acceptance Criteria:
                             </div>
                           </div>
                         </div>
-                        {/* Preview */}
+                        {/* Editable preview */}
                         <div style={{ background: "#0B0D0E", padding: "14px 16px", borderTop: "1px solid #314550" }}>
-                          <div style={{ fontSize: 10, fontWeight: 600, color: "#A2F3F3", letterSpacing: "0.07em", marginBottom: 8 }}>CONTENT TO BE PUSHED</div>
-                          <pre style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1.7,
-                            whiteSpace: "pre-wrap", wordBreak: "break-word", color: "#F4F3F0",
-                            background: "#1A1A1A", border: "1px solid #314550", borderRadius: 7,
-                            padding: "10px 13px", maxHeight: 180, overflowY: "auto" }}>
-                            {buildJiraDescription(r)}
-                          </pre>
+                          <div style={{ fontSize: 10, fontWeight: 600, color: "#A2F3F3", letterSpacing: "0.07em", marginBottom: 8 }}>EDIT BEFORE PUSHING</div>
+                          <textarea
+                            value={editableDescription}
+                            onChange={e => setEditableDescription(e.target.value)}
+                            rows={10}
+                            style={{ width: "100%", boxSizing: "border-box", fontFamily: "var(--font-mono)", fontSize: 11,
+                              lineHeight: 1.7, color: "#F4F3F0", background: "#1A1A1A",
+                              border: "1px solid #314550", borderRadius: 7, padding: "10px 13px",
+                              resize: "vertical", outline: "none" }}
+                            onFocus={e => e.target.style.borderColor = "#00EDED"}
+                            onBlur={e => e.target.style.borderColor = "#314550"}
+                          />
                         </div>
                         {/* Key input + actions */}
                         <div style={{ background: "#0B0D0E", padding: "12px 16px", borderTop: "1px solid #314550", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -870,7 +876,7 @@ Acceptance Criteria:
                               borderRadius: 7, background: "none", color: "#A2F3F3", cursor: "pointer" }}>
                             Cancel
                           </button>
-                          <button onClick={() => pushToJira(r)} disabled={pushing}
+                          <button onClick={() => pushToJira()} disabled={pushing}
                             style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px",
                               fontSize: 12, fontWeight: 600, border: "none", borderRadius: 7,
                               background: pushing ? "#314550" : "#053057", color: "#FFFFFF",
