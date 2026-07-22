@@ -831,11 +831,11 @@ Acceptance Criteria:
                   </div>
                   {Object.entries(sc).map(([k, v]) => (
                     <div key={k} style={{ marginBottom: 10 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--color-text-secondary)", marginBottom: 4 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#F4F3F0", marginBottom: 4 }}>
                         <span>{SCORE_LABELS[k] || k}</span>
                         <span style={{ fontWeight: 600, color: dimColor(v) }}>{v}/20</span>
                       </div>
-                      <div style={{ height: 5, background: "var(--color-background-secondary)", borderRadius: 99 }}>
+                      <div style={{ height: 5, background: "#314550", borderRadius: 99 }}>
                         <div style={{ height: "100%", width: `${(v / 20) * 100}%`, background: dimColor(v), borderRadius: 99 }} />
                       </div>
                     </div>
