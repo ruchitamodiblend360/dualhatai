@@ -43,7 +43,7 @@
     body {
       margin: 0;
       padding: 24px;
-      background: #eef1f4;
+      background: #F4F3F0;
       font-family: var(--font-sans);
     }
     .sr-only {
@@ -798,8 +798,8 @@ Acceptance Criteria:
                           <span style={{ fontSize: 11, fontWeight: 600, color: s.color, textTransform: "capitalize" }}>{g.severity}</span>
                           <span style={{ fontSize: 11, color: s.color, opacity: 0.7 }}>· {g.area}</span>
                         </div>
-                        <p style={{ margin: "0 0 4px", fontSize: 13, color: "#1a2230", lineHeight: 1.5 }}>{g.issue}</p>
-                        <p style={{ margin: 0, fontSize: 12, color: "#5a6675" }}>
+                        <p style={{ margin: "0 0 4px", fontSize: 13, color: "#053057", lineHeight: 1.5 }}>{g.issue}</p>
+                        <p style={{ margin: 0, fontSize: 12, color: "#1A1A1A" }}>
                           <i className="ti ti-arrow-right" style={{ fontSize: 11 }} aria-hidden="true" /> {g.fix}
                         </p>
                       </div>
@@ -992,7 +992,7 @@ Acceptance Criteria:
                         </tr>,
                         isExp && (
                           <tr key={row.id + "-exp"}>
-                            <td colSpan={8} style={{ padding: 0, background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                            <td colSpan={8} style={{ padding: 0, background: "#F4F3F0", borderBottom: "1px solid #314550" }}>
                               <StoryPanel
                                 selectedStory={row}
                                 onBack={() => setExpandedId(null)}
@@ -1082,7 +1082,7 @@ Acceptance Criteria:
                       fontSize: 12, fontWeight: 700, color: "#fff" }}>{initials(board.projectName || board.name)}</div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{board.projectName || board.name}</div>
-                      <div style={{ fontSize: 11, color: "#4a6070", marginTop: 1 }}>
+                      <div style={{ fontSize: 11, color: "#F4F3F0", marginTop: 1 }}>
                         {board.sprints.length} sprint{board.sprints.length !== 1 ? "s" : ""} · {board.backlogCount} backlog
                       </div>
                     </div>
@@ -1093,13 +1093,13 @@ Acceptance Criteria:
                         style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
                           padding: "9px 10px", borderRadius: 7, cursor: "pointer", marginBottom: 4,
                           border: "1px solid #314550", transition: "background 120ms" }}
-                        onMouseEnter={e => e.currentTarget.style.background = "#0D2030"}
+                        onMouseEnter={e => e.currentTarget.style.background = "#053057"}
                         onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                           <i className="ti ti-stack-2" style={{ fontSize: 13, color: "#A2F3F3" }} />
-                          <span style={{ fontSize: 13, color: "#cbd5e1" }}>Backlog</span>
+                          <span style={{ fontSize: 13, color: "#F4F3F0" }}>Backlog</span>
                         </div>
-                        <span style={{ fontSize: 11, color: "#4a6070" }}>{board.backlogCount} {board.backlogCount === 1 ? "story" : "stories"}</span>
+                        <span style={{ fontSize: 11, color: "#F4F3F0" }}>{board.backlogCount} {board.backlogCount === 1 ? "story" : "stories"}</span>
                       </div>
                     )}
                     {board.sprints.map(sprint => {
@@ -1109,17 +1109,17 @@ Acceptance Criteria:
                           style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
                             padding: "9px 10px", borderRadius: 7, cursor: "pointer", marginBottom: 4,
                             border: isActive ? "1.5px solid #00EDED" : "1px solid #314550",
-                            background: isActive ? "#0D2030" : "transparent", transition: "background 120ms" }}
-                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#0D2030"; }}
-                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = isActive ? "#0D2030" : "transparent"; }}>
+                            background: isActive ? "#053057" : "transparent", transition: "background 120ms" }}
+                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#053057"; }}
+                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = isActive ? "#053057" : "transparent"; }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
                             <i className="ti ti-refresh" style={{ fontSize: 13, color: isActive ? "#00EDED" : "#A2F3F3", flexShrink: 0 }} />
-                            <span style={{ fontSize: 13, color: isActive ? "#00EDED" : "#cbd5e1", fontWeight: isActive ? 500 : 400,
+                            <span style={{ fontSize: 13, color: isActive ? "#00EDED" : "#F4F3F0", fontWeight: isActive ? 500 : 400,
                               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sprint.name}</span>
                             {isActive && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 99, flexShrink: 0,
                               background: "#00EDED", color: "#053057", fontWeight: 700, letterSpacing: "0.05em" }}>Active</span>}
                           </div>
-                          <span style={{ fontSize: 11, color: "#4a6070", flexShrink: 0, marginLeft: 8 }}>{sprint.count} {sprint.count === 1 ? "story" : "stories"}</span>
+                          <span style={{ fontSize: 11, color: "#F4F3F0", flexShrink: 0, marginLeft: 8 }}>{sprint.count} {sprint.count === 1 ? "story" : "stories"}</span>
                         </div>
                       );
                     })}
@@ -1156,27 +1156,27 @@ Acceptance Criteria:
       ];
 
       return (
-        <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden", background: "#fff", marginTop: 14 }}>
+        <div style={{ border: "1px solid #314550", borderRadius: 8, overflow: "hidden", background: "#fff", marginTop: 14 }}>
 
           {/* Score header */}
-          <div style={{ padding: "14px 16px", borderBottom: "1px solid #e2e8f0" }}>
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid #314550" }}>
             <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
               <div style={{ minWidth: 120 }}>
-                <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9aabb6", marginBottom: 5 }}>Readiness score</div>
+                <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#1A1A1A", marginBottom: 5 }}>Readiness score</div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 7 }}>
                   <span style={{ fontSize: 40, fontWeight: 500, color: scoreColor(result.total / 5), lineHeight: 1 }}>{result.total}</span>
-                  <span style={{ fontSize: 14, color: "#9aabb6" }}>/100</span>
+                  <span style={{ fontSize: 14, color: "#1A1A1A" }}>/100</span>
                 </div>
                 <span style={{ display: "inline-block", fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 99, background: rc.bg, color: rc.color }}>{result.readiness_level}</span>
               </div>
               <div style={{ flex: 1, minWidth: 160 }}>
                 {Object.entries(result.scores || {}).map(([k, v]) => (
                   <div key={k} style={{ marginBottom: 6 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#5a6675", marginBottom: 3 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#1A1A1A", marginBottom: 3 }}>
                       <span>{SCORE_LABELS[k] || k}</span>
                       <span style={{ color: scoreColor(v), fontWeight: 500 }}>{v}/20</span>
                     </div>
-                    <div style={{ height: 4, background: "#eef1f4", borderRadius: 99 }}>
+                    <div style={{ height: 4, background: "#F4F3F0", borderRadius: 99 }}>
                       <div style={{ height: "100%", width: `${Math.round((v / 20) * 100)}%`, background: scoreColor(v), borderRadius: 99, transition: "width 0.7s ease" }} />
                     </div>
                   </div>
@@ -1184,17 +1184,17 @@ Acceptance Criteria:
               </div>
             </div>
             {result.summary && (
-              <p style={{ margin: "12px 0 0", fontSize: 13, color: "#314550", lineHeight: 1.7, borderTop: "1px solid #e2e8f0", paddingTop: 10 }}>{result.summary}</p>
+              <p style={{ margin: "12px 0 0", fontSize: 13, color: "#314550", lineHeight: 1.7, borderTop: "1px solid #314550", paddingTop: 10 }}>{result.summary}</p>
             )}
           </div>
 
           {/* Tabs */}
-          <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", padding: "0 6px", background: "#f8fafc" }}>
+          <div style={{ display: "flex", borderBottom: "1px solid #314550", padding: "0 6px", background: "#F4F3F0" }}>
             {tabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 11px", fontSize: 12,
                   fontWeight: tab === t.id ? 500 : 400,
-                  color: tab === t.id ? "#053057" : "#5a6675",
+                  color: tab === t.id ? "#053057" : "#1A1A1A",
                   background: "none", border: "none",
                   borderBottom: tab === t.id ? "2px solid #053057" : "2px solid transparent",
                   cursor: "pointer", marginBottom: -1 }}>
@@ -1202,8 +1202,8 @@ Acceptance Criteria:
                 {t.label}
                 {t.count > 0 && (
                   <span style={{ fontSize: 10, fontWeight: 500, padding: "1px 5px", borderRadius: 99,
-                    background: tab === t.id ? "#A2F3F3" : "#eef1f4",
-                    color: tab === t.id ? "#053057" : "#9aabb6" }}>{t.count}</span>
+                    background: tab === t.id ? "#A2F3F3" : "#F4F3F0",
+                    color: tab === t.id ? "#053057" : "#1A1A1A" }}>{t.count}</span>
                 )}
               </button>
             ))}
@@ -1215,7 +1215,7 @@ Acceptance Criteria:
             {tab === "gaps" && (
               <div>
                 {!result.gaps?.length
-                  ? <p style={{ fontSize: 13, color: "#5a6675", margin: 0 }}>No significant gaps detected.</p>
+                  ? <p style={{ fontSize: 13, color: "#1A1A1A", margin: 0 }}>No significant gaps detected.</p>
                   : result.gaps.map((g, i) => {
                       const c = SEVERITY_CFG[g.severity] || SEVERITY_CFG.info;
                       return (
@@ -1226,7 +1226,7 @@ Acceptance Criteria:
                             <span style={{ fontSize: 11, color: c.color, opacity: 0.7 }}>· {g.area}</span>
                           </div>
                           <p style={{ margin: "0 0 4px", fontSize: 13, color: "#314550", lineHeight: 1.5 }}>{g.issue}</p>
-                          <p style={{ margin: 0, fontSize: 12, color: "#5a6675", lineHeight: 1.5 }}>
+                          <p style={{ margin: 0, fontSize: 12, color: "#1A1A1A", lineHeight: 1.5 }}>
                             <i className="ti ti-arrow-right" style={{ fontSize: 11 }} /> {g.fix}
                           </p>
                         </div>
@@ -1238,7 +1238,7 @@ Acceptance Criteria:
             {tab === "ambiguities" && (
               <div>
                 {!result.ambiguities?.length
-                  ? <p style={{ fontSize: 13, color: "#5a6675", margin: 0 }}>No ambiguous language detected.</p>
+                  ? <p style={{ fontSize: 13, color: "#1A1A1A", margin: 0 }}>No ambiguous language detected.</p>
                   : result.ambiguities.map((a, i) => (
                       <div key={i} style={{ display: "flex", gap: 11, padding: "10px 0",
                         borderBottom: i < result.ambiguities.length - 1 ? "1px solid #f4f6f8" : "none" }}>
@@ -1260,19 +1260,19 @@ Acceptance Criteria:
             {tab === "dependencies" && (
               <div>
                 {!result.dependencies?.length
-                  ? <p style={{ fontSize: 13, color: "#5a6675", margin: 0 }}>No dependency signals detected.</p>
+                  ? <p style={{ fontSize: 13, color: "#1A1A1A", margin: 0 }}>No dependency signals detected.</p>
                   : result.dependencies.map((d, i) => {
                       const c = CONFIDENCE_CFG[d.confidence] || CONFIDENCE_CFG.low;
                       return (
                         <div key={i} style={{ display: "flex", gap: 10, padding: "10px 0",
                           borderBottom: i < result.dependencies.length - 1 ? "1px solid #f4f6f8" : "none" }}>
-                          <div style={{ width: 28, height: 28, borderRadius: 6, background: "#f4f6f8",
+                          <div style={{ width: 28, height: 28, borderRadius: 6, background: "#F4F3F0",
                             display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <i className={`ti ${DEP_ICONS[d.type] || "ti-link"}`} style={{ fontSize: 14, color: "#5a6675" }} />
+                            <i className={`ti ${DEP_ICONS[d.type] || "ti-link"}`} style={{ fontSize: 14, color: "#1A1A1A" }} />
                           </div>
                           <div style={{ flex: 1 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                              <span style={{ fontSize: 12, fontWeight: 500, textTransform: "capitalize", color: "#1a2230" }}>{d.type}</span>
+                              <span style={{ fontSize: 12, fontWeight: 500, textTransform: "capitalize", color: "#053057" }}>{d.type}</span>
                               <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 6px", borderRadius: 99, background: c.bg, color: c.color }}>{d.confidence} confidence</span>
                               {d.status && (
                                 <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 99,
@@ -1282,7 +1282,7 @@ Acceptance Criteria:
                                 </span>
                               )}
                             </div>
-                            <p style={{ margin: 0, fontSize: 13, color: "#5a6675", lineHeight: 1.5 }}>{d.description}</p>
+                            <p style={{ margin: 0, fontSize: 13, color: "#1A1A1A", lineHeight: 1.5 }}>{d.description}</p>
                           </div>
                         </div>
                       );
@@ -1293,21 +1293,21 @@ Acceptance Criteria:
             {tab === "improved" && (
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <span style={{ fontSize: 12, color: "#5a6675" }}>AI-suggested rewrite — review before using</span>
+                  <span style={{ fontSize: 12, color: "#1A1A1A" }}>AI-suggested rewrite — review before using</span>
                   <button onClick={copyImproved}
-                    style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#5a6675",
-                      background: "none", cursor: "pointer", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 9px" }}>
+                    style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#1A1A1A",
+                      background: "none", cursor: "pointer", border: "1px solid #314550", borderRadius: 6, padding: "4px 9px" }}>
                     <i className={`ti ${copied ? "ti-check" : "ti-copy"}`} style={{ fontSize: 12 }} />
                     {copied ? "Copied" : "Copy"}
                   </button>
                 </div>
                 <pre style={{ margin: "0 0 12px", fontFamily: "monospace", fontSize: 12, lineHeight: 1.7,
                   whiteSpace: "pre-wrap", wordBreak: "break-word",
-                  background: "#f8fafc", borderRadius: 6, padding: "12px 14px", color: "#314550" }}>
+                  background: "#F4F3F0", borderRadius: 6, padding: "12px 14px", color: "#314550" }}>
                   {result.improved_story}
                 </pre>
                 {result.suggested_acs?.length > 0 && (<>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: "#1a2230", marginBottom: 8 }}>Suggested acceptance criteria</div>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: "#053057", marginBottom: 8 }}>Suggested acceptance criteria</div>
                   {result.suggested_acs.map((ac, i) => (
                     <div key={i} style={{ display: "flex", gap: 8, padding: "7px 0",
                       borderBottom: i < result.suggested_acs.length - 1 ? "1px solid #f4f6f8" : "none" }}>
@@ -1317,7 +1317,7 @@ Acceptance Criteria:
                   ))}
                 </>)}
                 {result.split_suggestions?.length > 0 && (<>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: "#1a2230", marginTop: 14, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: "#053057", marginTop: 14, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
                     <i className="ti ti-scissors" style={{ fontSize: 13, color: "#EF9F27" }} />
                     Suggested split — this story may be too large for a single sprint
                   </div>
@@ -1335,8 +1335,8 @@ Acceptance Criteria:
           </div>
 
           {/* Footer */}
-          <div style={{ borderTop: "1px solid #e2e8f0", padding: "10px 16px", display: "flex", alignItems: "center",
-            background: "#f8fafc" }}>
+          <div style={{ borderTop: "1px solid #314550", padding: "10px 16px", display: "flex", alignItems: "center",
+            background: "#F4F3F0" }}>
             <span style={{ fontSize: 12, color: criticalCount > 0 ? "#A32D2D" : "#0F6E56" }}>
               {criticalCount > 0
                 ? <><i className="ti ti-alert-circle" style={{ fontSize: 13, marginRight: 5 }} />{criticalCount} blocker{criticalCount > 1 ? "s" : ""} must be resolved before sprint planning</>
@@ -1435,7 +1435,7 @@ Acceptance Criteria:
         const c = sc2(score);
         return (
           <svg width={S} height={S} style={{ display: "block", margin: "0 auto" }}>
-            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#eef1f4" strokeWidth={3} />
+            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#F4F3F0" strokeWidth={3} />
             <circle cx={S/2} cy={S/2} r={r} fill="none" stroke={c} strokeWidth={3}
               strokeDasharray={`${arc} ${circ - arc}`} strokeLinecap="round"
               transform={`rotate(-90 ${S/2} ${S/2})`} />
@@ -1447,7 +1447,7 @@ Acceptance Criteria:
         const S = 40, r = 16, circ = 2 * Math.PI * r;
         return (
           <svg width={S} height={S} style={{ display: "block", margin: "0 auto", animation: "spin 0.9s linear infinite" }}>
-            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#dde4ea" strokeWidth={3} />
+            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#F4F3F0" strokeWidth={3} />
             <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#053057" strokeWidth={3}
               strokeDasharray={`${circ * 0.28} ${circ * 0.72}`} strokeLinecap="round"
               transform={`rotate(-90 ${S/2} ${S/2})`} />
@@ -1458,7 +1458,7 @@ Acceptance Criteria:
         const S = 40, r = 16;
         return (
           <svg width={S} height={S} style={{ display: "block", margin: "0 auto", opacity: 0.3 }}>
-            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#8fa3b1" strokeWidth={2.5} strokeDasharray="3.5 4" />
+            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#314550" strokeWidth={2.5} strokeDasharray="3.5 4" />
           </svg>
         );
       }
@@ -1483,25 +1483,25 @@ Acceptance Criteria:
         <div style={{ background: "#fff", minHeight: 400 }}>
 
           {/* ── Top header ── */}
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid #e2e8f0",
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid #314550",
             display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
             <div>
               <h2 style={{ fontSize: 18, fontWeight: 500, color: "#053057", margin: "0 0 3px" }}>{board.projectName || board.name}</h2>
-              <p style={{ fontSize: 13, color: "#5a6675", margin: 0 }}>{label} · {issues.length} issues</p>
+              <p style={{ fontSize: 13, color: "#1A1A1A", margin: 0 }}>{label} · {issues.length} issues</p>
             </div>
             <button onClick={onChangeBoard}
-              style={{ fontSize: 12, padding: "6px 12px", border: "1px solid #e2e8f0",
+              style={{ fontSize: 12, padding: "6px 12px", border: "1px solid #314550",
                 borderRadius: 6, background: "none", cursor: "pointer",
-                color: "#5a6675", display: "flex", alignItems: "center", gap: 5 }}>
+                color: "#1A1A1A", display: "flex", alignItems: "center", gap: 5 }}>
               <i className="ti ti-arrow-left" style={{ fontSize: 12 }} /> Change board
             </button>
           </div>
 
           {/* ── Live progress banner (replaces plain selection bar when running) ── */}
           {batchStarted ? (
-            <div style={{ background: running ? "#e8fafa" : "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+            <div style={{ background: running ? "#F4F3F0" : "#F4F3F0", borderBottom: "1px solid #314550" }}>
               {/* Progress bar */}
-              <div style={{ height: 3, background: "#dde4ea" }}>
+              <div style={{ height: 3, background: "#F4F3F0" }}>
                 <div style={{ height: "100%", width: `${progressPct}%`, transition: "width 0.5s ease",
                   background: running ? "linear-gradient(90deg,#053057,#00EDED)" : "#1D9E75" }} />
               </div>
@@ -1512,7 +1512,7 @@ Acceptance Criteria:
                     checked={selected.size === issues.length && issues.length > 0}
                     onChange={toggleAll} disabled={running}
                     style={{ width: 14, height: 14, accentColor: "#053057" }} />
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "#1a2230" }}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "#053057" }}>
                     {selectedCount} of {issues.length} selected
                   </span>
                 </label>
@@ -1522,7 +1522,7 @@ Acceptance Criteria:
                     <span style={{ fontSize: 12, fontWeight: 500, color: "#053057",
                       display: "inline-flex", alignItems: "center", gap: 6 }}>
                       <svg width="14" height="14" style={{ animation: "spin 0.9s linear infinite", flexShrink: 0 }}>
-                        <circle cx="7" cy="7" r="5" fill="none" stroke="#dde4ea" strokeWidth="2.5" />
+                        <circle cx="7" cy="7" r="5" fill="none" stroke="#F4F3F0" strokeWidth="2.5" />
                         <circle cx="7" cy="7" r="5" fill="none" stroke="#053057" strokeWidth="2.5"
                           strokeDasharray="8 23" strokeLinecap="round" transform="rotate(-90 7 7)" />
                       </svg>
@@ -1543,7 +1543,7 @@ Acceptance Criteria:
                     style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 500,
                       padding: "7px 16px", borderRadius: 7, border: "none",
                       cursor: running || selectedCount === 0 ? "not-allowed" : "pointer",
-                      background: running ? "#A2F3F3" : "#053057", color: "#fff" }}>
+                      background: running ? "#314550" : "#053057", color: "#fff" }}>
                     {running
                       ? <><i className="ti ti-loader-2" style={{ fontSize: 13, animation: "spin 1s linear infinite" }} /> Running batch…</>
                       : <><i className="ti ti-refresh" style={{ fontSize: 13 }} /> Re-run</>}
@@ -1553,14 +1553,14 @@ Acceptance Criteria:
             </div>
           ) : (
             /* ── Pre-run selection bar ── */
-            <div style={{ padding: "11px 20px", borderBottom: "1px solid #e2e8f0",
+            <div style={{ padding: "11px 20px", borderBottom: "1px solid #314550",
               display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <label style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", userSelect: "none" }}>
                 <input type="checkbox"
                   checked={selected.size === issues.length && issues.length > 0}
                   onChange={toggleAll}
                   style={{ width: 14, height: 14, accentColor: "#053057" }} />
-                <span style={{ fontSize: 13, fontWeight: 500, color: "#1a2230" }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: "#053057" }}>
                   {selectedCount} of {issues.length} selected
                 </span>
               </label>
@@ -1569,7 +1569,7 @@ Acceptance Criteria:
                   style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 500,
                     padding: "8px 18px", borderRadius: 8, border: "none",
                     cursor: selectedCount === 0 ? "not-allowed" : "pointer",
-                    background: selectedCount === 0 ? "#A2F3F3" : "#053057", color: "#fff" }}>
+                    background: selectedCount === 0 ? "#314550" : "#053057", color: "#fff" }}>
                   <i className="ti ti-sparkles" style={{ fontSize: 13 }} /> Run batch
                 </button>
               </div>
@@ -1578,16 +1578,16 @@ Acceptance Criteria:
 
           {/* ── Real-time summary strip ── */}
           {batchStarted && (
-            <div style={{ display: "flex", background: "#fafbfc", borderBottom: "1px solid #e2e8f0" }}>
+            <div style={{ display: "flex", background: "#F4F3F0", borderBottom: "1px solid #314550" }}>
               {[
                 { val: `${doneCount}/${selectedCount}`, sub: "Analysed",     color: "#053057", icon: "ti-chart-bar" },
                 { val: sprintReadyCount,                sub: "Sprint ready",  color: "#0F6E56", icon: "ti-circle-check" },
-                { val: criticalGaps,                    sub: "Critical gaps", color: criticalGaps > 0 ? "#A32D2D" : "#9aabb6", icon: "ti-alert-circle" },
+                { val: criticalGaps,                    sub: "Critical gaps", color: criticalGaps > 0 ? "#A32D2D" : "#1A1A1A", icon: "ti-alert-circle" },
               ].map((s, i) => (
                 <div key={i} style={{ flex: 1, textAlign: "center", padding: "14px 0",
-                  borderRight: i < 2 ? "1px solid #e2e8f0" : "none" }}>
+                  borderRight: i < 2 ? "1px solid #314550" : "none" }}>
                   <div style={{ fontSize: 24, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.val}</div>
-                  <div style={{ fontSize: 11, color: "#9aabb6", marginTop: 4, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                  <div style={{ fontSize: 11, color: "#1A1A1A", marginTop: 4, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                     <i className={`ti ${s.icon}`} style={{ fontSize: 11 }} />{s.sub}
                   </div>
                 </div>
@@ -1597,21 +1597,21 @@ Acceptance Criteria:
 
           {/* ── Table ── */}
           {issues.length === 0 ? (
-            <div style={{ padding: "48px 24px", textAlign: "center", color: "#9aabb6", fontSize: 13 }}>
+            <div style={{ padding: "48px 24px", textAlign: "center", color: "#1A1A1A", fontSize: 13 }}>
               No issues found in this {type}.
             </div>
           ) : (
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", margin: "0" }}>
+            <div style={{ background: "#fff", border: "1px solid #314550", borderRadius: 10, overflow: "hidden", margin: "0" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ background: "#f8fafc" }}>
-                  <th style={{ width: 42, padding: "9px 16px", borderBottom: "1px solid #e2e8f0" }} />
-                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#9aabb6", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>ID</th>
-                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#9aabb6", borderBottom: "1px solid #e2e8f0" }}>TITLE</th>
-                  <th style={{ textAlign: "right", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#9aabb6", borderBottom: "1px solid #e2e8f0", width: 60, whiteSpace: "nowrap" }}>PTS</th>
-                  <th style={{ textAlign: "center", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#9aabb6", borderBottom: "1px solid #e2e8f0", width: 60 }}>SCORE</th>
-                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#9aabb6", borderBottom: "1px solid #e2e8f0", width: 130 }}>STATUS</th>
-                  <th style={{ width: 36, borderBottom: "1px solid #e2e8f0" }} />
+                <tr style={{ background: "#F4F3F0" }}>
+                  <th style={{ width: 42, padding: "9px 16px", borderBottom: "1px solid #314550" }} />
+                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#1A1A1A", borderBottom: "1px solid #314550", whiteSpace: "nowrap" }}>ID</th>
+                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#1A1A1A", borderBottom: "1px solid #314550" }}>TITLE</th>
+                  <th style={{ textAlign: "right", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#1A1A1A", borderBottom: "1px solid #314550", width: 60, whiteSpace: "nowrap" }}>PTS</th>
+                  <th style={{ textAlign: "center", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#1A1A1A", borderBottom: "1px solid #314550", width: 60 }}>SCORE</th>
+                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#1A1A1A", borderBottom: "1px solid #314550", width: 130 }}>STATUS</th>
+                  <th style={{ width: 36, borderBottom: "1px solid #314550" }} />
                 </tr>
               </thead>
               <tbody>
@@ -1627,11 +1627,11 @@ Acceptance Criteria:
                   const rows = [
                     <tr key={issue.key}
                       style={{ borderBottom: isExp ? "none" : "1px solid #f4f6f8",
-                        background: st === "running" ? "#e8fafa" : isExp ? "#F4F3F0" : "#fff",
+                        background: st === "running" ? "#F4F3F0" : isExp ? "#F4F3F0" : "#fff",
                         cursor: "pointer", transition: "background 200ms" }}
                       onClick={() => setExpandedKey(isExp ? null : issue.key)}
                       onMouseEnter={e => { if (st !== "running") e.currentTarget.style.background = "#F4F3F0"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = st === "running" ? "#e8fafa" : isExp ? "#F4F3F0" : "#fff"; }}>
+                      onMouseLeave={e => { e.currentTarget.style.background = st === "running" ? "#F4F3F0" : isExp ? "#F4F3F0" : "#fff"; }}>
                       {/* Checkbox */}
                       <td style={{ padding: "11px 16px", textAlign: "center" }} onClick={e => e.stopPropagation()}>
                         <input type="checkbox" checked={isSel} disabled={running}
@@ -1650,10 +1650,10 @@ Acceptance Criteria:
                       {/* Title */}
                       <td style={{ padding: "11px 12px", color: "#053057", maxWidth: 280 }}>
                         <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "underline" }}>{issue.summary}</div>
-                        {issue.assignee && <div style={{ fontSize: 11, color: "#9aabb6", marginTop: 1 }}>{issue.assignee}</div>}
+                        {issue.assignee && <div style={{ fontSize: 11, color: "#1A1A1A", marginTop: 1 }}>{issue.assignee}</div>}
                       </td>
                       {/* Points */}
-                      <td style={{ padding: "11px 12px", textAlign: "right", color: "#9aabb6", fontSize: 12, whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "11px 12px", textAlign: "right", color: "#1A1A1A", fontSize: 12, whiteSpace: "nowrap" }}>
                         {issue.points != null ? `${issue.points} pts` : "—"}
                       </td>
                       {/* Score ring */}
@@ -1675,18 +1675,18 @@ Acceptance Criteria:
                         ) : st === "error" ? (
                           <span style={{ fontSize: 11, color: "#A32D2D" }}>Error</span>
                         ) : isSel ? (
-                          <span style={{ fontSize: 11, color: "#b0bec5" }}>Queued</span>
+                          <span style={{ fontSize: 11, color: "#1A1A1A" }}>Queued</span>
                         ) : (
-                          <span style={{ fontSize: 11, color: "#d0d9e0", fontStyle: "italic" }}>Skipped</span>
+                          <span style={{ fontSize: 11, color: "#1A1A1A", fontStyle: "italic" }}>Skipped</span>
                         )}
                       </td>
                       {/* Expand chevron — always shown */}
                       <td style={{ padding: "11px 12px", textAlign: "center" }} onClick={e => e.stopPropagation()}>
                         <button onClick={() => setExpandedKey(isExp ? null : issue.key)}
                           style={{ background: "none", border: "none", cursor: "pointer",
-                            color: "#9aabb6", padding: "2px 4px", borderRadius: 4, transition: "color 120ms" }}
-                          onMouseEnter={e => e.currentTarget.style.color = "#1a2230"}
-                          onMouseLeave={e => e.currentTarget.style.color = "#9aabb6"}>
+                            color: "#1A1A1A", padding: "2px 4px", borderRadius: 4, transition: "color 120ms" }}
+                          onMouseEnter={e => e.currentTarget.style.color = "#053057"}
+                          onMouseLeave={e => e.currentTarget.style.color = "#1A1A1A"}>
                           <i className={`ti ti-chevron-${isExp ? "up" : "right"}`} style={{ fontSize: 14 }} />
                         </button>
                       </td>
@@ -1696,14 +1696,14 @@ Acceptance Criteria:
                   if (isExp) {
                     rows.push(
                       <tr key={issue.key + "-exp"}>
-                        <td colSpan={7} style={{ padding: 0, borderBottom: "1px solid #e2e8f0" }}>
+                        <td colSpan={7} style={{ padding: 0, borderBottom: "1px solid #314550" }}>
 
                           {/* ── Jira info header (always shown) ── */}
-                          <div style={{ padding: "16px 20px", background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
+                          <div style={{ padding: "16px 20px", background: "#fff", borderBottom: "1px solid #314550" }}>
                             {/* Meta pills row */}
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: issue.text ? 14 : 0 }}>
                               <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 99,
-                                background: "#f0f4f8", color: "#053057", fontFamily: "monospace" }}>{issue.key}</span>
+                                background: "#F4F3F0", color: "#053057", fontFamily: "monospace" }}>{issue.key}</span>
                               {issue.type && (
                                 <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 99,
                                   background: isEpic ? "#EDE9FE" : "#A2F3F3",
@@ -1713,7 +1713,7 @@ Acceptance Criteria:
                               )}
                               {issue.status && (
                                 <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 99,
-                                  background: "#f4f6f8", color: "#314550", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                  background: "#F4F3F0", color: "#314550", display: "inline-flex", alignItems: "center", gap: 4 }}>
                                   <i className="ti ti-circle-dot" style={{ fontSize: 10 }} />{issue.status}
                                 </span>
                               )}
@@ -1731,7 +1731,7 @@ Acceptance Criteria:
                               )}
                               {issue.assignee && (
                                 <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 99,
-                                  background: "#f4f6f8", color: "#5a6675", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                  background: "#F4F3F0", color: "#1A1A1A", display: "inline-flex", alignItems: "center", gap: 4 }}>
                                   <i className="ti ti-user" style={{ fontSize: 10 }} />{issue.assignee}
                                 </span>
                               )}
@@ -1740,12 +1740,12 @@ Acceptance Criteria:
                             {issue.text && (
                               <div>
                                 <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.07em",
-                                  textTransform: "uppercase", color: "#9aabb6", marginBottom: 7 }}>
+                                  textTransform: "uppercase", color: "#1A1A1A", marginBottom: 7 }}>
                                   {isEpic ? "Epic description" : "Story description"}
                                 </div>
                                 <pre style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.75,
                                   whiteSpace: "pre-wrap", wordBreak: "break-word",
-                                  background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 7,
+                                  background: "#F4F3F0", border: "1px solid #314550", borderRadius: 7,
                                   padding: "11px 14px", color: "#314550", maxHeight: 220, overflowY: "auto" }}>
                                   {issue.text}
                                 </pre>
@@ -1767,11 +1767,11 @@ Acceptance Criteria:
                               onRecheck={() => {}}
                             />
                           ) : (
-                            <div style={{ padding: "14px 20px", background: "#f8fafc",
-                              display: "flex", alignItems: "center", gap: 8, color: "#9aabb6", fontSize: 12 }}>
+                            <div style={{ padding: "14px 20px", background: "#F4F3F0",
+                              display: "flex", alignItems: "center", gap: 8, color: "#1A1A1A", fontSize: 12 }}>
                               {st === "running"
                                 ? <><svg width="14" height="14" style={{ animation: "spin 0.9s linear infinite", flexShrink: 0 }}>
-                                    <circle cx="7" cy="7" r="5" fill="none" stroke="#dde4ea" strokeWidth="2.5" />
+                                    <circle cx="7" cy="7" r="5" fill="none" stroke="#F4F3F0" strokeWidth="2.5" />
                                     <circle cx="7" cy="7" r="5" fill="none" stroke="#053057" strokeWidth="2.5"
                                       strokeDasharray="8 23" strokeLinecap="round" transform="rotate(-90 7 7)" />
                                   </svg>
@@ -1898,7 +1898,7 @@ Acceptance Criteria:
 
               {/* ── Single / Batch sub-tab bar ── */}
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 20px",
-                borderBottom: "1px solid #e2e8f0", background: "#fff" }}>
+                borderBottom: "1px solid #314550", background: "#fff" }}>
                 {[
                   { id: "single", label: "Single story", icon: "ti-sparkles" },
                   { id: "batch",  label: "Batch analysis", icon: "ti-stack-2" },
@@ -1908,7 +1908,7 @@ Acceptance Criteria:
                       padding: "7px 16px", borderRadius: 99, fontSize: 13, fontWeight: checkerTab === t.id ? 500 : 400,
                       border: "none", cursor: "pointer",
                       background: checkerTab === t.id ? "#A2F3F3" : "none",
-                      color: checkerTab === t.id ? "#053057" : "#5a6675" }}>
+                      color: checkerTab === t.id ? "#053057" : "#1A1A1A" }}>
                     <i className={`ti ${t.icon}`} style={{ fontSize: 13 }} />
                     {t.label}
                   </button>
@@ -1945,7 +1945,7 @@ Acceptance Criteria:
                 <h1 style={{ fontSize: 20, fontWeight: 500, color: "#053057", margin: "0 0 4px" }}>
                   {checkerMode === "epic" ? "Check an Epic" : "Check a User Story"}
                 </h1>
-                <p style={{ fontSize: 13, color: "rgb(24, 95, 165)", margin: "0 0 4px" }}>
+                <p style={{ fontSize: 13, color: "#1A1A1A", margin: "0 0 4px" }}>
                   {checkerMode === "epic"
                     ? "Paste your epic below and get a readiness score, flagged gaps, and an improved version in seconds."
                     : "Paste your story below and get a readiness score, flagged gaps, and an improved version in seconds."}
@@ -1976,7 +1976,7 @@ Acceptance Criteria:
                           background: "var(--color-background-secondary)",
                           border: "0.5px solid var(--color-border-secondary)",
                           borderRadius: "var(--border-radius-md)", padding: "10px 12px",
-                          color: "rgb(24, 95, 165)", boxSizing: "border-box" }}
+                          color: "#1A1A1A", boxSizing: "border-box" }}
                       />
                       <div style={{ fontSize: 11, color: "var(--color-text-primary)", textAlign: "right", marginTop: 3, marginBottom: 12 }}>
                         {story.length} chars
@@ -2021,7 +2021,7 @@ Acceptance Criteria:
                         disabled={uiState === "loading" || !story.trim()}
                         style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500,
                           padding: "9px 20px", cursor: uiState === "loading" || !story.trim() ? "not-allowed" : "pointer",
-                          background: uiState === "loading" || !story.trim() ? "#A2F3F3" : "#053057",
+                          background: uiState === "loading" || !story.trim() ? "#314550" : "#053057",
                           color: "#fff", border: "none", borderRadius: "var(--border-radius-md)" }}>
                         {uiState === "loading"
                           ? <><i className="ti ti-loader-2" style={{ fontSize: 15, animation: "spin 0.9s linear infinite" }} aria-hidden="true" /> Analysing…</>
@@ -2056,7 +2056,7 @@ Acceptance Criteria:
           <style>{`
             @keyframes spin  { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
             @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
-            textarea:focus, input:focus { outline: none; border-color: #378ADD !important; box-shadow: 0 0 0 3px rgba(55,138,221,0.15); }
+            textarea:focus, input:focus { outline: none; border-color: #00EDED !important; box-shadow: 0 0 0 3px rgba(0,237,237,0.15); }
             button:not(:disabled):hover { opacity: 0.88; }
           `}</style>
         </div>

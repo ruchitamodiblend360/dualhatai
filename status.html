@@ -10,7 +10,7 @@
   <script src="/vendor/babel.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #eef1f4; padding: 24px; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #fff; }
+    body { background: #0B0D0E; padding: 24px; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #fff; }
     #root { max-width: 1100px; margin: 0 auto; }
     @keyframes spin  { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
     button:not(:disabled):hover { opacity: 0.88; }
@@ -123,8 +123,8 @@
                     onClick={function() { setSelectedSprint(Object.assign({}, sprint, { type: "sprint" })); setDeck(null); }}
                     style={{ padding: "5px 13px", borderRadius: 99, fontSize: 12, cursor: "pointer",
                       border: isSel ? "2px solid #00EDED" : isActive ? "1.5px solid #053057" : "1px solid #314550",
-                      background: isSel ? "#00EDED" : "transparent",
-                      color: isSel ? "#053057" : isActive ? "#A2F3F3" : "#cbd5e1",
+                      background: isSel ? "#053057" : "transparent",
+                      color: isSel ? "#FFFFFF" : isActive ? "#A2F3F3" : "#F4F3F0",
                       fontWeight: isSel ? 700 : isActive ? 500 : 400 }}>
                     {isActive && !isSel && <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 99, background: "#053057", color: "#A2F3F3", marginRight: 5, fontWeight: 700 }}>ACTIVE</span>}
                     {sprint.name}
@@ -136,8 +136,8 @@
                   onClick={function() { setSelectedSprint({ type: "backlog", name: "Backlog", id: null }); setDeck(null); }}
                   style={{ padding: "5px 13px", borderRadius: 99, fontSize: 12, cursor: "pointer",
                     border: selectedSprint && selectedSprint.type === "backlog" ? "2px solid #00EDED" : "1px solid #314550",
-                    background: selectedSprint && selectedSprint.type === "backlog" ? "#00EDED" : "transparent",
-                    color: selectedSprint && selectedSprint.type === "backlog" ? "#053057" : "#cbd5e1",
+                    background: selectedSprint && selectedSprint.type === "backlog" ? "#053057" : "transparent",
+                    color: selectedSprint && selectedSprint.type === "backlog" ? "#FFFFFF" : "#F4F3F0",
                     fontWeight: selectedSprint && selectedSprint.type === "backlog" ? 700 : 400 }}>
                   <i className="ti ti-stack-2" style={{ fontSize: 11, marginRight: 4 }} />Backlog
                 </button>
@@ -145,7 +145,8 @@
               {selectedSprint && (
                 <button onClick={generate} disabled={generating}
                   style={{ marginLeft: 6, padding: "7px 18px", borderRadius: 8, border: "none",
-                    background: generating ? "#314550" : "#00EDED", color: "#053057",
+                    background: generating ? "#314550" : "#053057", color: "#FFFFFF",
+                    border: "1.5px solid #00EDED",
                     fontSize: 13, fontWeight: 700, cursor: generating ? "not-allowed" : "pointer",
                     display: "flex", alignItems: "center", gap: 7 }}>
                   {generating
@@ -162,7 +163,7 @@
               )}
             </div>
             {genError && (
-              <div style={{ marginTop: 10, padding: "9px 14px", background: "#1a0808", border: "1px solid #7F1D1D", borderRadius: 8, fontSize: 13, color: "#FCA5A5" }}>
+              <div style={{ marginTop: 10, padding: "9px 14px", background: "#1A1A1A", border: "1px solid #7F1D1D", borderRadius: 8, fontSize: 13, color: "#FCA5A5" }}>
                 <i className="ti ti-alert-circle" style={{ marginRight: 6 }} />{genError}
               </div>
             )}
@@ -197,7 +198,7 @@
                   <div key={board.id}
                     onClick={function() { setSelectedBoard(board); setSelectedSprint(null); setDeck(null); }}
                     style={{ border: isSel ? "2px solid #00EDED" : "1px solid #314550", borderRadius: 10,
-                      background: isSel ? "#0D2030" : "#1A1A1A", cursor: "pointer",
+                      background: isSel ? "#053057" : "#1A1A1A", cursor: "pointer",
                       padding: "13px 15px", display: "flex", alignItems: "center", gap: 11 }}>
                     <div style={{ width: 34, height: 34, borderRadius: 8, background: color, flexShrink: 0,
                       display: "flex", alignItems: "center", justifyContent: "center",
@@ -207,7 +208,7 @@
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {board.projectName || board.name}
                       </div>
-                      <div style={{ fontSize: 11, color: "#4a6070", marginTop: 2 }}>
+                      <div style={{ fontSize: 11, color: "#A2F3F3", marginTop: 2 }}>
                         {board.sprints.length} sprint{board.sprints.length !== 1 ? "s" : ""} &middot; {board.backlogCount} backlog
                       </div>
                     </div>
@@ -223,10 +224,10 @@
       function DeckView(props) {
         const d = props.d;
         const hcfg = ({
-          "On Track":  { bg: "#052e16", border: "#065F46", text: "#6EE7B7", icon: "ti-circle-check" },
-          "At Risk":   { bg: "#2d1800", border: "#B45309", text: "#FCD34D", icon: "ti-alert-triangle" },
-          "Off Track": { bg: "#2a0505", border: "#7F1D1D", text: "#F87171", icon: "ti-circle-x" },
-        })[d.healthStatus] || { bg: "#2d1800", border: "#B45309", text: "#FCD34D", icon: "ti-alert-triangle" };
+          "On Track":  { bg: "#0B0D0E", border: "#065F46", text: "#6EE7B7", icon: "ti-circle-check" },
+          "At Risk":   { bg: "#1A1A1A", border: "#B45309", text: "#FCD34D", icon: "ti-alert-triangle" },
+          "Off Track": { bg: "#1A1A1A", border: "#7F1D1D", text: "#F87171", icon: "ti-circle-x" },
+        })[d.healthStatus] || { bg: "#1A1A1A", border: "#B45309", text: "#FCD34D", icon: "ti-alert-triangle" };
 
         const m = d.metrics || {};
         const compPct = m.completionPct || 0;
@@ -246,8 +247,8 @@
                   <i className={"ti " + hcfg.icon} />{d.healthStatus}
                 </div>
                 <button onClick={handleExport} disabled={exporting}
-                  style={{ padding: "9px 18px", borderRadius: 8, border: "none",
-                    background: exporting ? "#314550" : "#00EDED", color: "#053057",
+                  style={{ padding: "9px 18px", borderRadius: 8, border: "1.5px solid #00EDED",
+                    background: exporting ? "#314550" : "#053057", color: "#FFFFFF",
                     fontSize: 13, fontWeight: 700, cursor: exporting ? "not-allowed" : "pointer",
                     display: "flex", alignItems: "center", gap: 7 }}>
                   {exporting
@@ -273,7 +274,7 @@
               ].map(function(stat) {
                 return (
                   <div key={stat.label} style={{ background: "#1A1A1A", border: "1px solid #314550", borderRadius: 8, padding: "11px 13px" }}>
-                    <div style={{ fontSize: 10, color: "#4a6070", marginBottom: 5, display: "flex", alignItems: "center", gap: 4 }}>
+                    <div style={{ fontSize: 10, color: "#A2F3F3", marginBottom: 5, display: "flex", alignItems: "center", gap: 4 }}>
                       <i className={"ti " + stat.icon} style={{ fontSize: 12 }} />{stat.label}
                     </div>
                     <div style={{ fontSize: 22, fontWeight: 700, color: stat.color }}>{stat.value}</div>
@@ -284,7 +285,7 @@
 
             {/* Progress bar */}
             <div style={{ marginBottom: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5, fontSize: 11, color: "#4a6070" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5, fontSize: 11, color: "#A2F3F3" }}>
                 <span>Sprint completion</span><span style={{ color: "#00EDED", fontWeight: 700 }}>{compPct}%</span>
               </div>
               <div style={{ height: 6, background: "#314550", borderRadius: 99, overflow: "hidden" }}>
@@ -302,7 +303,7 @@
                 </div>
                 <div style={{ padding: "6px", background: "#0B0D0E" }}>
                   {(d.accomplishments || []).length === 0
-                    ? <div style={{ padding: "18px", fontSize: 13, color: "#4a6070", textAlign: "center" }}>No completed items</div>
+                    ? <div style={{ padding: "18px", fontSize: 13, color: "#A2F3F3", textAlign: "center" }}>No completed items</div>
                     : (d.accomplishments || []).map(function(a, i) {
                       return (
                         <div key={i} style={{ display: "flex", gap: 9, padding: "9px 10px", borderRadius: 7, marginBottom: 2, background: i % 2 === 0 ? "#1A1A1A" : "#0B0D0E" }}>
@@ -325,7 +326,7 @@
                 </div>
                 <div style={{ padding: "6px", background: "#0B0D0E" }}>
                   {(d.nextSteps || []).length === 0
-                    ? <div style={{ padding: "18px", fontSize: 13, color: "#4a6070", textAlign: "center" }}>No action items</div>
+                    ? <div style={{ padding: "18px", fontSize: 13, color: "#A2F3F3", textAlign: "center" }}>No action items</div>
                     : (d.nextSteps || []).map(function(s, i) {
                       return (
                         <div key={i} style={{ padding: "9px 10px", borderRadius: 7, marginBottom: 2, background: i % 2 === 0 ? "#1A1A1A" : "#0B0D0E" }}>
@@ -351,7 +352,7 @@
                 </div>
                 <div style={{ padding: "8px", background: "#0B0D0E" }}>
                   {d.blockers.map(function(b, i) {
-                    const ic = ({ High: { bg: "#2a0505", border: "#F87171", text: "#F87171" }, Medium: { bg: "#2d1800", border: "#FCD34D", text: "#FCD34D" }, Low: { bg: "#052e16", border: "#6EE7B7", text: "#6EE7B7" } })[b.impact] || { bg: "#2d1800", border: "#FCD34D", text: "#FCD34D" };
+                    const ic = ({ High: { bg: "#1A1A1A", border: "#F87171", text: "#F87171" }, Medium: { bg: "#1A1A1A", border: "#FCD34D", text: "#FCD34D" }, Low: { bg: "#0B0D0E", border: "#6EE7B7", text: "#6EE7B7" } })[b.impact] || { bg: "#1A1A1A", border: "#FCD34D", text: "#FCD34D" };
                     return (
                       <div key={i} style={{ padding: "12px 14px", borderRadius: 8, marginBottom: 6, background: ic.bg, border: "1px solid " + ic.border + "50" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
@@ -361,7 +362,7 @@
                           {b.type && <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 99, fontWeight: 600, background: "#314550", color: "#A2F3F3" }}>{b.type}</span>}
                         </div>
                         {b.mitigation && <div style={{ fontSize: 12, color: "#A2F3F3", marginLeft: 22 }}>Mitigation: {b.mitigation}</div>}
-                        {b.owner && <div style={{ fontSize: 11, color: "#4a6070", marginLeft: 22, marginTop: 3 }}>Owner: {b.owner}</div>}
+                        {b.owner && <div style={{ fontSize: 11, color: "#A2F3F3", marginLeft: 22, marginTop: 3 }}>Owner: {b.owner}</div>}
                       </div>
                     );
                   })}
@@ -378,12 +379,12 @@
                 </div>
                 <div style={{ padding: "6px", background: "#0B0D0E" }}>
                   {d.milestones.map(function(ms, i) {
-                    const sc = ({ complete: { icon: "ti-circle-check", color: "#00EDED" }, in_progress: { icon: "ti-loader-2", color: "#FCD34D" }, upcoming: { icon: "ti-clock", color: "#4a6070" } })[ms.status] || { icon: "ti-clock", color: "#4a6070" };
+                    const sc = ({ complete: { icon: "ti-circle-check", color: "#00EDED" }, in_progress: { icon: "ti-loader-2", color: "#A2F3F3" }, upcoming: { icon: "ti-clock", color: "#A2F3F3" } })[ms.status] || { icon: "ti-clock", color: "#A2F3F3" };
                     return (
                       <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 7, marginBottom: 2, background: i % 2 === 0 ? "#1A1A1A" : "#0B0D0E" }}>
                         <i className={"ti " + sc.icon} style={{ color: sc.color, fontSize: 14 }} />
                         <span style={{ fontSize: 13, color: "#F4F3F0" }}>{ms.name}</span>
-                        {ms.date && <span style={{ marginLeft: "auto", fontSize: 11, color: "#4a6070" }}>{ms.date}</span>}
+                        {ms.date && <span style={{ marginLeft: "auto", fontSize: 11, color: "#A2F3F3" }}>{ms.date}</span>}
                       </div>
                     );
                   })}
@@ -428,7 +429,7 @@
               <i className="ti ti-home" style={{ fontSize: 15 }} /> Home
             </a>
             <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 18px",
-              fontSize: 13, fontWeight: 700, color: "#053057", background: "#00EDED",
+              fontSize: 13, fontWeight: 700, color: "#053057", background: "#FFFFFF",
               margin: "4px 0 4px 8px", borderRadius: 7 }}>
               <i className="ti ti-presentation-analytics" style={{ fontSize: 15 }} /> Status Generator
             </div>
