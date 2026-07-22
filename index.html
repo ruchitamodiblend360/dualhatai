@@ -609,18 +609,11 @@ Acceptance Criteria:
       },
     };
 
-    const sidePanelCardStyle = {
-      background: "#1A1A1A",
-      border: "0.5px solid #314550",
-      borderRadius: "var(--border-radius-lg)",
-      overflow: "hidden",
-    };
-
     function SidePanel({ mode }) {
       const content = SIDE_CONTENT[mode] || SIDE_CONTENT.story;
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ ...sidePanelCardStyle, padding: "14px 16px" }}>
+          <div style={{ ...cardStyle, padding: "14px 16px" }}>
             <div style={sideTitleStyle}>
               <i className="ti ti-info-circle" style={{ fontSize: 14, color: "#053057" }} aria-hidden="true" />
               What we check
@@ -634,7 +627,7 @@ Acceptance Criteria:
             ))}
           </div>
 
-          <div style={{ ...sidePanelCardStyle, padding: "14px 16px" }}>
+          <div style={{ ...cardStyle, padding: "14px 16px" }}>
             <div style={sideTitleStyle}>
               <i className="ti ti-bulb" style={{ fontSize: 14, color: "#854F0B" }} aria-hidden="true" />
               Tips for better results
