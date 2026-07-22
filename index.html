@@ -578,7 +578,39 @@ Acceptance Criteria:
     }
 
     /* ── Side panel ── */
-    function SidePanel() {
+    const SIDE_CONTENT = {
+      story: {
+        checks: [
+          "Completeness of the story format",
+          "Clarity & vague language",
+          "Testability of acceptance criteria",
+          "Story size & sprint fit",
+          "Dependency signals",
+        ],
+        tips: [
+          "Include all existing ACs, even rough ones",
+          "Mention the parent epic for dependency detection",
+          "Add your DoR to score against your own bar",
+        ],
+      },
+      epic: {
+        checks: [
+          "Clarity of the epic goal & business outcome",
+          "Scope definition & boundary clarity",
+          "Decomposability into sprint-sized stories",
+          "Dependency & cross-team risk signals",
+          "Measurable success criteria",
+        ],
+        tips: [
+          "Include the business outcome, not just the feature",
+          "List known dependencies or impacted teams upfront",
+          "Add rough story count or sizing if available",
+        ],
+      },
+    };
+
+    function SidePanel({ mode }) {
+      const content = SIDE_CONTENT[mode] || SIDE_CONTENT.story;
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ ...cardStyle, padding: "14px 16px" }}>
@@ -586,11 +618,9 @@ Acceptance Criteria:
               <i className="ti ti-info-circle" style={{ fontSize: 14, color: "#053057" }} aria-hidden="true" />
               What we check
             </div>
-            {["Completeness of the story format", "Clarity & vague language",
-              "Testability of acceptance criteria", "Story size & sprint fit",
-              "Dependency signals"].map((t, i) => (
+            {content.checks.map((t, i) => (
               <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", padding: "5px 0",
-                borderBottom: i < 4 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                borderBottom: i < content.checks.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
                 <i className="ti ti-check" style={{ fontSize: 13, color: "#1D9E75", flexShrink: 0, marginTop: 1 }} aria-hidden="true" />
                 <span style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.5 }}>{t}</span>
               </div>
@@ -602,18 +632,14 @@ Acceptance Criteria:
               <i className="ti ti-bulb" style={{ fontSize: 14, color: "#854F0B" }} aria-hidden="true" />
               Tips for better results
             </div>
-            {["Include all existing ACs, even rough ones",
-              "Mention the epic for dependency detection",
-              "Add your DoR to score against your own bar"].map((t, i) => (
+            {content.tips.map((t, i) => (
               <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", padding: "5px 0",
-                borderBottom: i < 2 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                borderBottom: i < content.tips.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
                 <i className="ti ti-arrow-right" style={{ fontSize: 12, color: "var(--color-text-primary)", flexShrink: 0, marginTop: 1 }} aria-hidden="true" />
                 <span style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.5 }}>{t}</span>
               </div>
             ))}
           </div>
-
-          {/* 'Recent checks' section disabled */}
         </div>
       );
     }
@@ -2014,7 +2040,7 @@ Acceptance Criteria:
                 </div>
 
                 {/* Right side panel */}
-                <SidePanel />
+                <SidePanel mode={checkerMode} />
               </div>
             </div>
               )}

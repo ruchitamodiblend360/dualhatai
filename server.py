@@ -1034,7 +1034,7 @@ class Handler(BaseHTTPRequestHandler):
 
         groq_body = json.dumps({
             "model": MODEL,
-            "max_tokens": 1500,
+            "max_tokens": 4096,
             "temperature": 0.3,
             "response_format": {"type": "json_object"},
             "messages": [
@@ -1049,24 +1049,32 @@ class Handler(BaseHTTPRequestHandler):
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {GROQ_API_KEY}",
-                # Cloudflare in front of Groq blocks the default Python-urllib UA (err 1010)
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) story-readiness-checker/1.0",
                 "Accept": "application/json",
             },
             method="POST",
         )
 
-        try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                groq_data = json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            detail = e.read().decode("utf-8", "replace")
-            print(f"  Groq HTTP {e.code}: {detail}")
-            self._send(502, json.dumps({"error": f"Groq API {e.code}", "detail": detail}))
-            return
-        except Exception as e:
-            self._send(502, json.dumps({"error": f"Upstream error: {e}"}))
-            return
+        # Retry up to 3 times on 429 rate-limit with backoff
+        groq_data = None
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(req, timeout=90) as resp:
+                    groq_data = json.loads(resp.read().decode("utf-8"))
+                break
+            except urllib.error.HTTPError as e:
+                body = e.read().decode("utf-8", "replace")
+                print(f"  Groq HTTP {e.code} (attempt {attempt+1}): {body}")
+                if e.code == 429 and attempt < 2:
+                    wait = 10 * (attempt + 1)
+                    print(f"  Rate limited — waiting {wait}s before retry")
+                    time.sleep(wait)
+                    continue
+                self._send(502, json.dumps({"error": f"Groq API {e.code}", "detail": body}))
+                return
+            except Exception as e:
+                self._send(502, json.dumps({"error": f"Upstream error: {e}"}))
+                return
 
         try:
             text = groq_data["choices"][0]["message"]["content"]
