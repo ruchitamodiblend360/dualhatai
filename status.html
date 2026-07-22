@@ -172,6 +172,11 @@
       }
 
       function BoardGrid() {
+        const [boardPage, setBoardPage] = React.useState(1);
+        const BOARD_PAGE_SIZE = 25;
+        const totalBoardPages = Math.ceil((boards || []).length / BOARD_PAGE_SIZE);
+        const pagedBoards = (boards || []).slice((boardPage - 1) * BOARD_PAGE_SIZE, boardPage * BOARD_PAGE_SIZE);
+
         if (loading) return (
           <div style={{ padding: "60px 24px", textAlign: "center", color: "#A2F3F3", fontSize: 14 }}>
             <i className="ti ti-loader-2" style={{ fontSize: 32, display: "block", marginBottom: 12, animation: "spin 1s linear infinite", color: "#00EDED" }} />
@@ -184,10 +189,6 @@
             {loadErr}
           </div>
         );
-        const BOARD_PAGE_SIZE = 25;
-        const [boardPage, setBoardPage] = React.useState(1);
-        const totalBoardPages = Math.ceil(boards.length / BOARD_PAGE_SIZE);
-        const pagedBoards = boards.slice((boardPage - 1) * BOARD_PAGE_SIZE, boardPage * BOARD_PAGE_SIZE);
 
         return (
           <div style={{ padding: "24px 20px 28px" }}>

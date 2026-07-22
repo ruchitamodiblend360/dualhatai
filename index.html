@@ -1036,6 +1036,7 @@ Acceptance Criteria:
       const [boards, setBoards] = useState([]);
       const [loading, setLoading] = useState(true);
       const [error, setError]   = useState("");
+      const [boardPage, setBoardPage] = useState(1);
 
       useEffect(() => {
         fetch("/api/jira/board-overview")
@@ -1068,7 +1069,6 @@ Acceptance Criteria:
       );
 
       const BOARD_PAGE_SIZE = 25;
-      const [boardPage, setBoardPage] = React.useState(1);
       const totalBoardPages = Math.ceil(boards.length / BOARD_PAGE_SIZE);
       const pagedBoards = boards.slice((boardPage - 1) * BOARD_PAGE_SIZE, boardPage * BOARD_PAGE_SIZE);
 
