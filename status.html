@@ -173,9 +173,11 @@
 
       function BoardGrid() {
         const [boardPage, setBoardPage] = React.useState(1);
+        const [search, setSearch] = React.useState("");
         const BOARD_PAGE_SIZE = 25;
-        const totalBoardPages = Math.ceil((boards || []).length / BOARD_PAGE_SIZE);
-        const pagedBoards = (boards || []).slice((boardPage - 1) * BOARD_PAGE_SIZE, boardPage * BOARD_PAGE_SIZE);
+        const filteredBoards = (boards || []).filter(function(b) { return (b.projectName || b.name || "").toLowerCase().includes(search.toLowerCase()); });
+        const totalBoardPages = Math.ceil(filteredBoards.length / BOARD_PAGE_SIZE);
+        const pagedBoards = filteredBoards.slice((boardPage - 1) * BOARD_PAGE_SIZE, boardPage * BOARD_PAGE_SIZE);
 
         if (loading) return (
           <div style={{ padding: "60px 24px", textAlign: "center", color: "#A2F3F3", fontSize: 14 }}>
@@ -193,9 +195,28 @@
         return (
           <div style={{ padding: "24px 20px 28px" }}>
             <h2 style={{ fontSize: 17, fontWeight: 600, color: "#fff", margin: "0 0 5px" }}>Select a project board</h2>
-            <p style={{ fontSize: 13, color: "#A2F3F3", opacity: 0.7, margin: "0 0 20px" }}>
+            <p style={{ fontSize: 13, color: "#A2F3F3", opacity: 0.7, margin: "0 0 14px" }}>
               Pick a board, then select a sprint to generate an executive status deck with AI.
             </p>
+            <div style={{ position: "relative", marginBottom: 20 }}>
+              <i className="ti ti-search" style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#314550", fontSize: 14, pointerEvents: "none" }} />
+              <input
+                type="text"
+                placeholder="Search projects…"
+                value={search}
+                onChange={function(e) { setSearch(e.target.value); setBoardPage(1); }}
+                style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px 9px 32px", borderRadius: 8,
+                  border: "1px solid #314550", background: "#1A1A1A", color: "#F4F3F0",
+                  fontSize: 13, outline: "none" }}
+                onFocus={function(e) { e.target.style.borderColor = "#00EDED"; }}
+                onBlur={function(e) { e.target.style.borderColor = "#314550"; }}
+              />
+            </div>
+            {filteredBoards.length === 0 && search && (
+              <div style={{ textAlign: "center", padding: "40px 0", color: "#314550", fontSize: 13 }}>
+                No projects match "<span style={{ color: "#A2F3F3" }}>{search}</span>"
+              </div>
+            )}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
               {pagedBoards.map(function(board) {
                 const color = avatarColor(board.projectKey || board.name);
