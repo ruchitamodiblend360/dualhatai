@@ -959,6 +959,49 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(500, json.dumps({"error": str(e), "trace": traceback.format_exc()}))
             return
 
+        if self.path == "/api/jira/update-description":
+            if not JIRA_AUTH:
+                self._send(503, json.dumps({"error": "Jira not configured"})); return
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                payload = json.loads(self.rfile.read(length) or "{}")
+            except Exception as e:
+                self._send(400, json.dumps({"error": str(e)})); return
+
+            key  = (payload.get("key") or "").strip().upper()
+            text = (payload.get("description") or "").strip()
+            if not key or not text:
+                self._send(400, json.dumps({"error": "key and description are required"})); return
+
+            # Convert plain text to Atlassian Document Format (ADF)
+            paragraphs = []
+            for line in text.split("\n"):
+                if line.strip():
+                    paragraphs.append({
+                        "type": "paragraph",
+                        "content": [{"type": "text", "text": line}]
+                    })
+                else:
+                    paragraphs.append({"type": "paragraph", "content": []})
+            adf = {"version": 1, "type": "doc", "content": paragraphs or [{"type": "paragraph", "content": []}]}
+
+            body = json.dumps({"fields": {"description": adf}}).encode("utf-8")
+            url  = f"{JIRA_BASE_URL}/rest/api/3/issue/{key}"
+            req  = urllib.request.Request(url, data=body, method="PUT",
+                       headers={"Authorization": f"Basic {JIRA_AUTH}",
+                                "Content-Type": "application/json",
+                                "Accept": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    _ = resp.read()
+                self._send(200, json.dumps({"ok": True, "key": key}))
+            except urllib.error.HTTPError as e:
+                detail = e.read().decode("utf-8", "replace")
+                self._send(e.code, json.dumps({"error": f"Jira {e.code}", "detail": detail}))
+            except Exception as e:
+                self._send(502, json.dumps({"error": str(e)}))
+            return
+
         if self.path != "/api/analyze":
             self._send(404, json.dumps({"error": "Not found"}))
             return
