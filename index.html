@@ -1039,11 +1039,18 @@ Acceptance Criteria:
 
           {history.length > 0 && (
             <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-              <input value={titleFilter} onChange={e => { setTitleFilter(e.target.value); setPage(1); }}
-                placeholder="Filter by story title…"
-                style={{ fontSize: 12, padding: "7px 11px", border: "0.5px solid var(--color-border-secondary)",
-                  borderRadius: "var(--border-radius-md)", background: "var(--color-background-primary)",
-                  color: "var(--color-text-primary)", width: 220 }} />
+              <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+                <input value={titleFilter} onChange={e => { setTitleFilter(e.target.value); setPage(1); }}
+                  placeholder="Filter by story title…"
+                  style={{ fontSize: 12, padding: "7px 28px 7px 11px", border: "0.5px solid var(--color-border-secondary)",
+                    borderRadius: "var(--border-radius-md)", background: "var(--color-background-primary)",
+                    color: "var(--color-text-primary)", width: 220 }} />
+                {titleFilter && (
+                  <button onClick={() => { setTitleFilter(""); setPage(1); }}
+                    style={{ position: "absolute", right: 7, background: "none", border: "none",
+                      cursor: "pointer", color: "var(--color-text-secondary)", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
+                )}
+              </div>
               <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
                 style={{ fontSize: 12, padding: "7px 11px", border: "0.5px solid var(--color-border-secondary)",
                   borderRadius: "var(--border-radius-md)", background: "var(--color-background-primary)",
@@ -1260,12 +1267,17 @@ Acceptance Criteria:
               placeholder="Search projects…"
               value={search}
               onChange={e => { setSearch(e.target.value); setBoardPage(1); }}
-              style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px 9px 32px", borderRadius: "var(--border-radius-md)",
+              style={{ width: "100%", boxSizing: "border-box", padding: "9px 32px 9px 32px", borderRadius: "var(--border-radius-md)",
                 border: "0.5px solid var(--color-border-secondary)", background: "var(--color-background-secondary)", color: "#053057",
                 fontSize: 13, outline: "none" }}
               onFocus={e => e.target.style.borderColor = "#053057"}
               onBlur={e => e.target.style.borderColor = "var(--color-border-secondary)"}
             />
+            {search && (
+              <button onClick={() => { setSearch(""); setBoardPage(1); }}
+                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+                  background: "none", border: "none", cursor: "pointer", color: "#314550", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+            )}
           </div>
           {filteredBoards.length === 0 && search && (
             <div style={{ textAlign: "center", padding: "40px 0", color: "#314550", fontSize: 13 }}>

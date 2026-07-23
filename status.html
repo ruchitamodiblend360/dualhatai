@@ -205,12 +205,17 @@
                 placeholder="Search projects…"
                 value={search}
                 onChange={function(e) { setSearch(e.target.value); setBoardPage(1); }}
-                style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px 9px 32px", borderRadius: 6,
+                style={{ width: "100%", boxSizing: "border-box", padding: "9px 32px 9px 32px", borderRadius: 6,
                   border: "0.5px solid #314550", background: "#ffffff", color: "#053057",
                   fontSize: 13, outline: "none" }}
                 onFocus={function(e) { e.target.style.borderColor = "#053057"; }}
                 onBlur={function(e) { e.target.style.borderColor = "#314550"; }}
               />
+              {search && (
+                <button onClick={function() { setSearch(""); setBoardPage(1); }}
+                  style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+                    background: "none", border: "none", cursor: "pointer", color: "#314550", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+              )}
             </div>
             {filteredBoards.length === 0 && search && (
               <div style={{ textAlign: "center", padding: "40px 0", color: "#314550", fontSize: 13 }}>
