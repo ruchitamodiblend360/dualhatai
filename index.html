@@ -1790,17 +1790,6 @@ Acceptance Criteria:
                 </span>
               </label>
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ fontSize: 11, color: "#A2F3F3" }}>Show:</span>
-                  {PAGE_SIZE_OPTIONS.map(opt => (
-                    <button key={opt} onClick={() => { setPageSize(opt); setStoryPage(1); setExpandedKey(null); }}
-                      style={{ padding: "4px 9px", fontSize: 11, borderRadius: 5, cursor: "pointer",
-                        border: "1px solid #314550",
-                        background: pageSize === opt ? "#00EDED" : "#1A2F4A",
-                        color: pageSize === opt ? "#053057" : "#A2F3F3",
-                        fontWeight: pageSize === opt ? 600 : 400 }}>{opt}</button>
-                  ))}
-                </div>
                 <button onClick={runBatch} disabled={selectedCount === 0}
                   style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 500,
                     padding: "8px 18px", borderRadius: 8, border: "none",
@@ -2031,20 +2020,14 @@ Acceptance Criteria:
             const totalPages = Math.ceil(issues.length / pageSize);
             return (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 4px", background: "#0B0D0E", borderTop: "1px solid #314550" }}>
-                <button onClick={() => { setStoryPage(p => Math.max(1, p - 1)); setExpandedKey(null); }} disabled={storyPage === 1}
-                  style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
-                    background: "none", cursor: storyPage === 1 ? "default" : "pointer",
-                    color: storyPage === 1 ? "#314550" : "#F4F3F0" }}>‹ Prev</button>
-                {Array.from({ length: totalPages }, (_, ii) => ii + 1).map(p => (
-                  <button key={p} onClick={() => { setStoryPage(p); setExpandedKey(null); }}
-                    style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
-                      cursor: "pointer", background: p === storyPage ? "#053057" : "#1A2F4A",
-                      color: p === storyPage ? "#FFFFFF" : "#A2F3F3" }}>{p}</button>
+                <span style={{ fontSize: 11, color: "#A2F3F3", marginRight: 2 }}>Show:</span>
+                {PAGE_SIZE_OPTIONS.map(opt => (
+                  <button key={opt} onClick={() => { setPageSize(opt); setStoryPage(1); setExpandedKey(null); }}
+                    style={{ padding: "5px 9px", fontSize: 11, border: "0.5px solid #314550", borderRadius: 6,
+                      cursor: "pointer", background: pageSize === opt ? "#053057" : "#1A2F4A",
+                      color: pageSize === opt ? "#FFFFFF" : "#A2F3F3",
+                      fontWeight: pageSize === opt ? 600 : 400 }}>{opt}</button>
                 ))}
-                <button onClick={() => { setStoryPage(p => Math.min(totalPages, p + 1)); setExpandedKey(null); }} disabled={storyPage === totalPages}
-                  style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
-                    background: "none", cursor: storyPage === totalPages ? "default" : "pointer",
-                    color: storyPage === totalPages ? "#314550" : "#F4F3F0" }}>Next ›</button>
               </div>
             );
           })()}
