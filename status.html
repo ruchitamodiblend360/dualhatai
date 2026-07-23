@@ -214,7 +214,7 @@
               {search && (
                 <button onClick={function() { setSearch(""); setBoardPage(1); }}
                   style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-                    background: "none", border: "none", cursor: "pointer", color: "#314550", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+                    background: "none", border: "none", cursor: "pointer", color: "#314550", fontSize: 16, lineHeight: 1, padding: 0, zIndex: 2 }}>×</button>
               )}
             </div>
             {filteredBoards.length === 0 && search && (

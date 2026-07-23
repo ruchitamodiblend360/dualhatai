@@ -1047,8 +1047,9 @@ Acceptance Criteria:
                     color: "var(--color-text-primary)", width: 220 }} />
                 {titleFilter && (
                   <button onClick={() => { setTitleFilter(""); setPage(1); }}
-                    style={{ position: "absolute", right: 7, background: "none", border: "none",
-                      cursor: "pointer", color: "var(--color-text-secondary)", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
+                    style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)",
+                      background: "none", border: "none", cursor: "pointer",
+                      color: "var(--color-text-secondary)", fontSize: 16, lineHeight: 1, padding: 0, zIndex: 2 }}>×</button>
                 )}
               </div>
               <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
@@ -1276,7 +1277,7 @@ Acceptance Criteria:
             {search && (
               <button onClick={() => { setSearch(""); setBoardPage(1); }}
                 style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-                  background: "none", border: "none", cursor: "pointer", color: "#314550", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+                  background: "none", border: "none", cursor: "pointer", color: "#314550", fontSize: 16, lineHeight: 1, padding: 0, zIndex: 2 }}>×</button>
             )}
           </div>
           {filteredBoards.length === 0 && search && (
