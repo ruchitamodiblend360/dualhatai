@@ -365,6 +365,31 @@ def jira_agile_get(path):
         return json.loads(resp.read().decode("utf-8"))
 
 
+def fetch_issue_comments(key, max_comments=3, max_chars=300):
+    """Fetch the most recent comments for a Jira issue. Returns a list of plain-text strings."""
+    try:
+        data = jira_get(f"issue/{key}/comment?maxResults=50&orderBy=-created")
+        comments = data.get("comments", [])
+        recent = comments[-max_comments:] if len(comments) > max_comments else comments
+
+        def _txt(node):
+            if not node: return ""
+            if isinstance(node, str): return node
+            parts = [_txt(c) for c in node.get("content", [])]
+            return (" ".join(p for p in parts if p.strip()) or node.get("text", ""))
+
+        result = []
+        for c in recent:
+            author = (c.get("author") or {}).get("displayName", "Unknown")
+            body_raw = c.get("body") or {}
+            text = (_txt(body_raw) if isinstance(body_raw, dict) else str(body_raw)).strip()
+            if text:
+                result.append(f"{author}: {text[:max_chars]}")
+        return result
+    except Exception:
+        return []
+
+
 def fetch_board_detail(board):
     """Fetch sprints + backlog count for one board. Called in parallel."""
     bid = board["id"]
@@ -887,11 +912,29 @@ class Handler(BaseHTTPRequestHandler):
                 week_end   = week_start + datetime.timedelta(days=6)
                 week_of    = f"{week_start.strftime('%B %d')}–{week_end.strftime('%d, %Y')}"
 
+                # Fetch comments in parallel for done + in-progress issues
+                issues_needing_comments = done_issues + in_progress_issues
+                comments_map = {}
+                if issues_needing_comments:
+                    with ThreadPoolExecutor(max_workers=8) as pool:
+                        futures = {pool.submit(fetch_issue_comments, iss["key"]): iss["key"]
+                                   for iss in issues_needing_comments}
+                        for fut in as_completed(futures):
+                            key = futures[fut]
+                            try:
+                                comments_map[key] = fut.result()
+                            except Exception:
+                                comments_map[key] = []
+
                 def fmt(iss, include_desc=False):
                     pts = f"| Points: {iss['points']}" if iss['points'] else ""
                     lbl = f"| Labels: {', '.join(iss['labels'])}" if iss['labels'] else ""
                     desc = ("\n  Description: " + iss['description'] if include_desc and iss.get('description') else "")
-                    return f"- [{iss['key']}] {iss['summary']} | Type: {iss['type']} | Assignee: {iss['assignee']} | Priority: {iss['priority']} {pts} {lbl}{desc}"
+                    line = f"- [{iss['key']}] {iss['summary']} | Type: {iss['type']} | Assignee: {iss['assignee']} | Priority: {iss['priority']} {pts} {lbl}{desc}"
+                    coms = comments_map.get(iss["key"], [])
+                    if coms:
+                        line += "\n  Comments:\n" + "\n".join(f"    > {c}" for c in coms)
+                    return line
 
                 lines = [
                     f"PROJECT: {project_name}", f"SPRINT: {sprint_name}", f"DATE: {week_of}",
