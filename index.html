@@ -946,7 +946,7 @@ Acceptance Criteria:
       const [sortCol, setSortCol] = useState("checked_at");
       const [sortDir, setSortDir] = useState("desc");
       const [page, setPage] = useState(1);
-      const [pageSize, setPageSize] = useState(10);
+      const [pageSize, setPageSize] = useState(25);
       const [selectedIds, setSelectedIds] = useState(new Set());
 
       function toggleSort(col) {
@@ -1170,8 +1170,25 @@ Acceptance Criteria:
                   </tbody>
                 </table>
               </div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 2px" }}>
-                <span style={{ fontSize: 11, color: "var(--color-text-secondary)", marginRight: 2 }}>Show:</span>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 2px", flexWrap: "wrap" }}>
+                {totalPages > 1 && (
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                    style={{ padding: "5px 10px", fontSize: 11, border: "0.5px solid #314550",
+                      borderRadius: "var(--border-radius-md)", cursor: page === 1 ? "default" : "pointer",
+                      background: "#F4F3F0", color: page === 1 ? "#aaa" : "#053057" }}>← Prev</button>
+                )}
+                {totalPages > 1 && (
+                  <span style={{ fontSize: 11, color: "var(--color-text-secondary)", padding: "0 4px" }}>
+                    Page {page} of {totalPages}
+                  </span>
+                )}
+                {totalPages > 1 && (
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                    style={{ padding: "5px 10px", fontSize: 11, border: "0.5px solid #314550",
+                      borderRadius: "var(--border-radius-md)", cursor: page === totalPages ? "default" : "pointer",
+                      background: "#F4F3F0", color: page === totalPages ? "#aaa" : "#053057" }}>Next →</button>
+                )}
+                <span style={{ fontSize: 11, color: "var(--color-text-secondary)", marginLeft: totalPages > 1 ? 10 : 0 }}>Show:</span>
                 {PAGE_SIZE_OPTIONS.map(opt => (
                   <button key={opt} onClick={() => { setPageSize(opt); setPage(1); setExpandedId(null); }}
                     style={{ padding: "5px 9px", fontSize: 11, border: "0.5px solid #314550",
@@ -2021,11 +2038,28 @@ Acceptance Criteria:
               </tbody>
             </table>
             </div>
-          {pageSize !== "All" && Math.ceil(issues.length / pageSize) > 1 && (() => {
-            const totalPages = Math.ceil(issues.length / pageSize);
+          {(() => {
+            const totalPages = pageSize === "All" ? 1 : Math.max(1, Math.ceil(issues.length / pageSize));
             return (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 4px", background: "#0B0D0E", borderTop: "1px solid #314550" }}>
-                <span style={{ fontSize: 11, color: "#A2F3F3", marginRight: 2 }}>Show:</span>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 4px", background: "#0B0D0E", borderTop: "1px solid #314550", flexWrap: "wrap" }}>
+                {totalPages > 1 && (
+                  <button onClick={() => setStoryPage(p => Math.max(1, p - 1))} disabled={storyPage === 1}
+                    style={{ padding: "5px 10px", fontSize: 11, border: "0.5px solid #314550", borderRadius: 6,
+                      cursor: storyPage === 1 ? "default" : "pointer",
+                      background: "#1A2F4A", color: storyPage === 1 ? "#556" : "#A2F3F3" }}>← Prev</button>
+                )}
+                {totalPages > 1 && (
+                  <span style={{ fontSize: 11, color: "#A2F3F3", padding: "0 4px" }}>
+                    Page {storyPage} of {totalPages}
+                  </span>
+                )}
+                {totalPages > 1 && (
+                  <button onClick={() => setStoryPage(p => Math.min(totalPages, p + 1))} disabled={storyPage === totalPages}
+                    style={{ padding: "5px 10px", fontSize: 11, border: "0.5px solid #314550", borderRadius: 6,
+                      cursor: storyPage === totalPages ? "default" : "pointer",
+                      background: "#1A2F4A", color: storyPage === totalPages ? "#556" : "#A2F3F3" }}>Next →</button>
+                )}
+                <span style={{ fontSize: 11, color: "#A2F3F3", marginLeft: totalPages > 1 ? 10 : 0 }}>Show:</span>
                 {PAGE_SIZE_OPTIONS.map(opt => (
                   <button key={opt} onClick={() => { setPageSize(opt); setStoryPage(1); setExpandedKey(null); }}
                     style={{ padding: "5px 9px", fontSize: 11, border: "0.5px solid #314550", borderRadius: 6,
