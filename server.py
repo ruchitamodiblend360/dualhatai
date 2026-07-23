@@ -1071,6 +1071,7 @@ class Handler(BaseHTTPRequestHandler):
         epic = (payload.get("epic") or "").strip()
         dor = (payload.get("dor") or "").strip()
         mode = (payload.get("mode") or "story").strip()  # "story" | "epic"
+        jira_key = (payload.get("jira_key") or "").strip().upper()
 
         active_prompt = EPIC_SYSTEM_PROMPT if mode == "epic" else SYSTEM_PROMPT
 
@@ -1158,6 +1159,8 @@ class Handler(BaseHTTPRequestHandler):
             "checked_at": time.strftime("%Y-%m-%d %H:%M"),
             "result": parsed,
         }
+        if jira_key:
+            entry["jira_key"] = jira_key
         history = load_history()
         history.insert(0, entry)
         save_history(history)

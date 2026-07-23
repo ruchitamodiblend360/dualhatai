@@ -816,12 +816,16 @@ Acceptance Criteria:
                         {/* Key input + actions — hidden after successful push */}
                         {pushStatus !== "ok" && (
                           <div style={{ background: "#0B0D0E", padding: "12px 16px", borderTop: "1px solid #314550", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                            <input value={jiraKey} onChange={e => { setJiraKey(e.target.value.toUpperCase()); setPushStatus(null); }}
+                            <input value={jiraKey}
+                              onChange={e => { if (!initialJiraKey) { setJiraKey(e.target.value.toUpperCase()); setPushStatus(null); } }}
+                              readOnly={!!initialJiraKey}
                               placeholder="Jira key e.g. PROJ-123"
                               style={{ flex: "1 1 160px", minWidth: 0, padding: "7px 10px", fontSize: 12,
-                                border: "1px solid #314550", borderRadius: 7, background: "#1A1A1A",
-                                color: "#F4F3F0", fontFamily: "var(--font-mono)", outline: "none" }}
-                              onFocus={e => e.target.style.borderColor = "#00EDED"}
+                                border: "1px solid #314550", borderRadius: 7,
+                                background: initialJiraKey ? "#0B0D0E" : "#1A1A1A",
+                                color: "#F4F3F0", fontFamily: "var(--font-mono)", outline: "none",
+                                cursor: initialJiraKey ? "default" : "text" }}
+                              onFocus={e => { if (!initialJiraKey) e.target.style.borderColor = "#00EDED"; }}
                               onBlur={e => e.target.style.borderColor = "#314550"} />
                             <button onClick={() => { setShowJiraReview(false); setPushStatus(null); setPushMsg(""); }}
                               style={{ padding: "7px 13px", fontSize: 12, border: "1px solid #314550",
@@ -996,8 +1000,8 @@ Acceptance Criteria:
       }
 
       function SortIcon({ col }) {
-        if (sortCol !== col) return <i className="ti ti-selector" style={{ fontSize: 11, opacity: 0.4 }} />;
-        return <i className={`ti ti-sort-${sortDir === "asc" ? "ascending" : "descending"}`} style={{ fontSize: 11, color: "#053057" }} />;
+        if (sortCol !== col) return <span style={{ fontSize: 9, opacity: 0.35, marginLeft: 3, lineHeight: 1 }}>⇅</span>;
+        return <span style={{ fontSize: 10, color: "#053057", marginLeft: 3, lineHeight: 1 }}>{sortDir === "asc" ? "▲" : "▼"}</span>;
       }
 
       const thStyle = (extra = {}) => ({
@@ -1154,6 +1158,7 @@ Acceptance Criteria:
                             <td colSpan={9} style={{ padding: 0, background: "#1A2F4A", borderBottom: "1px solid #314550" }}>
                               <StoryPanel
                                 selectedStory={row}
+                                jiraKey={row.jira_key}
                                 onBack={() => setExpandedId(null)}
                                 onRecheck={() => onRecheck(row)}
                               />
@@ -1586,7 +1591,7 @@ Acceptance Criteria:
             const res  = await fetch("/api/analyze", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ story: issue.text, mode }),
+              body: JSON.stringify({ story: issue.text, mode, jira_key: issue.key }),
             });
             const data = await res.json();
             if (res.ok) {
@@ -1616,7 +1621,7 @@ Acceptance Criteria:
           const res = await fetch("/api/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ story: freshText, mode }),
+            body: JSON.stringify({ story: freshText, mode, jira_key: key }),
           });
           const data = await res.json();
           if (res.ok) {
