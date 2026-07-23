@@ -715,12 +715,6 @@ Acceptance Criteria:
               <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: rc.bg, color: rc.color }}>{r.readiness_level}</span>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => { navigator.clipboard.writeText(r.improved_story || ""); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                style={{ fontSize: 12, padding: "7px 13px", background: "none", border: "0.5px solid var(--color-border-secondary)",
-                  borderRadius: "var(--border-radius-md)", color: "var(--color-text-secondary)", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-                <i className={`ti ${copied ? "ti-check" : "ti-copy"}`} style={{ fontSize: 13 }} aria-hidden="true" />
-                {copied ? "Copied" : "Copy improved story"}
-              </button>
               <button onClick={onRecheck}
                 style={{ fontSize: 12, padding: "7px 13px", background: "#053057", border: "none",
                   borderRadius: "var(--border-radius-md)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
@@ -774,14 +768,6 @@ Acceptance Criteria:
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                       <div style={{ fontSize: 11, fontWeight: 600, color: "#A2F3F3", letterSpacing: "0.07em" }}>IMPROVED STORY</div>
                       <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => { navigator.clipboard.writeText(r.improved_story); setImprovedCopied(true); setTimeout(() => setImprovedCopied(false), 2000); }}
-                          style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11,
-                            color: "#F4F3F0", background: "none", cursor: "pointer",
-                            border: "0.5px solid #314550",
-                            borderRadius: "var(--border-radius-md)", padding: "3px 8px" }}>
-                          <i className={`ti ${improvedCopied ? "ti-check" : "ti-copy"}`} style={{ fontSize: 12 }} />
-                          {improvedCopied ? "Copied" : "Copy"}
-                        </button>
                         <button onClick={() => { setEditableDescription(buildJiraDescription(r)); setShowJiraReview(true); setPushStatus(null); setPushMsg(""); }}
                           style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11,
                             color: "#053057", background: "#A2F3F3", cursor: "pointer",
