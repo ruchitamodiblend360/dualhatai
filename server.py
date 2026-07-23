@@ -367,27 +367,34 @@ def jira_agile_get(path):
 
 def fetch_issue_comments(key, max_comments=3, max_chars=300):
     """Fetch the most recent comments for a Jira issue. Returns a list of plain-text strings."""
-    try:
-        data = jira_get(f"issue/{key}/comment?maxResults=50&orderBy=-created")
-        comments = data.get("comments", [])
-        recent = comments[-max_comments:] if len(comments) > max_comments else comments
+    for attempt in range(3):
+        try:
+            data = jira_get(f"issue/{key}/comment?maxResults=50&orderBy=-created")
+            comments = data.get("comments", [])
+            recent = comments[-max_comments:] if len(comments) > max_comments else comments
 
-        def _txt(node):
-            if not node: return ""
-            if isinstance(node, str): return node
-            parts = [_txt(c) for c in node.get("content", [])]
-            return (" ".join(p for p in parts if p.strip()) or node.get("text", ""))
+            def _txt(node):
+                if not node: return ""
+                if isinstance(node, str): return node
+                parts = [_txt(c) for c in node.get("content", [])]
+                return (" ".join(p for p in parts if p.strip()) or node.get("text", ""))
 
-        result = []
-        for c in recent:
-            author = (c.get("author") or {}).get("displayName", "Unknown")
-            body_raw = c.get("body") or {}
-            text = (_txt(body_raw) if isinstance(body_raw, dict) else str(body_raw)).strip()
-            if text:
-                result.append(f"{author}: {text[:max_chars]}")
-        return result
-    except Exception:
-        return []
+            result = []
+            for c in recent:
+                author = (c.get("author") or {}).get("displayName", "Unknown")
+                body_raw = c.get("body") or {}
+                text = (_txt(body_raw) if isinstance(body_raw, dict) else str(body_raw)).strip()
+                if text:
+                    result.append(f"{author}: {text[:max_chars]}")
+            return result
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                time.sleep(2 ** attempt)  # 1s, 2s, 4s backoff
+                continue
+            return []
+        except Exception:
+            return []
+    return []
 
 
 def fetch_board_detail(board):
@@ -916,7 +923,7 @@ class Handler(BaseHTTPRequestHandler):
                 issues_needing_comments = done_issues + in_progress_issues
                 comments_map = {}
                 if issues_needing_comments:
-                    with ThreadPoolExecutor(max_workers=8) as pool:
+                    with ThreadPoolExecutor(max_workers=3) as pool:
                         futures = {pool.submit(fetch_issue_comments, iss["key"]): iss["key"]
                                    for iss in issues_needing_comments}
                         for fut in as_completed(futures):
