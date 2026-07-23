@@ -945,7 +945,7 @@ Acceptance Criteria:
 
     /* ── Dashboard ── */
     function Dashboard({ history, setHistory, onRecheck }) {
-      const PAGE_SIZE = 10;
+      const PAGE_SIZE_OPTIONS = [10, 25, 50, "All"];
       const RC = { "Not Ready": { color: "#A32D2D", bg: "#FCEBEB" }, "Needs Work": { color: "#854F0B", bg: "#FAEEDA" }, "Almost Ready": { color: "#053057", bg: "#A2F3F3" }, "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" } };
       const scoreColor = v => v >= 80 ? "#1D9E75" : v >= 60 ? "#378ADD" : v >= 40 ? "#EF9F27" : "#E24B4A";
 
@@ -956,6 +956,8 @@ Acceptance Criteria:
       const [sortCol, setSortCol] = useState("checked_at");
       const [sortDir, setSortDir] = useState("desc");
       const [page, setPage] = useState(1);
+      const [pageSize, setPageSize] = useState(10);
+      const [selectedIds, setSelectedIds] = useState(new Set());
 
       function toggleSort(col) {
         if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -965,9 +967,22 @@ Acceptance Criteria:
 
       function deleteRow(id, e) {
         e.stopPropagation();
-        fetch(`/api/history/delete/${id}`).then(() =>
-          setHistory(h => h.filter(r => r.id !== id))
-        );
+        fetch(`/api/history/delete/${id}`).then(() => {
+          setHistory(h => h.filter(r => r.id !== id));
+          setSelectedIds(s => { const n = new Set(s); n.delete(id); return n; });
+        });
+      }
+
+      function deleteSelected() {
+        const ids = [...selectedIds];
+        Promise.all(ids.map(id => fetch(`/api/history/delete/${id}`))).then(() => {
+          setHistory(h => h.filter(r => !ids.includes(r.id)));
+          setSelectedIds(new Set());
+        });
+      }
+
+      function toggleSelectRow(id) {
+        setSelectedIds(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
       }
 
       const filtered = history
@@ -982,8 +997,17 @@ Acceptance Criteria:
           return 0;
         });
 
-      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-      const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+      const pageRows = pageSize === "All" ? filtered : filtered.slice((page - 1) * pageSize, page * pageSize);
+      const totalPages = pageSize === "All" ? 1 : Math.max(1, Math.ceil(filtered.length / pageSize));
+      const allPageSelected = pageRows.length > 0 && pageRows.every(r => selectedIds.has(r.id));
+
+      function toggleSelectAll() {
+        if (allPageSelected) {
+          setSelectedIds(s => { const n = new Set(s); pageRows.forEach(r => n.delete(r.id)); return n; });
+        } else {
+          setSelectedIds(s => { const n = new Set(s); pageRows.forEach(r => n.add(r.id)); return n; });
+        }
+      }
 
       function SortIcon({ col }) {
         if (sortCol !== col) return <i className="ti ti-selector" style={{ fontSize: 11, opacity: 0.4 }} />;
@@ -1003,14 +1027,24 @@ Acceptance Criteria:
               <h2 style={{ fontSize: 18, fontWeight: 500, color: "#053057", margin: "0 0 4px" }}>Sprint Dashboard</h2>
               <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: 0 }}>{filtered.length} of {history.length} stories</p>
             </div>
-            {history.length > 0 && (
-              <button onClick={() => fetch("/api/history/clear").then(() => setHistory([]))}
-                style={{ fontSize: 12, padding: "6px 12px", background: "none", cursor: "pointer",
-                  border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-md)",
-                  color: "var(--color-text-secondary)", display: "flex", alignItems: "center", gap: 5 }}>
-                <i className="ti ti-trash" style={{ fontSize: 13 }} /> Clear all
-              </button>
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {selectedIds.size > 0 && (
+                <button onClick={deleteSelected}
+                  style={{ fontSize: 12, padding: "6px 12px", background: "#A32D2D", cursor: "pointer",
+                    border: "none", borderRadius: "var(--border-radius-md)",
+                    color: "#fff", display: "flex", alignItems: "center", gap: 5 }}>
+                  <i className="ti ti-trash" style={{ fontSize: 13 }} /> Delete {selectedIds.size} selected
+                </button>
+              )}
+              {history.length > 0 && (
+                <button onClick={() => fetch("/api/history/clear").then(() => { setHistory([]); setSelectedIds(new Set()); })}
+                  style={{ fontSize: 12, padding: "6px 12px", background: "none", cursor: "pointer",
+                    border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-md)",
+                    color: "var(--color-text-secondary)", display: "flex", alignItems: "center", gap: 5 }}>
+                  <i className="ti ti-trash" style={{ fontSize: 13 }} /> Clear all
+                </button>
+              )}
+            </div>
           </div>
 
           {history.length > 0 && (
@@ -1062,6 +1096,10 @@ Acceptance Criteria:
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: "var(--color-background-secondary)" }}>
+                      <th style={thStyle({ width: 42, cursor: "default" })} onClick={e => e.stopPropagation()}>
+                        <input type="checkbox" checked={allPageSelected} onChange={toggleSelectAll}
+                          style={{ width: 14, height: 14, accentColor: "#053057", cursor: "pointer" }} />
+                      </th>
                       <th style={thStyle({ width: 36, cursor: "default" })}>#</th>
                       <th style={thStyle()} onClick={() => toggleSort("title")}>Title <SortIcon col="title" /></th>
                       <th style={thStyle({ width: 100 })} onClick={() => toggleSort("mode")}>Type <SortIcon col="mode" /></th>
@@ -1076,12 +1114,17 @@ Acceptance Criteria:
                     {pageRows.map((row, i) => {
                       const rc = RC[row.readiness_level] || RC["Needs Work"];
                       const isExp = expandedId === row.id;
+                      const isSel = selectedIds.has(row.id);
                       return [
                         <tr key={row.id} onClick={() => setExpandedId(isExp ? null : row.id)}
                           style={{ background: isExp ? "#1A2F4A" : "var(--color-background-primary)", cursor: "pointer", borderBottom: isExp ? "none" : undefined }}
                           onMouseEnter={e => { if (!isExp) e.currentTarget.style.background = "#1A2F4A"; }}
                           onMouseLeave={e => { if (!isExp) e.currentTarget.style.background = "var(--color-background-primary)"; }}>
-                          <td style={{ padding: "11px 14px", color: "#A2F3F3", width: 36 }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
+                          <td style={{ padding: "11px 14px", width: 42, textAlign: "center" }} onClick={e => e.stopPropagation()}>
+                            <input type="checkbox" checked={isSel} onChange={() => toggleSelectRow(row.id)}
+                              style={{ width: 14, height: 14, accentColor: "#00EDED", cursor: "pointer" }} />
+                          </td>
+                          <td style={{ padding: "11px 14px", color: "#A2F3F3", width: 36 }}>{(pageSize === "All" ? 0 : (page - 1) * pageSize) + i + 1}</td>
                           <td style={{ padding: "11px 14px", color: "#FFFFFF", maxWidth: 240 }}>
                             <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "underline" }}>{row.title}</div>
                           </td>
@@ -1122,7 +1165,7 @@ Acceptance Criteria:
                         </tr>,
                         isExp && (
                           <tr key={row.id + "-exp"}>
-                            <td colSpan={8} style={{ padding: 0, background: "#1A2F4A", borderBottom: "1px solid #314550" }}>
+                            <td colSpan={9} style={{ padding: 0, background: "#1A2F4A", borderBottom: "1px solid #314550" }}>
                               <StoryPanel
                                 selectedStory={row}
                                 onBack={() => setExpandedId(null)}
@@ -1136,25 +1179,17 @@ Acceptance Criteria:
                   </tbody>
                 </table>
               </div>
-              {totalPages > 1 && (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 2px" }}>
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550",
-                      borderRadius: "var(--border-radius-md)", background: "none", cursor: page === 1 ? "default" : "pointer",
-                      color: page === 1 ? "#314550" : "#053057" }}>‹ Prev</button>
-                  {Array.from({ length: totalPages }, (_, ii) => ii + 1).map(p => (
-                    <button key={p} onClick={() => setPage(p)}
-                      style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid #314550",
-                        borderRadius: "var(--border-radius-md)", cursor: "pointer",
-                        background: p === page ? "#053057" : "#F4F3F0",
-                        color: p === page ? "#FFFFFF" : "#053057" }}>{p}</button>
-                  ))}
-                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550",
-                      borderRadius: "var(--border-radius-md)", background: "none", cursor: page === totalPages ? "default" : "pointer",
-                      color: page === totalPages ? "#314550" : "#053057" }}>Next ›</button>
-                </div>
-              )}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 2px" }}>
+                <span style={{ fontSize: 11, color: "var(--color-text-secondary)", marginRight: 2 }}>Show:</span>
+                {PAGE_SIZE_OPTIONS.map(opt => (
+                  <button key={opt} onClick={() => { setPageSize(opt); setPage(1); setExpandedId(null); }}
+                    style={{ padding: "5px 9px", fontSize: 11, border: "0.5px solid #314550",
+                      borderRadius: "var(--border-radius-md)", cursor: "pointer",
+                      background: pageSize === opt ? "#053057" : "#F4F3F0",
+                      color: pageSize === opt ? "#FFFFFF" : "#053057",
+                      fontWeight: pageSize === opt ? 600 : 400 }}>{opt}</button>
+                ))}
+              </div>
             </>
           )}
         </div>
@@ -1205,9 +1240,9 @@ Acceptance Criteria:
       const pagedBoards = filteredBoards.slice((boardPage - 1) * BOARD_PAGE_SIZE, boardPage * BOARD_PAGE_SIZE);
 
       return (
-        <div style={{ padding: "24px 20px 28px", background: "#0B0D0E" }}>
-          <h2 style={{ fontSize: 17, fontWeight: 600, color: "#fff", margin: "0 0 5px" }}>Select a project and board</h2>
-          <p style={{ fontSize: 13, color: "#A2F3F3", opacity: 0.7, margin: "0 0 14px" }}>Choose the sprint or backlog you want to analyse.</p>
+        <div style={{ padding: "24px 20px 28px", background: "var(--color-background-secondary)" }}>
+          <h2 style={{ fontSize: 17, fontWeight: 500, color: "#053057", margin: "0 0 5px" }}>Select a project and board</h2>
+          <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: "0 0 14px" }}>Choose the sprint or backlog you want to analyze.</p>
           <div style={{ position: "relative", marginBottom: 20 }}>
             <i className="ti ti-search" style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#314550", fontSize: 14, pointerEvents: "none" }} />
             <input
@@ -1215,11 +1250,11 @@ Acceptance Criteria:
               placeholder="Search projects…"
               value={search}
               onChange={e => { setSearch(e.target.value); setBoardPage(1); }}
-              style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px 9px 32px", borderRadius: 8,
-                border: "1px solid #314550", background: "#1A1A1A", color: "#F4F3F0",
+              style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px 9px 32px", borderRadius: "var(--border-radius-md)",
+                border: "0.5px solid var(--color-border-secondary)", background: "var(--color-background-secondary)", color: "#053057",
                 fontSize: 13, outline: "none" }}
-              onFocus={e => e.target.style.borderColor = "#00EDED"}
-              onBlur={e => e.target.style.borderColor = "#314550"}
+              onFocus={e => e.target.style.borderColor = "#053057"}
+              onBlur={e => e.target.style.borderColor = "var(--color-border-secondary)"}
             />
           </div>
           {filteredBoards.length === 0 && search && (
@@ -1625,7 +1660,7 @@ Acceptance Criteria:
         return (
           <svg width={S} height={S} style={{ display: "block", margin: "0 auto", animation: "spin 0.9s linear infinite" }}>
             <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#F4F3F0" strokeWidth={3} />
-            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#053057" strokeWidth={3}
+            <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#00EDED" strokeWidth={3}
               strokeDasharray={`${circ * 0.28} ${circ * 0.72}`} strokeLinecap="round"
               transform={`rotate(-90 ${S/2} ${S/2})`} />
           </svg>
@@ -1657,28 +1692,28 @@ Acceptance Criteria:
       );
 
       return (
-        <div style={{ background: "#fff", minHeight: 400 }}>
+        <div style={{ background: "#0B0D0E", minHeight: 400 }}>
 
           {/* ── Top header ── */}
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid #314550",
+          <div style={{ padding: "14px 20px", borderBottom: "0.5px solid var(--color-border-tertiary)", background: "var(--color-background-secondary)",
             display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
             <div>
               <h2 style={{ fontSize: 18, fontWeight: 500, color: "#053057", margin: "0 0 3px" }}>{board.projectName || board.name}</h2>
-              <p style={{ fontSize: 13, color: "#1A1A1A", margin: 0 }}>{label} · {issues.length} issues</p>
+              <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: 0 }}>{label} · {issues.length} issues</p>
             </div>
             <button onClick={onChangeBoard}
-              style={{ fontSize: 12, padding: "6px 12px", border: "1px solid #314550",
+              style={{ fontSize: 12, padding: "6px 12px", border: "0.5px solid var(--color-border-secondary)",
                 borderRadius: 6, background: "none", cursor: "pointer",
-                color: "#1A1A1A", display: "flex", alignItems: "center", gap: 5 }}>
+                color: "var(--color-text-secondary)", display: "flex", alignItems: "center", gap: 5 }}>
               <i className="ti ti-arrow-left" style={{ fontSize: 12 }} /> Change board
             </button>
           </div>
 
           {/* ── Live progress banner (replaces plain selection bar when running) ── */}
           {batchStarted ? (
-            <div style={{ background: running ? "#F4F3F0" : "#F4F3F0", borderBottom: "1px solid #314550" }}>
+            <div style={{ background: "#053057", borderBottom: "1px solid #314550" }}>
               {/* Progress bar */}
-              <div style={{ height: 3, background: "#F4F3F0" }}>
+              <div style={{ height: 3, background: "#1A2F4A" }}>
                 <div style={{ height: "100%", width: `${progressPct}%`, transition: "width 0.5s ease",
                   background: running ? "linear-gradient(90deg,#053057,#00EDED)" : "#1D9E75" }} />
               </div>
@@ -1688,22 +1723,22 @@ Acceptance Criteria:
                   <input type="checkbox"
                     checked={selected.size === issues.length && issues.length > 0}
                     onChange={toggleAll} disabled={running}
-                    style={{ width: 14, height: 14, accentColor: "#053057" }} />
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "#053057" }}>
+                    style={{ width: 14, height: 14, accentColor: "#00EDED" }} />
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "#F4F3F0" }}>
                     {selectedCount} of {issues.length} selected
                   </span>
                 </label>
                 {/* Middle: live status text */}
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {running && (
-                    <span style={{ fontSize: 12, fontWeight: 500, color: "#053057",
+                    <span style={{ fontSize: 12, fontWeight: 500, color: "#A2F3F3",
                       display: "inline-flex", alignItems: "center", gap: 6 }}>
                       <svg width="14" height="14" style={{ animation: "spin 0.9s linear infinite", flexShrink: 0 }}>
                         <circle cx="7" cy="7" r="5" fill="none" stroke="#F4F3F0" strokeWidth="2.5" />
-                        <circle cx="7" cy="7" r="5" fill="none" stroke="#053057" strokeWidth="2.5"
+                        <circle cx="7" cy="7" r="5" fill="none" stroke="#00EDED" strokeWidth="2.5"
                           strokeDasharray="8 23" strokeLinecap="round" transform="rotate(-90 7 7)" />
                       </svg>
-                      Analysing {activeIdx}/{selectedCount}…
+                      Analyzing {activeIdx}/{selectedCount}…
                     </span>
                   )}
                   {!running && doneCount > 0 && (
@@ -1730,26 +1765,26 @@ Acceptance Criteria:
             </div>
           ) : (
             /* ── Pre-run selection bar ── */
-            <div style={{ padding: "11px 20px", borderBottom: "1px solid #314550",
+            <div style={{ padding: "11px 20px", borderBottom: "1px solid #314550", background: "#053057",
               display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <label style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", userSelect: "none" }}>
                 <input type="checkbox"
                   checked={selected.size === issues.length && issues.length > 0}
                   onChange={toggleAll}
-                  style={{ width: 14, height: 14, accentColor: "#053057" }} />
-                <span style={{ fontSize: 13, fontWeight: 500, color: "#053057" }}>
+                  style={{ width: 14, height: 14, accentColor: "#00EDED" }} />
+                <span style={{ fontSize: 13, fontWeight: 500, color: "#F4F3F0" }}>
                   {selectedCount} of {issues.length} selected
                 </span>
               </label>
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ fontSize: 11, color: "#1A1A1A" }}>Show:</span>
+                  <span style={{ fontSize: 11, color: "#A2F3F3" }}>Show:</span>
                   {PAGE_SIZE_OPTIONS.map(opt => (
                     <button key={opt} onClick={() => { setPageSize(opt); setStoryPage(1); setExpandedKey(null); }}
                       style={{ padding: "4px 9px", fontSize: 11, borderRadius: 5, cursor: "pointer",
                         border: "1px solid #314550",
-                        background: pageSize === opt ? "#053057" : "#F4F3F0",
-                        color: pageSize === opt ? "#FFFFFF" : "#053057",
+                        background: pageSize === opt ? "#00EDED" : "#1A2F4A",
+                        color: pageSize === opt ? "#053057" : "#A2F3F3",
                         fontWeight: pageSize === opt ? 600 : 400 }}>{opt}</button>
                   ))}
                 </div>
@@ -1766,16 +1801,16 @@ Acceptance Criteria:
 
           {/* ── Real-time summary strip ── */}
           {batchStarted && (
-            <div style={{ display: "flex", background: "#F4F3F0", borderBottom: "1px solid #314550" }}>
+            <div style={{ display: "flex", background: "#0B0D0E", borderBottom: "1px solid #314550" }}>
               {[
-                { val: `${doneCount}/${selectedCount}`, sub: "Analyzed",     color: "#053057", icon: "ti-chart-bar" },
-                { val: sprintReadyCount,                sub: "Sprint ready",  color: "#0F6E56", icon: "ti-circle-check" },
-                { val: criticalGaps,                    sub: "Critical gaps", color: criticalGaps > 0 ? "#A32D2D" : "#1A1A1A", icon: "ti-alert-circle" },
+                { val: `${doneCount}/${selectedCount}`, sub: "Analyzed",     color: "#A2F3F3", icon: "ti-chart-bar" },
+                { val: sprintReadyCount,                sub: "Sprint ready",  color: "#1D9E75", icon: "ti-circle-check" },
+                { val: criticalGaps,                    sub: "Critical gaps", color: criticalGaps > 0 ? "#F87171" : "#A2F3F3", icon: "ti-alert-circle" },
               ].map((s, i) => (
                 <div key={i} style={{ flex: 1, textAlign: "center", padding: "14px 0",
                   borderRight: i < 2 ? "1px solid #314550" : "none" }}>
                   <div style={{ fontSize: 24, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.val}</div>
-                  <div style={{ fontSize: 11, color: "#1A1A1A", marginTop: 4, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                  <div style={{ fontSize: 11, color: "#A2F3F3", marginTop: 4, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                     <i className={`ti ${s.icon}`} style={{ fontSize: 11 }} />{s.sub}
                   </div>
                 </div>
@@ -1785,22 +1820,22 @@ Acceptance Criteria:
 
           {/* ── Table ── */}
           {issues.length === 0 ? (
-            <div style={{ padding: "48px 24px", textAlign: "center", color: "#1A1A1A", fontSize: 13 }}>
+            <div style={{ padding: "48px 24px", textAlign: "center", color: "#A2F3F3", fontSize: 13 }}>
               No issues found in this {type}.
             </div>
           ) : (
             <>
-            <div style={{ background: "#fff", border: "1px solid #314550", borderRadius: 10, overflow: "hidden", margin: "0" }}>
+            <div style={{ background: "#0B0D0E", border: "1px solid #314550", borderRadius: 10, overflow: "hidden", margin: "0" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ background: "#0B0D0E" }}>
-                  <th style={{ width: 42, padding: "9px 16px", borderBottom: "1px solid #314550" }} />
-                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#A2F3F3", borderBottom: "1px solid #314550", whiteSpace: "nowrap" }}>ID</th>
-                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#A2F3F3", borderBottom: "1px solid #314550" }}>TITLE</th>
-                  <th style={{ textAlign: "right", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#A2F3F3", borderBottom: "1px solid #314550", width: 60, whiteSpace: "nowrap" }}>PTS</th>
-                  <th style={{ textAlign: "center", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#A2F3F3", borderBottom: "1px solid #314550", width: 60 }}>SCORE</th>
-                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "#A2F3F3", borderBottom: "1px solid #314550", width: 130 }}>STATUS</th>
-                  <th style={{ width: 36, borderBottom: "1px solid #314550" }} />
+                <tr style={{ background: "var(--color-background-secondary)" }}>
+                  <th style={{ width: 42, padding: "9px 16px", borderBottom: "0.5px solid var(--color-border-tertiary)" }} />
+                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "var(--color-text-secondary)", borderBottom: "0.5px solid var(--color-border-tertiary)", whiteSpace: "nowrap" }}>ID</th>
+                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "var(--color-text-secondary)", borderBottom: "0.5px solid var(--color-border-tertiary)" }}>TITLE</th>
+                  <th style={{ textAlign: "right", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "var(--color-text-secondary)", borderBottom: "0.5px solid var(--color-border-tertiary)", width: 60, whiteSpace: "nowrap" }}>PTS</th>
+                  <th style={{ textAlign: "center", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "var(--color-text-secondary)", borderBottom: "0.5px solid var(--color-border-tertiary)", width: 60 }}>SCORE</th>
+                  <th style={{ textAlign: "left", padding: "9px 12px", fontSize: 11, fontWeight: 500, color: "var(--color-text-secondary)", borderBottom: "0.5px solid var(--color-border-tertiary)", width: 130 }}>STATUS</th>
+                  <th style={{ width: 36, borderBottom: "0.5px solid var(--color-border-tertiary)" }} />
                 </tr>
               </thead>
               <tbody>
@@ -1860,7 +1895,7 @@ Acceptance Criteria:
                             {result.readiness_level}
                           </span>
                         ) : st === "running" ? (
-                          <span style={{ fontSize: 11, color: "#A2F3F3", fontWeight: 500 }}>Analysing…</span>
+                          <span style={{ fontSize: 11, color: "#A2F3F3", fontWeight: 500 }}>Analyzing…</span>
                         ) : st === "error" ? (
                           <span style={{ fontSize: 11, color: "#F87171" }}>Error</span>
                         ) : isSel ? (
@@ -1892,7 +1927,7 @@ Acceptance Criteria:
                             {/* Meta pills row */}
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: issue.text ? 14 : 0 }}>
                               <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 99,
-                                background: "#F4F3F0", color: "#053057", fontFamily: "monospace" }}>{issue.key}</span>
+                                background: "#A2F3F3", color: "#053057", fontFamily: "monospace" }}>{issue.key}</span>
                               {issue.type && (
                                 <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 99,
                                   background: isEpic ? "#EDE9FE" : "#A2F3F3",
@@ -1902,7 +1937,7 @@ Acceptance Criteria:
                               )}
                               {issue.status && (
                                 <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 99,
-                                  background: "#F4F3F0", color: "#314550", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                  background: "#1A2F4A", color: "#A2F3F3", display: "inline-flex", alignItems: "center", gap: 4 }}>
                                   <i className="ti ti-circle-dot" style={{ fontSize: 10 }} />{issue.status}
                                 </span>
                               )}
@@ -1920,7 +1955,7 @@ Acceptance Criteria:
                               )}
                               {issue.assignee && (
                                 <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 99,
-                                  background: "#F4F3F0", color: "#1A1A1A", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                  background: "#1A2F4A", color: "#A2F3F3", display: "inline-flex", alignItems: "center", gap: 4 }}>
                                   <i className="ti ti-user" style={{ fontSize: 10 }} />{issue.assignee}
                                 </span>
                               )}
@@ -1957,17 +1992,17 @@ Acceptance Criteria:
                               onRecheck={() => {}}
                             />
                           ) : (
-                            <div style={{ padding: "14px 20px", background: "#F4F3F0",
-                              display: "flex", alignItems: "center", gap: 8, color: "#1A1A1A", fontSize: 12 }}>
+                            <div style={{ padding: "14px 20px", background: "#053057",
+                              display: "flex", alignItems: "center", gap: 8, color: "#A2F3F3", fontSize: 12 }}>
                               {st === "running"
                                 ? <><svg width="14" height="14" style={{ animation: "spin 0.9s linear infinite", flexShrink: 0 }}>
-                                    <circle cx="7" cy="7" r="5" fill="none" stroke="#F4F3F0" strokeWidth="2.5" />
-                                    <circle cx="7" cy="7" r="5" fill="none" stroke="#053057" strokeWidth="2.5"
+                                    <circle cx="7" cy="7" r="5" fill="none" stroke="#1A2F4A" strokeWidth="2.5" />
+                                    <circle cx="7" cy="7" r="5" fill="none" stroke="#00EDED" strokeWidth="2.5"
                                       strokeDasharray="8 23" strokeLinecap="round" transform="rotate(-90 7 7)" />
                                   </svg>
-                                  <span style={{ color: "#053057", fontWeight: 500 }}>Analysing this story…</span></>
+                                  <span style={{ color: "#A2F3F3", fontWeight: 500 }}>Analyzing this story…</span></>
                                 : <><i className="ti ti-sparkles" style={{ fontSize: 14 }} />
-                                    {isSel ? "Queued — run the batch to see readiness scores." : "Select this story and run the batch to analyse it."}</>}
+                                    {isSel ? "Queued — run the batch to see readiness scores." : "Select this story and run the batch to analyze it."}</>}
                             </div>
                           )}
                         </td>
@@ -1982,21 +2017,21 @@ Acceptance Criteria:
           {pageSize !== "All" && Math.ceil(issues.length / pageSize) > 1 && (() => {
             const totalPages = Math.ceil(issues.length / pageSize);
             return (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 4px", background: "#fff", borderTop: "1px solid #314550" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0 4px", background: "#0B0D0E", borderTop: "1px solid #314550" }}>
                 <button onClick={() => { setStoryPage(p => Math.max(1, p - 1)); setExpandedKey(null); }} disabled={storyPage === 1}
                   style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
                     background: "none", cursor: storyPage === 1 ? "default" : "pointer",
-                    color: storyPage === 1 ? "#314550" : "#053057" }}>‹ Prev</button>
+                    color: storyPage === 1 ? "#314550" : "#F4F3F0" }}>‹ Prev</button>
                 {Array.from({ length: totalPages }, (_, ii) => ii + 1).map(p => (
                   <button key={p} onClick={() => { setStoryPage(p); setExpandedKey(null); }}
                     style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
-                      cursor: "pointer", background: p === storyPage ? "#053057" : "#F4F3F0",
-                      color: p === storyPage ? "#FFFFFF" : "#053057" }}>{p}</button>
+                      cursor: "pointer", background: p === storyPage ? "#053057" : "#1A2F4A",
+                      color: p === storyPage ? "#FFFFFF" : "#A2F3F3" }}>{p}</button>
                 ))}
                 <button onClick={() => { setStoryPage(p => Math.min(totalPages, p + 1)); setExpandedKey(null); }} disabled={storyPage === totalPages}
                   style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
                     background: "none", cursor: storyPage === totalPages ? "default" : "pointer",
-                    color: storyPage === totalPages ? "#314550" : "#053057" }}>Next ›</button>
+                    color: storyPage === totalPages ? "#314550" : "#F4F3F0" }}>Next ›</button>
               </div>
             );
           })()}
