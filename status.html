@@ -193,9 +193,9 @@
         );
 
         return (
-          <div style={{ padding: "24px 20px 28px" }}>
-            <h2 style={{ fontSize: 17, fontWeight: 600, color: "#fff", margin: "0 0 5px" }}>Select a project board</h2>
-            <p style={{ fontSize: 13, color: "#A2F3F3", opacity: 0.7, margin: "0 0 14px" }}>
+          <div style={{ padding: "24px 20px 28px", background: "#ffffff" }}>
+            <h2 style={{ fontSize: 17, fontWeight: 500, color: "#053057", margin: "0 0 5px" }}>Select a project board</h2>
+            <p style={{ fontSize: 13, color: "#314550", margin: "0 0 14px" }}>
               Pick a board, then select a sprint to generate an executive status deck with AI.
             </p>
             <div style={{ position: "relative", marginBottom: 20 }}>
@@ -205,16 +205,16 @@
                 placeholder="Search projects…"
                 value={search}
                 onChange={function(e) { setSearch(e.target.value); setBoardPage(1); }}
-                style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px 9px 32px", borderRadius: 8,
-                  border: "1px solid #314550", background: "#1A1A1A", color: "#F4F3F0",
+                style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px 9px 32px", borderRadius: 6,
+                  border: "0.5px solid #314550", background: "#ffffff", color: "#053057",
                   fontSize: 13, outline: "none" }}
-                onFocus={function(e) { e.target.style.borderColor = "#00EDED"; }}
+                onFocus={function(e) { e.target.style.borderColor = "#053057"; }}
                 onBlur={function(e) { e.target.style.borderColor = "#314550"; }}
               />
             </div>
             {filteredBoards.length === 0 && search && (
               <div style={{ textAlign: "center", padding: "40px 0", color: "#314550", fontSize: 13 }}>
-                No projects match "<span style={{ color: "#A2F3F3" }}>{search}</span>"
+                No projects match "<span style={{ color: "#053057", fontWeight: 500 }}>{search}</span>"
               </div>
             )}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
@@ -224,22 +224,22 @@
                 return (
                   <div key={board.id}
                     onClick={function() { setSelectedBoard(board); setSelectedSprint(null); setDeck(null); }}
-                    style={{ border: isSel ? "2px solid #00EDED" : "1px solid #314550", borderRadius: 10,
-                      background: isSel ? "#053057" : "#1A1A1A", cursor: "pointer",
+                    style={{ border: isSel ? "2px solid #053057" : "0.5px solid #314550", borderRadius: 10,
+                      background: isSel ? "#eef6ff" : "#ffffff", cursor: "pointer",
                       padding: "13px 15px", display: "flex", alignItems: "center", gap: 11 }}>
                     <div style={{ width: 34, height: 34, borderRadius: 8, background: color, flexShrink: 0,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: 12, fontWeight: 700, color: "#fff" }}>{initials(board.projectName || board.name)}</div>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: isSel ? "#00EDED" : "#fff",
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#053057",
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {board.projectName || board.name}
                       </div>
-                      <div style={{ fontSize: 11, color: "#A2F3F3", marginTop: 2 }}>
+                      <div style={{ fontSize: 11, color: "#314550", marginTop: 2 }}>
                         {board.sprints.length} sprint{board.sprints.length !== 1 ? "s" : ""} &middot; {board.backlogCount} backlog
                       </div>
                     </div>
-                    {isSel && <i className="ti ti-check" style={{ marginLeft: "auto", color: "#00EDED", fontSize: 16, flexShrink: 0 }} />}
+                    {isSel && <i className="ti ti-check" style={{ marginLeft: "auto", color: "#053057", fontSize: 16, flexShrink: 0 }} />}
                   </div>
                 );
               })}
@@ -249,19 +249,19 @@
                 <button onClick={function() { setBoardPage(function(p) { return Math.max(1, p - 1); }); }} disabled={boardPage === 1}
                   style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
                     background: "none", cursor: boardPage === 1 ? "default" : "pointer",
-                    color: boardPage === 1 ? "#314550" : "#A2F3F3" }}>‹ Prev</button>
+                    color: boardPage === 1 ? "#314550" : "#053057" }}>‹ Prev</button>
                 {Array.from({ length: totalBoardPages }, function(_, ii) { return ii + 1; }).map(function(p) {
                   return (
                     <button key={p} onClick={function() { setBoardPage(p); }}
                       style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
-                        cursor: "pointer", background: p === boardPage ? "#053057" : "#1A1A1A",
-                        color: p === boardPage ? "#FFFFFF" : "#A2F3F3" }}>{p}</button>
+                        cursor: "pointer", background: p === boardPage ? "#053057" : "#F4F3F0",
+                        color: p === boardPage ? "#FFFFFF" : "#053057" }}>{p}</button>
                   );
                 })}
                 <button onClick={function() { setBoardPage(function(p) { return Math.min(totalBoardPages, p + 1); }); }} disabled={boardPage === totalBoardPages}
                   style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
                     background: "none", cursor: boardPage === totalBoardPages ? "default" : "pointer",
-                    color: boardPage === totalBoardPages ? "#314550" : "#A2F3F3" }}>Next ›</button>
+                    color: boardPage === totalBoardPages ? "#314550" : "#053057" }}>Next ›</button>
               </div>
             )}
           </div>
