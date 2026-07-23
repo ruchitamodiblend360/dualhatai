@@ -1150,7 +1150,9 @@ Acceptance Criteria:
                               onMouseLeave={e => e.currentTarget.style.color = "#F4F3F0"}>
                               <i className="ti ti-trash" style={{ fontSize: 14 }} />
                             </button>
-                            <i className={`ti ti-chevron-${isExp ? "up" : "down"}`} style={{ fontSize: 13, color: "#F4F3F0" }} />
+                            <i className={`ti ti-chevron-${isExp ? "up" : "down"}`}
+                              onClick={() => setExpandedId(isExp ? null : row.id)}
+                              style={{ fontSize: 13, color: "#F4F3F0", cursor: "pointer" }} />
                           </td>
                         </tr>,
                         isExp && (
