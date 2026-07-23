@@ -1617,6 +1617,33 @@ Acceptance Criteria:
         setRunning(false);
       }
 
+      async function recheckIssue(key) {
+        setStatuses(s => ({ ...s, [key]: "running" }));
+        try {
+          // Fetch the latest description from Jira so re-check uses the updated text
+          const jiraRes = await fetch(`/api/jira/issue/${key}`);
+          const jiraData = jiraRes.ok ? await jiraRes.json() : null;
+          const freshText = jiraData?.text || issues.find(i => i.key === key)?.text || "";
+          // Update the issue text in state so future re-checks also use the fresh version
+          setIssues(prev => prev.map(i => i.key === key ? { ...i, text: freshText } : i));
+          const mode = (issues.find(i => i.key === key)?.type || "").toLowerCase() === "epic" ? "epic" : "story";
+          const res = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ story: freshText, mode }),
+          });
+          const data = await res.json();
+          if (res.ok) {
+            setResults(r => ({ ...r, [key]: data }));
+            setStatuses(s => ({ ...s, [key]: "done" }));
+          } else {
+            setStatuses(s => ({ ...s, [key]: "error" }));
+          }
+        } catch {
+          setStatuses(s => ({ ...s, [key]: "error" }));
+        }
+      }
+
       function toggleSelect(key) {
         setSelected(s => { const n = new Set(s); n.has(key) ? n.delete(key) : n.add(key); return n; });
       }
@@ -1989,7 +2016,7 @@ Acceptance Criteria:
                               }}
                               jiraKey={issue.key}
                               onBack={() => setExpandedKey(null)}
-                              onRecheck={() => {}}
+                              onRecheck={() => recheckIssue(issue.key)}
                             />
                           ) : (
                             <div style={{ padding: "14px 20px", background: "#053057",
