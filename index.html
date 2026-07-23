@@ -1923,7 +1923,7 @@ Acceptance Criteria:
                         <td colSpan={7} style={{ padding: 0, borderBottom: "1px solid #314550" }}>
 
                           {/* ── Jira info header (always shown) ── */}
-                          <div style={{ padding: "16px 20px", background: "#0B0D0E", borderBottom: "1px solid #314550" }}>
+                          <div style={{ padding: "16px 20px", background: "var(--color-background-secondary)", borderBottom: "0.5px solid var(--color-border-tertiary)" }}>
                             {/* Meta pills row */}
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: issue.text ? 14 : 0 }}>
                               <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 99,
@@ -1937,7 +1937,7 @@ Acceptance Criteria:
                               )}
                               {issue.status && (
                                 <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 99,
-                                  background: "#1A2F4A", color: "#A2F3F3", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                  background: "#eef0f2", color: "#314550", display: "inline-flex", alignItems: "center", gap: 4 }}>
                                   <i className="ti ti-circle-dot" style={{ fontSize: 10 }} />{issue.status}
                                 </span>
                               )}
@@ -1955,7 +1955,7 @@ Acceptance Criteria:
                               )}
                               {issue.assignee && (
                                 <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 99,
-                                  background: "#1A2F4A", color: "#A2F3F3", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                  background: "#eef0f2", color: "#314550", display: "inline-flex", alignItems: "center", gap: 4 }}>
                                   <i className="ti ti-user" style={{ fontSize: 10 }} />{issue.assignee}
                                 </span>
                               )}
@@ -1964,13 +1964,13 @@ Acceptance Criteria:
                             {issue.text && (
                               <div>
                                 <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.07em",
-                                  textTransform: "uppercase", color: "#A2F3F3", marginBottom: 7 }}>
+                                  textTransform: "uppercase", color: "#314550", marginBottom: 7 }}>
                                   {isEpic ? "Epic description" : "Story description"}
                                 </div>
                                 <pre style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.75,
                                   whiteSpace: "pre-wrap", wordBreak: "break-word",
-                                  background: "#1A1A1A", border: "1px solid #314550", borderRadius: 7,
-                                  padding: "11px 14px", color: "#F4F3F0", maxHeight: 220, overflowY: "auto" }}>
+                                  background: "#f4f5f7", border: "0.5px solid var(--color-border-secondary)", borderRadius: 7,
+                                  padding: "11px 14px", color: "#053057", maxHeight: 220, overflowY: "auto" }}>
                                   {issue.text}
                                 </pre>
                               </div>
