@@ -1642,6 +1642,7 @@ Acceptance Criteria:
 
       async function recheckIssue(key) {
         setStatuses(s => ({ ...s, [key]: "running" }));
+        setResults(r => { const n = { ...r }; delete n[key]; return n; });
         try {
           // Fetch the latest description from Jira so re-check uses the updated text
           const jiraRes = await fetch(`/api/jira/issue/${key}`);
