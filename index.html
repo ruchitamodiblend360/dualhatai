@@ -1641,14 +1641,13 @@ Acceptance Criteria:
       }
 
       async function recheckIssue(key) {
+        const prevResult = results[key];
         setStatuses(s => ({ ...s, [key]: "running" }));
         setResults(r => { const n = { ...r }; delete n[key]; return n; });
         try {
-          // Fetch the latest description from Jira so re-check uses the updated text
           const jiraRes = await fetch(`/api/jira/issue/${key}`);
           const jiraData = jiraRes.ok ? await jiraRes.json() : null;
           const freshText = jiraData?.text || issues.find(i => i.key === key)?.text || "";
-          // Update the issue text in state so future re-checks also use the fresh version
           setIssues(prev => prev.map(i => i.key === key ? { ...i, text: freshText } : i));
           const mode = (issues.find(i => i.key === key)?.type || "").toLowerCase() === "epic" ? "epic" : "story";
           const res = await fetch("/api/analyze", {
@@ -1661,10 +1660,14 @@ Acceptance Criteria:
             setResults(r => ({ ...r, [key]: data }));
             setStatuses(s => ({ ...s, [key]: "done" }));
           } else {
+            if (prevResult) setResults(r => ({ ...r, [key]: prevResult }));
             setStatuses(s => ({ ...s, [key]: "error" }));
+            console.error("Analyze Again failed:", data);
           }
-        } catch {
+        } catch(err) {
+          if (prevResult) setResults(r => ({ ...r, [key]: prevResult }));
           setStatuses(s => ({ ...s, [key]: "error" }));
+          console.error("recheckIssue error:", err);
         }
       }
 
@@ -2016,6 +2019,20 @@ Acceptance Criteria:
                               </div>
                             )}
                           </div>
+
+                          {/* ── Error banner (recheck failed but old result restored) ── */}
+                          {st === "error" && result && (
+                            <div style={{ padding: "10px 20px", background: "#3D1515", borderBottom: "1px solid #7B2020",
+                              display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#F87171" }}>
+                              <i className="ti ti-alert-circle" style={{ fontSize: 14, flexShrink: 0 }} />
+                              Analyze Again failed — showing previous result. Check your connection or Groq API limit and try again.
+                              <button onClick={() => recheckIssue(issue.key)}
+                                style={{ marginLeft: "auto", fontSize: 11, padding: "3px 10px", background: "none",
+                                  border: "1px solid #F87171", borderRadius: 5, color: "#F87171", cursor: "pointer" }}>
+                                Retry
+                              </button>
+                            </div>
+                          )}
 
                           {/* ── Analysis (if done) or status placeholder ── */}
                           {result ? (
