@@ -131,8 +131,9 @@
         if (!selectedBoard) return null;
         const sprints = selectedBoard.sprints || [];
         return (
-          <div style={{ padding: "14px 20px", background: "#1A1A1A", borderBottom: "1px solid #314550" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+          <div style={{ background: "#1A1A1A", borderBottom: "1px solid #314550" }}>
+            {/* Sprint selection row */}
+            <div style={{ padding: "14px 20px 10px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: "#A2F3F3", flexShrink: 0, marginRight: 4 }}>
                 {selectedBoard.projectName || selectedBoard.name}
               </span>
@@ -152,26 +153,34 @@
                   </button>
                 );
               })}
-              {selectedSprint && (
-                <button onClick={generate} disabled={generating}
-                  style={{ marginLeft: 6, padding: "7px 18px", borderRadius: 8, border: "none",
-                    background: generating ? "#314550" : "#053057", color: "#FFFFFF",
-                    border: "1.5px solid #00EDED",
-                    fontSize: 13, fontWeight: 700, cursor: generating ? "not-allowed" : "pointer",
-                    display: "flex", alignItems: "center", gap: 7 }}>
-                  {generating
-                    ? <span><i className="ti ti-loader-2" style={{ animation: "spin 1s linear infinite", marginRight: 6 }} />Generating...</span>
-                    : <span><i className="ti ti-sparkles" style={{ marginRight: 6 }} />Generate Status Deck</span>}
-                </button>
-              )}
               {deck && !generating && (
                 <button onClick={function() { setDeck(null); setSelectedBoard(null); setSelectedSprint(null); }}
-                  style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #314550", background: "transparent",
+                  style={{ marginLeft: "auto", padding: "6px 12px", borderRadius: 8, border: "1px solid #314550", background: "transparent",
                     color: "#A2F3F3", fontSize: 12, cursor: "pointer" }}>
                   <i className="ti ti-arrow-left" style={{ marginRight: 4 }} /> Change Board
                 </button>
               )}
             </div>
+            {/* Generate action bar */}
+            {selectedSprint && !deck && (
+              <div style={{ padding: "10px 20px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ fontSize: 12, color: "#F4F3F0", opacity: 0.6 }}>
+                  <i className="ti ti-calendar-event" style={{ marginRight: 5 }} />
+                  {selectedSprint.name}
+                </div>
+                <button onClick={generate} disabled={generating}
+                  style={{ marginLeft: "auto", padding: "9px 24px", borderRadius: 8,
+                    background: generating ? "#314550" : "#00EDED",
+                    border: "none", color: generating ? "#F4F3F0" : "#053057",
+                    fontSize: 13, fontWeight: 700, cursor: generating ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", gap: 8 }}>
+                  {generating
+                    ? <><i className="ti ti-loader-2" style={{ animation: "spin 1s linear infinite" }} />Generating...</>
+                    : <><i className="ti ti-sparkles" />Generate Draft Status Deck</>}
+                </button>
+              </div>
+            )}
+          </div>
             {genError && (
               <div style={{
                 marginTop: 10, padding: "12px 16px", borderRadius: 8, fontSize: 13,
