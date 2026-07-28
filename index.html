@@ -2350,7 +2350,7 @@ Acceptance Criteria:
                     {uiState === "loading" && <LoadingState step={loadStep} />}
                     {uiState === "error"   && <ErrorState message={errorMsg} onRetry={analyzeStory} onEdit={() => setUiState("idle")} />}
                     {uiState === "done" && result && (
-                      <ResultState result={result} onRecheck={() => { setUiState("idle"); setResult(null); }} />
+                      <ResultState result={result} onRecheck={() => analyzeStory()} />
                     )}
                   </div>
                 </div>
