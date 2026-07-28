@@ -473,6 +473,77 @@
       border: 1px solid rgba(162,243,243,0.2);
     }
 
+    /* ── Team section ───────────────────────────── */
+    .team-grid {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .team-card {
+      background: var(--blend-cool-gray);
+      border: 1px solid rgba(0, 237, 237, 0.12);
+      border-radius: 14px;
+      padding: 36px 28px 28px;
+      width: 240px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: border-color 220ms, box-shadow 220ms, transform 220ms;
+    }
+
+    .team-card:hover {
+      border-color: rgba(0, 237, 237, 0.4);
+      box-shadow: 0 0 24px rgba(0, 237, 237, 0.09);
+      transform: translateY(-2px);
+    }
+
+    .team-avatar {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      border: 2.5px solid var(--blend-neon-turquoise);
+      background: var(--blend-washed-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--blend-neon-turquoise);
+      margin-bottom: 20px;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 4px rgba(0, 237, 237, 0.1);
+    }
+
+    .team-name {
+      font-size: 1rem;
+      color: var(--blend-white);
+      margin-bottom: 7px;
+      line-height: 1.3;
+    }
+
+    .team-name strong {
+      font-weight: 600;
+    }
+
+    .team-role {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--blend-neon-turquoise);
+      margin-bottom: 12px;
+    }
+
+    .team-email {
+      font-size: 11.5px;
+      color: var(--blend-off-white);
+      opacity: 0.5;
+      word-break: break-all;
+      line-height: 1.4;
+    }
+
     @media (max-width: 740px) {
       .cards { flex-direction: column; align-items: center; }
       .card { width: 100%; max-width: 400px; }
@@ -503,6 +574,7 @@
     <nav class="header-nav">
       <a href="#how-it-works" class="nav-link">How it works</a>
       <a href="#features" class="nav-link">Features</a>
+      <a href="#team" class="nav-link">Team</a>
     </nav>
   </header>
 
@@ -659,6 +731,39 @@
         <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Both tools</span>
         <h3>No data leaves your network</h3>
         <p>Runs on your local machine. Jira credentials stay in your <code style="font-size:11px;background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:3px;">.env</code> file and are never sent to any third party.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Team ─────────────────────────────────────────────── -->
+  <hr class="section-divider" />
+  <section id="team" class="section">
+    <p class="section-eyebrow">Team</p>
+    <h2 class="section-title">Built by Blend</h2>
+    <p class="section-sub">The data scientists behind DualHat AI.</p>
+
+    <div class="team-grid">
+
+      <div class="team-card">
+        <div class="team-avatar">AN</div>
+        <div class="team-name"><strong>Amir</strong> Nasrollahzadeh</div>
+        <div class="team-role">Data Scientist</div>
+        <div class="team-email">amir.nasrollahzadeh@blend360.com</div>
+      </div>
+
+      <div class="team-card">
+        <div class="team-avatar">JL</div>
+        <div class="team-name"><strong>Jae Hun</strong> Lee</div>
+        <div class="team-role">Data Scientist</div>
+        <div class="team-email">jaehun.lee@blend360.com</div>
+      </div>
+
+      <div class="team-card">
+        <div class="team-avatar">JD</div>
+        <div class="team-name"><strong>Jonathan</strong> Davidoff</div>
+        <div class="team-role">Data Scientist</div>
+        <div class="team-email">jonathan.davidoff@blend360.com</div>
       </div>
 
     </div>
