@@ -257,20 +257,25 @@ Acceptance Criteria:
 
     /* ── Error state ── */
     function ErrorState({ onRetry, onEdit, message }) {
+      const isRateLimit = message === "rate_limited" || (message || "").includes("rate_limit") || (message || "").includes("429");
       return (
         <div style={{ ...cardStyle }}>
           <div style={{ padding: "36px 24px", display: "flex", flexDirection: "column",
             alignItems: "center", textAlign: "center" }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#FCEBEB",
+            <div style={{ width: 48, height: 48, borderRadius: "50%",
+              background: isRateLimit ? "rgba(251,191,36,0.12)" : "#FCEBEB",
               display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
-              <i className="ti ti-alert-circle" style={{ fontSize: 24, color: "#A32D2D" }} aria-hidden="true" />
+              <i className={`ti ${isRateLimit ? "ti-clock-pause" : "ti-alert-circle"}`}
+                style={{ fontSize: 24, color: isRateLimit ? "#F59E0B" : "#A32D2D" }} aria-hidden="true" />
             </div>
             <div style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 6 }}>
-              Analysis failed
+              {isRateLimit ? "AI rate limit reached" : "Analysis failed"}
             </div>
             <div style={{ fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.7,
-              marginBottom: 22, maxWidth: 360 }}>
-              {message || "Something went wrong while processing your story. Your text is still here — try again or edit the story."}
+              marginBottom: 22, maxWidth: 380 }}>
+              {isRateLimit
+                ? "The AI service is temporarily limiting requests. The server will retry automatically — wait a moment and try again."
+                : (message || "Something went wrong while processing your story. Your text is still here — try again or edit the story.")}
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={onEdit}
@@ -2186,7 +2191,7 @@ Acceptance Criteria:
           });
           const data = await res.json();
           if (!res.ok) {
-            throw new Error(data.error || `Request failed (${res.status})`);
+            throw new Error(data.error === "rate_limited" ? "rate_limited" : (data.error || `Request failed (${res.status})`));
           }
           setResult(data);
           setUiState("done");

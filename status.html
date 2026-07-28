@@ -106,8 +106,16 @@
             sprintName:  selectedSprint.name,
           })
         })
-        .then(function(r) { return r.json(); })
-        .then(function(d) { if (d.error) setGenError(d.error); else setDeck(d); setGenerating(false); })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(res) {
+          if (!res.ok || res.data.error) {
+            var key = res.data.error || "unknown";
+            setGenError(key === "rate_limited" ? "rate_limited" : key);
+          } else {
+            setDeck(res.data);
+          }
+          setGenerating(false);
+        })
         .catch(function(e) { setGenError(e.message); setGenerating(false); });
       }
 
@@ -176,8 +184,25 @@
               )}
             </div>
             {genError && (
-              <div style={{ marginTop: 10, padding: "9px 14px", background: "#1A1A1A", border: "1px solid #7F1D1D", borderRadius: 8, fontSize: 13, color: "#FCA5A5" }}>
-                <i className="ti ti-alert-circle" style={{ marginRight: 6 }} />{genError}
+              <div style={{
+                marginTop: 10, padding: "12px 16px", borderRadius: 8, fontSize: 13,
+                background: genError === "rate_limited" ? "rgba(251,191,36,0.08)" : "#1A1A1A",
+                border: genError === "rate_limited" ? "1px solid rgba(251,191,36,0.35)" : "1px solid #7F1D1D",
+                color: genError === "rate_limited" ? "#FCD34D" : "#FCA5A5",
+                display: "flex", alignItems: "flex-start", gap: 9,
+              }}>
+                <i className={`ti ${genError === "rate_limited" ? "ti-clock-pause" : "ti-alert-circle"}`}
+                  style={{ fontSize: 16, marginTop: 1, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 500, marginBottom: 3 }}>
+                    {genError === "rate_limited" ? "AI rate limit reached" : "Generation failed"}
+                  </div>
+                  <div style={{ opacity: 0.8, lineHeight: 1.5 }}>
+                    {genError === "rate_limited"
+                      ? "The AI service is temporarily limiting requests. The server retries automatically — wait a moment and try again."
+                      : genError}
+                  </div>
+                </div>
               </div>
             )}
           </div>

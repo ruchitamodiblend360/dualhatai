@@ -1115,8 +1115,27 @@ class Handler(BaseHTTPRequestHandler):
                     "Accept": "application/json",
                 }, method="POST")
 
-                with urllib.request.urlopen(req, timeout=90) as resp:
-                    groq_data = json.loads(resp.read().decode("utf-8"))
+                # Retry up to 3 times on 429 with exponential backoff
+                groq_data = None
+                for attempt in range(3):
+                    try:
+                        with urllib.request.urlopen(req, timeout=90) as resp:
+                            groq_data = json.loads(resp.read().decode("utf-8"))
+                        break
+                    except urllib.error.HTTPError as e:
+                        body = e.read().decode("utf-8", "replace")
+                        print(f"  Groq HTTP {e.code} (attempt {attempt+1}): {body}")
+                        if e.code == 429 and attempt < 2:
+                            wait = 10 * (2 ** attempt)  # 10s, 20s
+                            print(f"  Rate limited — waiting {wait}s before retry")
+                            time.sleep(wait)
+                            continue
+                        err = {"error": "rate_limited" if e.code == 429 else f"Groq API {e.code}", "detail": body}
+                        self._send(429 if e.code == 429 else 502, json.dumps(err))
+                        return
+                    except Exception as e:
+                        self._send(502, json.dumps({"error": f"Upstream error: {e}"}))
+                        return
 
                 text = groq_data["choices"][0]["message"]["content"]
                 text = text.replace("```json", "").replace("```", "").strip()
@@ -1268,11 +1287,12 @@ class Handler(BaseHTTPRequestHandler):
                 body = e.read().decode("utf-8", "replace")
                 print(f"  Groq HTTP {e.code} (attempt {attempt+1}): {body}")
                 if e.code == 429 and attempt < 2:
-                    wait = 10 * (attempt + 1)
+                    wait = 10 * (2 ** attempt)  # 10s, 20s
                     print(f"  Rate limited — waiting {wait}s before retry")
                     time.sleep(wait)
                     continue
-                self._send(502, json.dumps({"error": f"Groq API {e.code}", "detail": body}))
+                err = {"error": "rate_limited" if e.code == 429 else f"Groq API {e.code}", "detail": body}
+                self._send(429 if e.code == 429 else 502, json.dumps(err))
                 return
             except Exception as e:
                 self._send(502, json.dumps({"error": f"Upstream error: {e}"}))
