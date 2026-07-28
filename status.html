@@ -152,17 +152,6 @@
                   </button>
                 );
               })}
-              {selectedBoard.backlogCount > 0 && (
-                <button
-                  onClick={function() { setSelectedSprint({ type: "backlog", name: "Backlog", id: null }); setDeck(null); }}
-                  style={{ padding: "5px 13px", borderRadius: 99, fontSize: 12, cursor: "pointer",
-                    border: selectedSprint && selectedSprint.type === "backlog" ? "2px solid #00EDED" : "1px solid #314550",
-                    background: selectedSprint && selectedSprint.type === "backlog" ? "#053057" : "transparent",
-                    color: selectedSprint && selectedSprint.type === "backlog" ? "#FFFFFF" : "#F4F3F0",
-                    fontWeight: selectedSprint && selectedSprint.type === "backlog" ? 700 : 400 }}>
-                  <i className="ti ti-stack-2" style={{ fontSize: 11, marginRight: 4 }} />Backlog
-                </button>
-              )}
               {selectedSprint && (
                 <button onClick={generate} disabled={generating}
                   style={{ marginLeft: 6, padding: "7px 18px", borderRadius: 8, border: "none",
@@ -240,7 +229,7 @@
           <div style={{ padding: "24px 20px 28px", background: "#ffffff" }}>
             <h2 style={{ fontSize: 17, fontWeight: 500, color: "#053057", margin: "0 0 5px" }}>Select a project board</h2>
             <p style={{ fontSize: 13, color: "#314550", margin: "0 0 14px" }}>
-              Pick a sprint or backlog to generate an executive status deck with AI.
+              Pick a sprint to generate an executive status deck with AI.
             </p>
             <div style={{ position: "relative", marginBottom: 20 }}>
               <i className="ti ti-search" style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#314550", fontSize: 14, pointerEvents: "none" }} />
@@ -278,27 +267,11 @@
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{board.projectName || board.name}</div>
                         <div style={{ fontSize: 11, color: "#F4F3F0", marginTop: 1 }}>
-                          {board.sprints.length} sprint{board.sprints.length !== 1 ? "s" : ""} · {board.backlogCount} backlog
+                          {board.sprints.length} sprint{board.sprints.length !== 1 ? "s" : ""}
                         </div>
                       </div>
                     </div>
                     <div style={{ padding: "8px" }}>
-                      {board.backlogCount > 0 && (
-                        <div onClick={function() { selectRow(board, { type: "backlog", name: "Backlog", id: null }); }}
-                          style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
-                            padding: "9px 10px", borderRadius: 7, cursor: "pointer", marginBottom: 4,
-                            border: selectedBoard && selectedBoard.id === board.id && selectedSprint && selectedSprint.type === "backlog" ? "1.5px solid #00EDED" : "1px solid #314550",
-                            background: selectedBoard && selectedBoard.id === board.id && selectedSprint && selectedSprint.type === "backlog" ? "#053057" : "transparent",
-                            transition: "background 120ms" }}
-                          onMouseEnter={function(e) { if (!(selectedBoard && selectedBoard.id === board.id && selectedSprint && selectedSprint.type === "backlog")) e.currentTarget.style.background = "#053057"; }}
-                          onMouseLeave={function(e) { if (!(selectedBoard && selectedBoard.id === board.id && selectedSprint && selectedSprint.type === "backlog")) e.currentTarget.style.background = "transparent"; }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                            <i className="ti ti-stack-2" style={{ fontSize: 13, color: "#A2F3F3" }} />
-                            <span style={{ fontSize: 13, color: "#F4F3F0" }}>Backlog</span>
-                          </div>
-                          <span style={{ fontSize: 11, color: "#F4F3F0" }}>{board.backlogCount} {board.backlogCount === 1 ? "story" : "stories"}</span>
-                        </div>
-                      )}
                       {board.sprints.map(function(sprint) {
                         const isActive = sprint.state === "active";
                         const isSelRow = selectedBoard && selectedBoard.id === board.id && selectedSprint && selectedSprint.id === sprint.id;
