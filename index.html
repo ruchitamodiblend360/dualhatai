@@ -321,7 +321,7 @@ Acceptance Criteria:
                   <span style={{ fontSize: 44, fontWeight: 500, color: scoreColor(result.total / 5), lineHeight: 1 }}>
                     {result.total}
                   </span>
-                  <span style={{ fontSize: 16, color: "var(--color-text-tertiary)" }}>/100</span>
+                  <span style={{ fontSize: 16, color: "var(--color-text-primary)" }}>/100</span>
                 </div>
                 <span style={{ display: "inline-block", fontSize: 11, fontWeight: 500,
                   padding: "4px 12px", borderRadius: 99, background: rc.bg, color: rc.color }}>
@@ -458,7 +458,7 @@ Acceptance Criteria:
                                 </span>
                               )}
                             </div>
-                            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.5 }}>{d.description}</p>
+                            <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-primary)", lineHeight: 1.5 }}>{d.description}</p>
                           </div>
                         </div>
                       );
@@ -1338,7 +1338,7 @@ Acceptance Criteria:
                       );
                     })}
                     {board.backlogCount === 0 && board.sprints.length === 0 && (
-                      <div style={{ padding: "10px", fontSize: 12, color: "#314550", textAlign: "center" }}>No stories</div>
+                      <div style={{ padding: "10px", fontSize: 12, color: "#F4F3F0", textAlign: "center" }}>No stories</div>
                     )}
                   </div>
                 </div>
@@ -2337,7 +2337,7 @@ Acceptance Criteria:
                         style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500,
                           padding: "9px 20px", cursor: uiState === "loading" || !story.trim() ? "not-allowed" : "pointer",
                           background: uiState === "loading" || !story.trim() ? "#314550" : "#053057",
-                          color: "#fff", border: "none", borderRadius: "var(--border-radius-md)" }}>
+                          color: "#fff", border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-md)" }}>
                         {uiState === "loading"
                           ? <><i className="ti ti-loader-2" style={{ fontSize: 15, animation: "spin 0.9s linear infinite" }} aria-hidden="true" /> Analyzing…</>
                           : <><i className="ti ti-sparkles" style={{ fontSize: 15 }} aria-hidden="true" /> Check Readiness</>}

@@ -192,11 +192,17 @@
           </div>
         );
 
+        function selectRow(board, sprintObj) {
+          setSelectedBoard(board);
+          setSelectedSprint(sprintObj);
+          setDeck(null);
+        }
+
         return (
           <div style={{ padding: "24px 20px 28px", background: "#ffffff" }}>
             <h2 style={{ fontSize: 17, fontWeight: 500, color: "#053057", margin: "0 0 5px" }}>Select a project board</h2>
             <p style={{ fontSize: 13, color: "#314550", margin: "0 0 14px" }}>
-              Pick a board, then select a sprint to generate an executive status deck with AI.
+              Pick a sprint or backlog to generate an executive status deck with AI.
             </p>
             <div style={{ position: "relative", marginBottom: 20 }}>
               <i className="ti ti-search" style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#314550", fontSize: 14, pointerEvents: "none" }} />
@@ -205,7 +211,7 @@
                 placeholder="Search projects…"
                 value={search}
                 onChange={function(e) { setSearch(e.target.value); setBoardPage(1); }}
-                style={{ width: "100%", boxSizing: "border-box", padding: "9px 32px 9px 32px", borderRadius: 6,
+                style={{ width: "100%", boxSizing: "border-box", padding: "9px 32px 9px 32px", borderRadius: 8,
                   border: "0.5px solid #314550", background: "#ffffff", color: "#053057",
                   fontSize: 13, outline: "none" }}
                 onFocus={function(e) { e.target.style.borderColor = "#053057"; }}
@@ -219,32 +225,69 @@
             </div>
             {filteredBoards.length === 0 && search && (
               <div style={{ textAlign: "center", padding: "40px 0", color: "#314550", fontSize: 13 }}>
-                No projects match "<span style={{ color: "#053057", fontWeight: 500 }}>{search}</span>"
+                No projects match "<span style={{ color: "#A2F3F3" }}>{search}</span>"
               </div>
             )}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
               {pagedBoards.map(function(board) {
                 const color = avatarColor(board.projectKey || board.name);
-                const isSel = selectedBoard && selectedBoard.id === board.id;
                 return (
-                  <div key={board.id}
-                    onClick={function() { setSelectedBoard(board); setSelectedSprint(null); setDeck(null); }}
-                    style={{ border: isSel ? "2px solid #053057" : "0.5px solid #314550", borderRadius: 10,
-                      background: isSel ? "#eef6ff" : "#1A1A1A", cursor: "pointer",
-                      padding: "13px 15px", display: "flex", alignItems: "center", gap: 11 }}>
-                    <div style={{ width: 34, height: 34, borderRadius: 8, background: color, flexShrink: 0,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 12, fontWeight: 700, color: "#fff" }}>{initials(board.projectName || board.name)}</div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: isSel ? "#053057" : "#fff",
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {board.projectName || board.name}
-                      </div>
-                      <div style={{ fontSize: 11, color: isSel ? "#314550" : "#F4F3F0", marginTop: 2 }}>
-                        {board.sprints.length} sprint{board.sprints.length !== 1 ? "s" : ""} &middot; {board.backlogCount} backlog
+                  <div key={board.id} style={{ border: "1px solid #314550", borderRadius: 10, overflow: "hidden", background: "#1A1A1A" }}>
+                    <div style={{ padding: "13px 15px 10px", borderBottom: "1px solid #314550", display: "flex", alignItems: "center", gap: 9 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: color, flexShrink: 0,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 12, fontWeight: 700, color: "#fff" }}>{initials(board.projectName || board.name)}</div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{board.projectName || board.name}</div>
+                        <div style={{ fontSize: 11, color: "#F4F3F0", marginTop: 1 }}>
+                          {board.sprints.length} sprint{board.sprints.length !== 1 ? "s" : ""} · {board.backlogCount} backlog
+                        </div>
                       </div>
                     </div>
-                    {isSel && <i className="ti ti-check" style={{ marginLeft: "auto", color: "#053057", fontSize: 16, flexShrink: 0 }} />}
+                    <div style={{ padding: "8px" }}>
+                      {board.backlogCount > 0 && (
+                        <div onClick={function() { selectRow(board, { type: "backlog", name: "Backlog", id: null }); }}
+                          style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+                            padding: "9px 10px", borderRadius: 7, cursor: "pointer", marginBottom: 4,
+                            border: selectedBoard && selectedBoard.id === board.id && selectedSprint && selectedSprint.type === "backlog" ? "1.5px solid #00EDED" : "1px solid #314550",
+                            background: selectedBoard && selectedBoard.id === board.id && selectedSprint && selectedSprint.type === "backlog" ? "#053057" : "transparent",
+                            transition: "background 120ms" }}
+                          onMouseEnter={function(e) { if (!(selectedBoard && selectedBoard.id === board.id && selectedSprint && selectedSprint.type === "backlog")) e.currentTarget.style.background = "#053057"; }}
+                          onMouseLeave={function(e) { if (!(selectedBoard && selectedBoard.id === board.id && selectedSprint && selectedSprint.type === "backlog")) e.currentTarget.style.background = "transparent"; }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                            <i className="ti ti-stack-2" style={{ fontSize: 13, color: "#A2F3F3" }} />
+                            <span style={{ fontSize: 13, color: "#F4F3F0" }}>Backlog</span>
+                          </div>
+                          <span style={{ fontSize: 11, color: "#F4F3F0" }}>{board.backlogCount} {board.backlogCount === 1 ? "story" : "stories"}</span>
+                        </div>
+                      )}
+                      {board.sprints.map(function(sprint) {
+                        const isActive = sprint.state === "active";
+                        const isSelRow = selectedBoard && selectedBoard.id === board.id && selectedSprint && selectedSprint.id === sprint.id;
+                        return (
+                          <div key={sprint.id} onClick={function() { selectRow(board, Object.assign({}, sprint, { type: "sprint" })); }}
+                            style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+                              padding: "9px 10px", borderRadius: 7, cursor: "pointer", marginBottom: 4,
+                              border: isSelRow ? "1.5px solid #00EDED" : isActive ? "1.5px solid #00EDED" : "1px solid #314550",
+                              background: isSelRow ? "#053057" : isActive ? "#053057" : "transparent",
+                              transition: "background 120ms" }}
+                            onMouseEnter={function(e) { if (!isSelRow && !isActive) e.currentTarget.style.background = "#053057"; }}
+                            onMouseLeave={function(e) { if (!isSelRow && !isActive) e.currentTarget.style.background = "transparent"; }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+                              <i className="ti ti-refresh" style={{ fontSize: 13, color: isActive ? "#00EDED" : "#A2F3F3", flexShrink: 0 }} />
+                              <span style={{ fontSize: 13, color: isActive ? "#00EDED" : "#F4F3F0", fontWeight: isActive ? 500 : 400,
+                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sprint.name}</span>
+                              {isActive && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 99, flexShrink: 0,
+                                background: "#00EDED", color: "#053057", fontWeight: 700, letterSpacing: "0.05em" }}>Active</span>}
+                            </div>
+                            <span style={{ fontSize: 11, color: "#F4F3F0", flexShrink: 0, marginLeft: 8 }}>{sprint.count} {sprint.count === 1 ? "story" : "stories"}</span>
+                          </div>
+                        );
+                      })}
+                      {board.backlogCount === 0 && board.sprints.length === 0 && (
+                        <div style={{ padding: "10px", fontSize: 12, color: "#F4F3F0", textAlign: "center" }}>No stories</div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -254,19 +297,19 @@
                 <button onClick={function() { setBoardPage(function(p) { return Math.max(1, p - 1); }); }} disabled={boardPage === 1}
                   style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
                     background: "none", cursor: boardPage === 1 ? "default" : "pointer",
-                    color: boardPage === 1 ? "#314550" : "#053057" }}>‹ Prev</button>
+                    color: boardPage === 1 ? "#314550" : "#A2F3F3" }}>‹ Prev</button>
                 {Array.from({ length: totalBoardPages }, function(_, ii) { return ii + 1; }).map(function(p) {
                   return (
                     <button key={p} onClick={function() { setBoardPage(p); }}
                       style={{ padding: "5px 9px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
-                        cursor: "pointer", background: p === boardPage ? "#053057" : "#F4F3F0",
-                        color: p === boardPage ? "#FFFFFF" : "#053057" }}>{p}</button>
+                        cursor: "pointer", background: p === boardPage ? "#053057" : "#1A1A1A",
+                        color: p === boardPage ? "#FFFFFF" : "#A2F3F3" }}>{p}</button>
                   );
                 })}
                 <button onClick={function() { setBoardPage(function(p) { return Math.min(totalBoardPages, p + 1); }); }} disabled={boardPage === totalBoardPages}
                   style={{ padding: "5px 10px", fontSize: 12, border: "0.5px solid #314550", borderRadius: 6,
                     background: "none", cursor: boardPage === totalBoardPages ? "default" : "pointer",
-                    color: boardPage === totalBoardPages ? "#314550" : "#053057" }}>Next ›</button>
+                    color: boardPage === totalBoardPages ? "#314550" : "#A2F3F3" }}>Next ›</button>
               </div>
             )}
           </div>
