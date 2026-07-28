@@ -11,9 +11,11 @@ Then open http://localhost:8000  in your browser.
 
 import json
 import os
+import re
 import time
 import urllib.request
 import urllib.error
+from collections import Counter
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import datetime
@@ -35,6 +37,108 @@ def load_history():
 def save_history(entries):
     with open(HISTORY_FILE, "w", encoding="utf-8") as f:
         json.dump(entries, f, ensure_ascii=False, indent=2)
+
+
+_STOP_WORDS = {
+    "a","an","the","as","is","in","of","to","and","or","for","with","that",
+    "this","we","i","it","be","at","by","on","so","our","can","are","have",
+    "has","from","their","will","not","should","when","was","were","if","but",
+    "about","into","they","he","she","its","all","any","each","get","use",
+    "new","my","your","his","her","what","which","who","do","how","may","more",
+    "also","want","user","story","epic","able","would","could","need","than",
+}
+
+def _keyword_set(text):
+    return {w for w in re.findall(r'\b[a-z]{3,}\b', text.lower()) if w not in _STOP_WORDS}
+
+def _jaccard(a, b):
+    sa, sb = _keyword_set(a), _keyword_set(b)
+    if not sa or not sb:
+        return 0.0
+    return len(sa & sb) / len(sa | sb)
+
+
+def build_team_context(history, mode, current_story, max_examples=2):
+    """Build Level 1 (few-shot examples) + Level 2 (pattern summary) context block."""
+    relevant = [
+        e for e in history
+        if e.get("result") and (e.get("mode") or "story") == mode and e.get("story_text")
+    ]
+    if not relevant:
+        return ""
+
+    parts = []
+
+    # ── Level 2: pattern summary (requires 3+ past entries) ──────────────────
+    if len(relevant) >= 3:
+        dim_names = ["completeness", "clarity", "testability", "size", "dependency_risk"]
+        all_scores = [e["result"].get("scores", {}) for e in relevant]
+        totals     = [e["result"]["total"] for e in relevant if e["result"].get("total")]
+
+        dim_avgs = {}
+        for d in dim_names:
+            vals = [s[d] for s in all_scores if isinstance(s.get(d), (int, float))]
+            if vals:
+                dim_avgs[d] = round(sum(vals) / len(vals), 1)
+
+        weak_dims = [
+            d.replace("_", " ")
+            for d, v in sorted(dim_avgs.items(), key=lambda x: x[1])
+            if v < 12
+        ]
+
+        gap_areas = [
+            g["area"]
+            for e in relevant
+            for g in (e["result"].get("gaps") or [])
+            if g.get("area")
+        ]
+        top_gap_areas = [area for area, _ in Counter(gap_areas).most_common(3)]
+
+        avg_total = round(sum(totals) / len(totals), 1) if totals else None
+
+        lines = [f"TEAM HISTORICAL PATTERNS ({len(relevant)} past {mode}s analysed):"]
+        if avg_total is not None:
+            lines.append(f"- Team average score: {avg_total}/100")
+        if weak_dims:
+            lines.append(
+                f"- Consistently weak dimensions: {', '.join(weak_dims)}"
+                f" — apply stricter scrutiny here"
+            )
+        if top_gap_areas:
+            lines.append(f"- Most recurring gap areas: {', '.join(top_gap_areas)}")
+        lines.append(
+            "Calibrate your scoring against these patterns. "
+            "Be especially critical in the weak dimensions listed above."
+        )
+        parts.append("\n".join(lines))
+
+    # ── Level 1: few-shot similar examples ───────────────────────────────────
+    ranked = sorted(relevant, key=lambda e: -_jaccard(current_story, e["story_text"]))
+    examples = [e for e in ranked[:max_examples] if _jaccard(current_story, e["story_text"]) > 0.05]
+
+    if examples:
+        ex_lines = [f"SIMILAR PAST {mode.upper()}S FROM THIS TEAM (score calibration):"]
+        for e in examples:
+            r = e["result"]
+            preview = (e["story_text"] or "")[:200].replace("\n", " ").strip()
+            if len(e["story_text"]) > 200:
+                preview += "…"
+            gap_summary = "; ".join(
+                f"{g['area']}: {g['issue'][:70]}"
+                for g in (r.get("gaps") or [])[:2]
+                if g.get("area") and g.get("issue")
+            ) or "none noted"
+            ex_lines.append(
+                f'Story: "{preview}"\n'
+                f'Score: {r.get("total","?")} / 100 | Level: {r.get("readiness_level","?")}\n'
+                f'Key gaps: {gap_summary}'
+            )
+        parts.append("\n\n".join(ex_lines))
+
+    return "\n\n---\n\n".join(parts) if parts else ""
+
+
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODEL = "llama-3.3-70b-versatile"
 
@@ -1080,7 +1184,13 @@ class Handler(BaseHTTPRequestHandler):
             context_parts.append(f"Parent epic: {epic}")
         if dor:
             context_parts.append(f"Team Definition of Ready: {dor}")
-        context = "\n".join(context_parts)
+
+        # Level 1 + 2: inject team history patterns and similar past stories
+        team_ctx = build_team_context(load_history(), mode, story)
+        if team_ctx:
+            context_parts.append(team_ctx)
+
+        context = "\n\n".join(context_parts)
         user_content = f"User story:\n{story}" + (f"\n\n{context}" if context else "")
 
         groq_body = json.dumps({
