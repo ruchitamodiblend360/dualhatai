@@ -60,10 +60,16 @@ def _jaccard(a, b):
 
 def build_team_context(history, mode, current_story, max_examples=2):
     """Build Level 1 (few-shot examples) + Level 2 (pattern summary) context block."""
-    relevant = [
-        e for e in history
-        if e.get("result") and (e.get("mode") or "story") == mode and e.get("story_text")
-    ]
+    seen_texts = set()
+    relevant = []
+    for e in history:
+        if not (e.get("result") and (e.get("mode") or "story") == mode and e.get("story_text")):
+            continue
+        key = e.get("story_text", "")[:120]
+        if key in seen_texts:
+            continue
+        seen_texts.add(key)
+        relevant.append(e)
     if not relevant:
         return ""
 
@@ -97,13 +103,14 @@ def build_team_context(history, mode, current_story, max_examples=2):
 
         avg_total = round(sum(totals) / len(totals), 1) if totals else None
 
-        lines = [f"TEAM HISTORICAL PATTERNS ({len(relevant)} past {mode}s analysed):"]
+        mode_label = "stories" if mode == "story" else "epics"
+        lines = [f"TEAM HISTORICAL PATTERNS ({len(relevant)} past {mode_label} analysed):"]
         if avg_total is not None:
             lines.append(f"- Team average score: {avg_total}/100")
         if weak_dims:
             lines.append(
                 f"- Consistently weak dimensions: {', '.join(weak_dims)}"
-                f" — apply stricter scrutiny here"
+                f" - apply stricter scrutiny here"
             )
         if top_gap_areas:
             lines.append(f"- Most recurring gap areas: {', '.join(top_gap_areas)}")
@@ -118,7 +125,7 @@ def build_team_context(history, mode, current_story, max_examples=2):
     examples = [e for e in ranked[:max_examples] if _jaccard(current_story, e["story_text"]) > 0.05]
 
     if examples:
-        ex_lines = [f"SIMILAR PAST {mode.upper()}S FROM THIS TEAM (score calibration):"]
+        ex_lines = [f"SIMILAR PAST {mode_label.upper()} FROM THIS TEAM (score calibration):"]
         for e in examples:
             r = e["result"]
             preview = (e["story_text"] or "")[:200].replace("\n", " ").strip()
