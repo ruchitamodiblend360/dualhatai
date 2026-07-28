@@ -367,6 +367,19 @@
 
         return (
           <div style={{ padding: "20px" }}>
+            {/* Draft banner */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14,
+              padding: "8px 14px", borderRadius: 8,
+              background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)" }}>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em",
+                padding: "2px 8px", borderRadius: 4,
+                background: "rgba(251,191,36,0.18)", color: "#FCD34D", border: "1px solid rgba(251,191,36,0.4)" }}>
+                DRAFT
+              </span>
+              <span style={{ fontSize: 12, color: "#FCD34D", opacity: 0.8 }}>
+                AI-generated content — review and edit before sharing externally.
+              </span>
+            </div>
             {/* Header */}
             <div style={{ background: "#053057", borderRadius: 12, padding: "18px 22px", marginBottom: 16, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
               <div>
