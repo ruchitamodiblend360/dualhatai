@@ -977,7 +977,7 @@ class Handler(BaseHTTPRequestHandler):
                     self._send(200, f.read(), "application/javascript; charset=utf-8")
             except FileNotFoundError:
                 self._send(404, "Not found", "text/plain")
-        elif self.path.endswith(".png") or self.path.endswith(".jpg") or self.path.endswith(".jpeg"):
+        elif any(self.path.endswith(ext) for ext in (".png", ".jpg", ".jpeg", ".webp", ".gif")):
             rel = self.path.lstrip("/").split("?", 1)[0]
             safe = os.path.normpath(rel).replace("\\", "/")
             if "/" in safe:
