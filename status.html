@@ -175,8 +175,8 @@
                     fontSize: 13, fontWeight: 700, cursor: generating ? "not-allowed" : "pointer",
                     display: "flex", alignItems: "center", gap: 8 }}>
                   {generating
-                    ? <><i className="ti ti-loader-2" style={{ animation: "spin 1s linear infinite" }} />Generating...</>
-                    : <><i className="ti ti-sparkles" />Generate Draft Status Deck</>}
+                    ? <span><i className="ti ti-loader-2" style={{ animation: "spin 1s linear infinite", marginRight: 6 }} />Generating...</span>
+                    : <span><i className="ti ti-sparkles" style={{ marginRight: 6 }} />Generate Draft Status Deck</span>}
                 </button>
               </div>
             )}
