@@ -977,6 +977,18 @@ class Handler(BaseHTTPRequestHandler):
                     self._send(200, f.read(), "application/javascript; charset=utf-8")
             except FileNotFoundError:
                 self._send(404, "Not found", "text/plain")
+        elif self.path.endswith(".png") or self.path.endswith(".jpg") or self.path.endswith(".jpeg"):
+            rel = self.path.lstrip("/").split("?", 1)[0]
+            safe = os.path.normpath(rel).replace("\\", "/")
+            if "/" in safe:
+                self._send(403, "Forbidden", "text/plain")
+                return
+            path = os.path.join(ROOT, safe)
+            try:
+                with open(path, "rb") as f:
+                    self._send(200, f.read(), "image/png")
+            except FileNotFoundError:
+                self._send(404, "Not found", "text/plain")
         else:
             self._send(404, "Not found", "text/plain")
 
