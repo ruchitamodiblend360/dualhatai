@@ -2,8 +2,9 @@
 Local dev server for the User Story Readiness Checker.
 
 - Serves index.html (the React UI) at /
-- Proxies POST /api/analyze to Groq's OpenAI-compatible API, injecting the
-  GROQ_API_KEY from .env server-side so it never touches the browser.
+- Proxies POST /api/analyze to an LLM (OpenAI by default, Groq as automatic
+  fallback), injecting the API keys from .env server-side so they never touch
+  the browser.
 
 Run:  py server.py    (or: python server.py)
 Then open http://localhost:8000  in your browser.
@@ -147,7 +148,10 @@ def build_team_context(history, mode, current_story, max_examples=2):
 
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "llama-3.3-70b-versatile"
+MODEL = GROQ_MODEL  # backward-compat alias
+OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_MODEL = "gpt-4o-mini"
 
 # ── User Story prompt ────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """You are an expert agile coach and product manager specializing in user story quality assessment. Your job is to review user stories or epics before sprint planning and return a structured readiness report.
@@ -401,12 +405,80 @@ def load_env():
 
 _ENV = load_env()
 GROQ_API_KEY   = _ENV.get("GROQ_API_KEY")
+OPENAI_API_KEY = _ENV.get("OPENAI_API_KEY")
+if _ENV.get("OPENAI_MODEL"):
+    OPENAI_MODEL = _ENV.get("OPENAI_MODEL")
+if _ENV.get("GROQ_MODEL"):
+    GROQ_MODEL = _ENV.get("GROQ_MODEL")
 JIRA_BASE_URL  = _ENV.get("JIRA_BASE_URL", "").rstrip("/")
 JIRA_EMAIL     = _ENV.get("JIRA_EMAIL", "")
 JIRA_API_TOKEN = _ENV.get("JIRA_API_TOKEN", "")
 
 import base64 as _b64
 JIRA_AUTH = _b64.b64encode(f"{JIRA_EMAIL}:{JIRA_API_TOKEN}".encode()).decode() if JIRA_EMAIL and JIRA_API_TOKEN else None
+
+LLM_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) story-readiness-checker/1.0"
+
+
+class LLMError(Exception):
+    def __init__(self, status, detail):
+        super().__init__(detail)
+        self.status = status
+        self.detail = detail
+
+
+def _llm_post(url, api_key, body_dict, timeout=90):
+    data = json.dumps(body_dict).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method="POST", headers={
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+        "User-Agent": LLM_UA,
+        "Accept": "application/json",
+    })
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def llm_chat(messages, max_tokens=4096, temperature=0.3,
+             groq_model=None, openai_model=None, timeout=90):
+    """Chat completion with OpenAI as primary and Groq as automatic fallback.
+
+    Tries providers in order (OpenAI first when its key is set); on a rate-limit
+    or transient error it falls through to the next provider, then backs off and
+    retries the whole set. Returns the assistant message content (str).
+    Raises LLMError only if every provider fails every round.
+    """
+    providers = []
+    if OPENAI_API_KEY:
+        providers.append(("openai", OPENAI_URL, OPENAI_API_KEY, openai_model or OPENAI_MODEL))
+    if GROQ_API_KEY:
+        providers.append(("groq", GROQ_URL, GROQ_API_KEY, groq_model or GROQ_MODEL))
+    if not providers:
+        raise LLMError(500, "No LLM API key configured. Set OPENAI_API_KEY (preferred) or GROQ_API_KEY in .env.")
+
+    last_err = LLMError(502, "LLM request failed")
+    for round_i in range(3):
+        for name, url, key, model in providers:
+            body = {
+                "model": model,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "response_format": {"type": "json_object"},
+                "messages": messages,
+            }
+            try:
+                data = _llm_post(url, key, body, timeout=timeout)
+                return data["choices"][0]["message"]["content"]
+            except urllib.error.HTTPError as e:
+                detail = e.read().decode("utf-8", "replace")
+                print(f"  LLM {name} HTTP {e.code} (round {round_i + 1}): {detail[:200]}")
+                last_err = LLMError(e.code, f"{name} API {e.code}: {detail[:400]}")
+            except Exception as e:
+                print(f"  LLM {name} error (round {round_i + 1}): {e}")
+                last_err = LLMError(502, f"{name}: {e}")
+        if round_i < 2:
+            time.sleep(min(5 * (2 ** round_i), 20))
+    raise last_err
 
 
 def jira_get(path):
@@ -1110,8 +1182,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.path == "/api/status-deck":
-            if not GROQ_API_KEY:
-                self._send(500, json.dumps({"error": "GROQ_API_KEY not found in .env"})); return
+            if not (OPENAI_API_KEY or GROQ_API_KEY):
+                self._send(500, json.dumps({"error": "No LLM API key configured. Set OPENAI_API_KEY or GROQ_API_KEY in .env."})); return
             if not JIRA_AUTH:
                 self._send(503, json.dumps({"error": "Jira not configured"})); return
             try:
@@ -1226,45 +1298,24 @@ class Handler(BaseHTTPRequestHandler):
                     "", "TO DO / NOT STARTED:",
                 ] + ([fmt(i) for i in todo_capped] if todo_capped else ["(none)"])
 
-                groq_body = json.dumps({
-                    "model": "llama-3.1-8b-instant", "max_tokens": 1500, "temperature": 0.3,
-                    "response_format": {"type": "json_object"},
-                    "messages": [
-                        {"role": "system", "content": STATUS_DECK_SYSTEM_PROMPT},
-                        {"role": "user",   "content": "\n".join(lines)},
-                    ],
-                }).encode("utf-8")
+                try:
+                    text = llm_chat(
+                        messages=[
+                            {"role": "system", "content": STATUS_DECK_SYSTEM_PROMPT},
+                            {"role": "user",   "content": "\n".join(lines)},
+                        ],
+                        max_tokens=1500,
+                        temperature=0.3,
+                        groq_model="llama-3.1-8b-instant",
+                    )
+                except LLMError as e:
+                    code = 429 if e.status == 429 else 502
+                    self._send(code, json.dumps({
+                        "error": "rate_limited" if e.status == 429 else "LLM request failed",
+                        "detail": e.detail,
+                    }))
+                    return
 
-                req = urllib.request.Request(GROQ_URL, data=groq_body, headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {GROQ_API_KEY}",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) story-readiness-checker/1.0",
-                    "Accept": "application/json",
-                }, method="POST")
-
-                # Retry up to 3 times on 429 with exponential backoff
-                groq_data = None
-                for attempt in range(3):
-                    try:
-                        with urllib.request.urlopen(req, timeout=90) as resp:
-                            groq_data = json.loads(resp.read().decode("utf-8"))
-                        break
-                    except urllib.error.HTTPError as e:
-                        body = e.read().decode("utf-8", "replace")
-                        print(f"  Groq HTTP {e.code} (attempt {attempt+1}): {body}")
-                        if e.code == 429 and attempt < 2:
-                            wait = 10 * (2 ** attempt)  # 10s, 20s
-                            print(f"  Rate limited — waiting {wait}s before retry")
-                            time.sleep(wait)
-                            continue
-                        err = {"error": "rate_limited" if e.code == 429 else f"Groq API {e.code}", "detail": body}
-                        self._send(429 if e.code == 429 else 502, json.dumps(err))
-                        return
-                    except Exception as e:
-                        self._send(502, json.dumps({"error": f"Upstream error: {e}"}))
-                        return
-
-                text = groq_data["choices"][0]["message"]["content"]
                 text = text.replace("```json", "").replace("```", "").strip()
                 parsed = json.loads(text)
                 parsed["metrics"] = {
@@ -1350,8 +1401,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(404, json.dumps({"error": "Not found"}))
             return
 
-        if not GROQ_API_KEY:
-            self._send(500, json.dumps({"error": "GROQ_API_KEY not found in .env"}))
+        if not (OPENAI_API_KEY or GROQ_API_KEY):
+            self._send(500, json.dumps({"error": "No LLM API key configured. Set OPENAI_API_KEY or GROQ_API_KEY in .env."}))
             return
 
         try:
@@ -1383,58 +1434,29 @@ class Handler(BaseHTTPRequestHandler):
         context = "\n\n".join(context_parts)
         user_content = f"User story:\n{story}" + (f"\n\n{context}" if context else "")
 
-        groq_body = json.dumps({
-            "model": MODEL,
-            "max_tokens": 4096,
-            "temperature": 0.3,
-            "response_format": {"type": "json_object"},
-            "messages": [
-                {"role": "system", "content": active_prompt},
-                {"role": "user", "content": user_content},
-            ],
-        }).encode("utf-8")
-
-        req = urllib.request.Request(
-            GROQ_URL,
-            data=groq_body,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {GROQ_API_KEY}",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) story-readiness-checker/1.0",
-                "Accept": "application/json",
-            },
-            method="POST",
-        )
-
-        # Retry up to 3 times on 429 rate-limit with backoff
-        groq_data = None
-        for attempt in range(3):
-            try:
-                with urllib.request.urlopen(req, timeout=90) as resp:
-                    groq_data = json.loads(resp.read().decode("utf-8"))
-                break
-            except urllib.error.HTTPError as e:
-                body = e.read().decode("utf-8", "replace")
-                print(f"  Groq HTTP {e.code} (attempt {attempt+1}): {body}")
-                if e.code == 429 and attempt < 2:
-                    wait = 10 * (2 ** attempt)  # 10s, 20s
-                    print(f"  Rate limited — waiting {wait}s before retry")
-                    time.sleep(wait)
-                    continue
-                err = {"error": "rate_limited" if e.code == 429 else f"Groq API {e.code}", "detail": body}
-                self._send(429 if e.code == 429 else 502, json.dumps(err))
-                return
-            except Exception as e:
-                self._send(502, json.dumps({"error": f"Upstream error: {e}"}))
-                return
+        try:
+            text = llm_chat(
+                messages=[
+                    {"role": "system", "content": active_prompt},
+                    {"role": "user",   "content": user_content},
+                ],
+                max_tokens=4096,
+                temperature=0.3,
+                groq_model=GROQ_MODEL,
+            )
+        except LLMError as e:
+            code = 429 if e.status == 429 else 502
+            self._send(code, json.dumps({
+                "error": "rate_limited" if e.status == 429 else "LLM request failed",
+                "detail": e.detail,
+            }))
+            return
 
         try:
-            text = groq_data["choices"][0]["message"]["content"]
             text = text.replace("```json", "").replace("```", "").strip()
             parsed = json.loads(text)
         except Exception as e:
-            self._send(502, json.dumps({"error": f"Could not parse model output: {e}",
-                                        "raw": groq_data}))
+            self._send(502, json.dumps({"error": f"Could not parse model output: {e}", "raw": text}))
             return
 
         # Enforce consistent readiness_level based on total score
@@ -1471,9 +1493,9 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8000"))
-    if not GROQ_API_KEY:
-        print("WARNING: GROQ_API_KEY not found in .env next to this script.")
-    print(f"Model: {MODEL}")
+    if not (OPENAI_API_KEY or GROQ_API_KEY):
+        print("WARNING: no LLM API key found in .env (set OPENAI_API_KEY and/or GROQ_API_KEY).")
+    print(f"LLM -> OpenAI (primary): {'configured' if OPENAI_API_KEY else 'MISSING'} | Groq (fallback): {'configured' if GROQ_API_KEY else 'MISSING'}")
     host = os.environ.get("HOST", "127.0.0.1")
     print(f"Serving on http://{host}:{port}  (Ctrl+C to stop)")
     ThreadingHTTPServer((host, port), Handler).serve_forever()
