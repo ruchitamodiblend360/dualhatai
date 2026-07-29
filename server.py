@@ -702,25 +702,32 @@ def build_pptx(deck):
     # ── Slide 1: Cover ────────────────────────────────────────────────────────
     cover = prs.slides.add_slide(blank)
 
-    # Gear photo background — object-fit:cover, centered (no stretch)
+    # Gear photo background — pre-crop to 16:9 so it fits the slide exactly
     bg_path = os.path.join(ROOT_DIR, "cover-bg.jpeg")
     if os.path.exists(bg_path):
+        import tempfile, os as _os
         from PIL import Image as _PIL
         try:
             with _PIL.open(bg_path) as im:
                 iw, ih = im.size
+                target_ratio = 12192000 / 6858000  # 16:9 ≈ 1.778
+                crop_h = int(iw / target_ratio)
+                if crop_h <= ih:
+                    y_start = (ih - crop_h) // 2   # centre crop vertically
+                    cropped = im.crop((0, y_start, iw, y_start + crop_h))
+                else:
+                    crop_w = int(ih * target_ratio)
+                    x_start = (iw - crop_w) // 2
+                    cropped = im.crop((x_start, 0, x_start + crop_w, ih))
+                tmp = tempfile.NamedTemporaryFile(suffix=".jpeg", delete=False)
+                cropped.save(tmp.name, "JPEG", quality=90)
+                tmp.close()
+            cover.shapes.add_picture(tmp.name, Emu(0), Emu(0),
+                                      width=Emu(12192000), height=Emu(6858000))
+            _os.unlink(tmp.name)
         except Exception:
-            iw, ih = 1920, 1080
-        slide_w, slide_h = Emu(12192000), Emu(6858000)
-        scale_w = slide_w / iw
-        scale_h = slide_h / ih
-        scale   = max(scale_w, scale_h)   # cover: fill the larger dimension
-        pic_w   = int(iw * scale)
-        pic_h   = int(ih * scale)
-        x_off   = (slide_w - pic_w) // 2
-        y_off   = (slide_h - pic_h) // 2
-        cover.shapes.add_picture(bg_path, x_off, y_off,
-                                  width=pic_w, height=pic_h)
+            cover.shapes.add_picture(bg_path, Emu(0), Emu(0),
+                                      width=Emu(12192000), height=Emu(6858000))
 
     # Rounded-rectangle shape matching reference — clips off left/top/bottom edges
     from pptx.util import Pt as _Pt
