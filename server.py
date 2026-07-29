@@ -528,12 +528,20 @@ def fetch_board_detail(board):
     project_name = (board.get("location") or {}).get("projectName", board.get("name", ""))
     avatar_url = (board.get("location") or {}).get("avatarURI", "")
 
-    # Sprints (active + future)
+    # Sprints (active + future + last 2 closed)
     try:
         sd = jira_agile_get(f"board/{bid}/sprint?state=active,future&maxResults=10")
         raw_sprints = sd.get("values", [])
     except Exception:
         raw_sprints = []
+    try:
+        cd = jira_agile_get(f"board/{bid}/sprint?state=closed&maxResults=50")
+        closed_all = cd.get("values", [])
+        # Keep only the 2 most recently ended
+        closed_all.sort(key=lambda s: s.get("endDate", ""), reverse=True)
+        raw_sprints += closed_all[:2]
+    except Exception:
+        pass
 
     # Backlog count
     try:
@@ -565,7 +573,12 @@ def fetch_board_detail(board):
                     "goal": s.get("goal", ""),
                     "count": fut.result(),
                 })
-        sprints.sort(key=lambda x: (0 if x["state"] == "active" else 1, x["name"]))
+        order = {"active": 0, "future": 1, "closed": 2}
+        sprints.sort(key=lambda x: (order.get(x["state"], 3), x.get("endDate", "") if x["state"] == "closed" else x["name"]), reverse=False)
+        # For closed sprints, show most recent first
+        active_future = [s for s in sprints if s["state"] != "closed"]
+        closed = sorted([s for s in sprints if s["state"] == "closed"], key=lambda x: x.get("endDate", ""), reverse=True)
+        sprints = active_future + closed
 
     board_url = f"{JIRA_BASE_URL}/jira/software/projects/{project_key}/boards/{bid}"
     return {

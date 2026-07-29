@@ -285,25 +285,30 @@
                     </div>
                     <div style={{ padding: "8px" }}>
                       {board.sprints.map(function(sprint) {
-                        const isActive = sprint.state === "active";
-                        const isSelRow = selectedBoard && selectedBoard.id === board.id && selectedSprint && selectedSprint.id === sprint.id;
+                        const isActive  = sprint.state === "active";
+                        const isClosed  = sprint.state === "closed";
+                        const isSelRow  = selectedBoard && selectedBoard.id === board.id && selectedSprint && selectedSprint.id === sprint.id;
                         return (
                           <div key={sprint.id} onClick={function() { selectRow(board, Object.assign({}, sprint, { type: "sprint" })); }}
                             style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
                               padding: "9px 10px", borderRadius: 7, cursor: "pointer", marginBottom: 4,
-                              border: isSelRow ? "1.5px solid #00EDED" : isActive ? "1.5px solid #00EDED" : "1px solid #314550",
+                              border: isSelRow ? "1.5px solid #00EDED" : isActive ? "1.5px solid #00EDED" : isClosed ? "1px solid #314550" : "1px solid #314550",
                               background: isSelRow ? "#053057" : isActive ? "#053057" : "transparent",
+                              opacity: isClosed ? 0.75 : 1,
                               transition: "background 120ms" }}
                             onMouseEnter={function(e) { if (!isSelRow && !isActive) e.currentTarget.style.background = "#053057"; }}
                             onMouseLeave={function(e) { if (!isSelRow && !isActive) e.currentTarget.style.background = "transparent"; }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-                              <i className="ti ti-refresh" style={{ fontSize: 13, color: isActive ? "#00EDED" : "#A2F3F3", flexShrink: 0 }} />
-                              <span style={{ fontSize: 13, color: isActive ? "#00EDED" : "#F4F3F0", fontWeight: isActive ? 500 : 400,
+                              <i className={isClosed ? "ti ti-circle-check" : "ti ti-refresh"}
+                                style={{ fontSize: 13, color: isActive ? "#00EDED" : isClosed ? "#6B7280" : "#A2F3F3", flexShrink: 0 }} />
+                              <span style={{ fontSize: 13, color: isActive ? "#00EDED" : isClosed ? "#9CA3AF" : "#F4F3F0", fontWeight: isActive ? 500 : 400,
                                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sprint.name}</span>
                               {isActive && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 99, flexShrink: 0,
                                 background: "#00EDED", color: "#053057", fontWeight: 700, letterSpacing: "0.05em" }}>Active</span>}
+                              {isClosed && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 99, flexShrink: 0,
+                                background: "#374151", color: "#9CA3AF", fontWeight: 600, letterSpacing: "0.05em" }}>Completed</span>}
                             </div>
-                            <span style={{ fontSize: 11, color: "#F4F3F0", flexShrink: 0, marginLeft: 8 }}>{sprint.count} {sprint.count === 1 ? "story" : "stories"}</span>
+                            <span style={{ fontSize: 11, color: isClosed ? "#6B7280" : "#F4F3F0", flexShrink: 0, marginLeft: 8 }}>{sprint.count} {sprint.count === 1 ? "story" : "stories"}</span>
                           </div>
                         );
                       })}
