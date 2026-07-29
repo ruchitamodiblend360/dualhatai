@@ -2338,10 +2338,28 @@ Dependencies:
                   {/* Input card — always visible */}
                   <div style={cardStyle}>
                     <div style={{ padding: "16px 18px 0" }}>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 500,
-                        color: "var(--color-text-primary)", marginBottom: 7 }}>
-                        {checkerMode === "epic" ? "Paste Epic here below:" : "Paste User Story here below:"}
-                      </label>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+                        <label style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-primary)" }}>
+                          {checkerMode === "epic" ? "Paste Epic here below:" : "Paste User Story here below:"}
+                        </label>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={() => { setStory(checkerMode === "epic" ? EXAMPLE_EPIC : EXAMPLE_STORY); setEpic(""); setDor(""); setUiState("idle"); setResult(null); }}
+                            style={{ fontSize: 11, padding: "4px 10px", background: "none", cursor: "pointer",
+                              border: "0.5px solid var(--color-border-secondary)",
+                              borderRadius: "var(--border-radius-md)", color: "var(--color-text-primary)" }}>
+                            Load example
+                          </button>
+                          {story.trim() && (
+                            <button onClick={() => { setStory(""); setEpic(""); setDor(""); setUiState("idle"); setResult(null); }}
+                              style={{ fontSize: 11, padding: "4px 10px", background: "none", cursor: "pointer",
+                                border: "0.5px solid var(--color-border-secondary)",
+                                borderRadius: "var(--border-radius-md)", color: "var(--color-text-tertiary)",
+                                display: "flex", alignItems: "center", gap: 4 }}>
+                              <i className="ti ti-x" style={{ fontSize: 10 }} /> Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
                       <textarea
                         value={story}
                         onChange={e => setStory(e.target.value)}
@@ -2390,24 +2408,7 @@ Dependencies:
                     </div>
 
                     <div style={{ borderTop: "0.5px solid var(--color-border-tertiary)", padding: "12px 18px",
-                      display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => { setStory(checkerMode === "epic" ? EXAMPLE_EPIC : EXAMPLE_STORY); setEpic(""); setDor(""); setUiState("idle"); setResult(null); }}
-                          style={{ fontSize: 12, padding: "7px 13px", background: "none", cursor: "pointer",
-                            border: "0.5px solid var(--color-border-secondary)",
-                            borderRadius: "var(--border-radius-md)", color: "var(--color-text-primary)" }}>
-                          Load example
-                        </button>
-                        {story.trim() && (
-                          <button onClick={() => { setStory(""); setEpic(""); setDor(""); setUiState("idle"); setResult(null); }}
-                            style={{ fontSize: 12, padding: "7px 13px", background: "none", cursor: "pointer",
-                              border: "0.5px solid var(--color-border-secondary)",
-                              borderRadius: "var(--border-radius-md)", color: "var(--color-text-tertiary)",
-                              display: "flex", alignItems: "center", gap: 5 }}>
-                            <i className="ti ti-x" style={{ fontSize: 11 }} /> Clear
-                          </button>
-                        )}
-                      </div>
+                      display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
                       <button onClick={analyzeStory}
                         disabled={uiState === "loading" || !story.trim()}
                         style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500,
