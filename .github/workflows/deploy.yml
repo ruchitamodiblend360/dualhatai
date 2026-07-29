@@ -1,0 +1,57 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-ec2
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Package app
+        run: |
+          tar -czf /tmp/app.tgz \
+            --exclude=./.git --exclude=./.github --exclude=./.env \
+            --exclude=./history.json --exclude='./*.pem' \
+            --exclude=./__pycache__ --exclude=./app.tar.gz .
+
+      - name: Upload and restart service
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+        run: |
+          scp -i ~/.ssh/deploy_key /tmp/app.tgz "$USER@$HOST:/tmp/app.tgz"
+          ssh -i ~/.ssh/deploy_key "$USER@$HOST" '
+            set -e
+            sudo tar -xzf /tmp/app.tgz -C /opt/dualhatai
+            sudo systemctl restart dualhatai
+            sleep 1
+            systemctl is-active dualhatai
+          '
+
+      - name: Health check
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://$HOST/" || true)
+            echo "attempt $i: HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 3
+          done
+          echo "health check failed"; exit 1

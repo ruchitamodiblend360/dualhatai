@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 history.json
+*.pem
+kperr.txt
+app.tar.gz

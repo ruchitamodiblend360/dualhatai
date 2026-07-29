@@ -74,6 +74,7 @@ def build_team_context(history, mode, current_story, max_examples=2):
         return ""
 
     parts = []
+    mode_label = "stories" if mode == "story" else "epics"
 
     # ── Level 2: pattern summary (requires 3+ past entries) ──────────────────
     if len(relevant) >= 3:
@@ -103,7 +104,6 @@ def build_team_context(history, mode, current_story, max_examples=2):
 
         avg_total = round(sum(totals) / len(totals), 1) if totals else None
 
-        mode_label = "stories" if mode == "story" else "epics"
         lines = [f"TEAM HISTORICAL PATTERNS ({len(relevant)} past {mode_label} analysed):"]
         if avg_total is not None:
             lines.append(f"- Team average score: {avg_total}/100")
@@ -1470,9 +1470,10 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    port = 8000
+    port = int(os.environ.get("PORT", "8000"))
     if not GROQ_API_KEY:
         print("WARNING: GROQ_API_KEY not found in .env next to this script.")
     print(f"Model: {MODEL}")
-    print(f"Serving on http://localhost:{port}  (Ctrl+C to stop)")
-    ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    host = os.environ.get("HOST", "127.0.0.1")
+    print(f"Serving on http://{host}:{port}  (Ctrl+C to stop)")
+    ThreadingHTTPServer((host, port), Handler).serve_forever()
