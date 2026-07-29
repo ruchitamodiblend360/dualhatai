@@ -712,8 +712,6 @@ def build_pptx(deck):
     oval.line.width = _Pt(2.0)
 
     # Text inside oval
-    add_text(cover, "SPRINT STATUS", 0.85, 1.3, 4.5, 0.28, size=8, color=C["nt"])
-    add_rect(cover, 0.85, 1.58, 4.5, 0.012, C["nt"])
     add_text(cover, pn, 0.85, 1.72, 4.5, 1.3, size=30, color=C["wh"])
     from datetime import date as _date
     created_label = _date.today().strftime("%B %d, %Y")
