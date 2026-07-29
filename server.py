@@ -1170,26 +1170,12 @@ class Handler(BaseHTTPRequestHandler):
                 week_end   = week_start + datetime.timedelta(days=6)
                 week_of    = f"{week_start.strftime('%B %d')}–{week_end.strftime('%d, %Y')}"
 
-                # Fetch comments in parallel for done + in-progress issues
-                issues_needing_comments = done_issues + in_progress_issues
-                comments_map = {}
-                if issues_needing_comments:
-                    with ThreadPoolExecutor(max_workers=3) as pool:
-                        futures = {pool.submit(fetch_issue_comments, iss["key"]): iss["key"]
-                                   for iss in issues_needing_comments}
-                        for fut in as_completed(futures):
-                            key = futures[fut]
-                            try:
-                                comments_map[key] = fut.result()
-                            except Exception:
-                                comments_map[key] = []
-
                 def fmt(iss, include_desc=False):
                     pts = f"| Points: {iss['points']}" if iss['points'] else ""
                     lbl = f"| Labels: {', '.join(iss['labels'])}" if iss['labels'] else ""
-                    desc = ("\n  Description: " + iss['description'] if include_desc and iss.get('description') else "")
+                    desc = ("\n  Description: " + iss['description'][:150] if include_desc and iss.get('description') else "")
                     line = f"- [{iss['key']}] {iss['summary']} | Type: {iss['type']} | Assignee: {iss['assignee']} | Priority: {iss['priority']} {pts} {lbl}{desc}"
-                    coms = comments_map.get(iss["key"], [])
+                    coms = []
                     if coms:
                         line += "\n  Comments:\n" + "\n".join(f"    > {c}" for c in coms)
                     return line
@@ -1211,7 +1197,7 @@ class Handler(BaseHTTPRequestHandler):
                 ] + ([fmt(i) for i in todo_capped] if todo_capped else ["(none)"])
 
                 groq_body = json.dumps({
-                    "model": MODEL, "max_tokens": 2000, "temperature": 0.3,
+                    "model": "llama-3.1-8b-instant", "max_tokens": 1500, "temperature": 0.3,
                     "response_format": {"type": "json_object"},
                     "messages": [
                         {"role": "system", "content": STATUS_DECK_SYSTEM_PROMPT},
