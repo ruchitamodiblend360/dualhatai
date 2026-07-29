@@ -345,7 +345,7 @@ Dependencies:
     }
 
     /* ── Result state ── */
-    function ResultState({ result, onRecheck }) {
+    function ResultState({ result, onRecheck, mode }) {
       const [tab, setTab]           = useState("gaps");
       const [copied, setCopied]     = useState(false);
       const [jiraKey, setJiraKey]   = useState("");
@@ -381,7 +381,7 @@ Dependencies:
         { id: "gaps",         label: "Gaps",           icon: "ti-alert-circle",  count: result.gaps?.length },
         { id: "ambiguities",  label: "Ambiguities",     icon: "ti-question-mark", count: result.ambiguities?.length },
         { id: "dependencies", label: "Dependencies",    icon: "ti-git-branch",    count: result.dependencies?.length },
-        { id: "improved",     label: "Improved story",  icon: "ti-sparkles",      count: null },
+        { id: "improved",     label: mode === "epic" ? "Improved epic" : "Improved story", icon: "ti-sparkles", count: null },
       ];
 
       const criticalCount = result.gaps?.filter(g => g.severity === "critical").length || 0;
@@ -846,7 +846,9 @@ Dependencies:
                 {r.improved_story && (
                   <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: "#A2F3F3", letterSpacing: "0.07em" }}>IMPROVED STORY</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#A2F3F3", letterSpacing: "0.07em" }}>
+                        {(selectedStory.mode || "story") === "epic" ? "IMPROVED EPIC" : "IMPROVED STORY"}
+                      </div>
                       <div style={{ display: "flex", gap: 6 }}>
                         <button onClick={() => { setEditableDescription(buildJiraDescription(r)); setShowJiraReview(true); setPushStatus(null); setPushMsg(""); }}
                           style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11,
@@ -2449,7 +2451,7 @@ Dependencies:
                     {uiState === "loading" && <LoadingState step={loadStep} />}
                     {uiState === "error"   && <ErrorState message={errorMsg} onRetry={analyzeStory} onEdit={() => setUiState("idle")} />}
                     {uiState === "done" && result && (
-                      <ResultState result={result} onRecheck={() => analyzeStory()} />
+                      <ResultState result={result} onRecheck={() => analyzeStory()} mode={checkerMode} />
                     )}
                   </div>
                 </div>

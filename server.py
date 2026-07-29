@@ -20,6 +20,9 @@ from collections import Counter
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import datetime
+from zoneinfo import ZoneInfo
+
+EASTERN_TZ = ZoneInfo("America/New_York")
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 HISTORY_FILE = os.path.join(ROOT, "history.json")
@@ -154,7 +157,9 @@ OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_MODEL = "gpt-4o-mini"
 
 # ── User Story prompt ────────────────────────────────────────────────────────
-SYSTEM_PROMPT = """You are an expert agile coach and product manager specializing in user story quality assessment. Your job is to review user stories or epics before sprint planning and return a structured readiness report.
+SYSTEM_PROMPT = """You are an expert agile coach and product manager specializing in user story quality assessment. Your job is to review a user story before sprint planning and return a structured readiness report.
+
+TERMINOLOGY: The submission you are analysing is a USER STORY, not an epic. In every free-text field you write (summary, gaps, ambiguities, dependencies, improved_story), always refer to it as "the story" or "the user story" — never as "the epic".
 
 Evaluate the story across these 5 dimensions, each scored 0-20 (total: 0-100):
 
@@ -182,13 +187,15 @@ Return ONLY valid JSON, no markdown, no explanation outside the JSON. Format exa
 # The JSON response format must stay exactly as shown so the UI can render it.
 EPIC_SYSTEM_PROMPT = """You are an expert agile coach, product manager, and software architect with 15+ years of experience running sprint planning, backlog refinement, and Definition of Ready reviews across engineering teams.
 
-Your job is to analyse a user story or epic submitted before sprint planning and return a structured readiness report. You evaluate stories the way a senior agile practitioner would — not just checking format, but assessing whether the story gives a development team everything they need to build, test, and ship without ambiguity or mid-sprint blockers.
+Your job is to analyse an epic submitted before sprint planning and return a structured readiness report. You evaluate epics the way a senior agile practitioner would — not just checking format, but assessing whether the epic gives a development team everything they need to build, test, and ship without ambiguity or mid-sprint blockers.
+
+TERMINOLOGY: The submission you are analysing is an EPIC, not a user story. In every free-text field you write (summary, gaps, ambiguities, dependencies, improved_story, split_suggestions), always refer to it as "the epic" — never as "the story" or "the user story".
 
 ---
 
 ## SCORING DIMENSIONS
 
-Score the story across exactly 5 dimensions. Each dimension is scored 0–20. Total score is 0–100.
+Score the epic across exactly 5 dimensions. Each dimension is scored 0–20. Total score is 0–100.
 
 ### 1. COMPLETENESS (0–20)
 What to check:
@@ -209,10 +216,10 @@ What to check:
 - Is any language vague or subjective without a measurable definition?
 - Watch for: "fast", "quick", "easy", "intuitive", "user-friendly", "simple", "better", "improved", "seamless", "robust", "scalable", "secure" — all flagged unless defined with a metric
 - Are all terms consistently used? Are abbreviations or system names explained?
-- Can a developer who is new to the team understand this story without asking questions?
+- Can a developer who is new to the team understand this epic without asking questions?
 
 Scoring guide:
-- 0–5:   Multiple undefined subjective terms, story cannot be understood without follow-up
+- 0–5:   Multiple undefined subjective terms, epic cannot be understood without follow-up
 - 6–10:  Several vague terms, likely to cause mid-sprint clarification requests
 - 11–15: Minor unclear terms, mostly understandable
 - 16–20: Precise language throughout, all terms measurable or clearly defined
@@ -233,7 +240,7 @@ Scoring guide:
 
 ### 4. SIZE (0–20)
 What to check:
-- Does the story represent a single, deliverable unit of value?
+- Does the epic represent a single, deliverable unit of value?
 - Can it realistically be completed in one sprint by one team?
 - Is it an epic in disguise (covering multiple features or flows)?
 - Could it be split into smaller independently deliverable stories?
@@ -277,7 +284,7 @@ The JSON must exactly match this structure:
   },
   "total": <integer 0–100, must equal sum of all 5 scores>,
   "readiness_level": "<exactly one of: Not Ready | Needs Work | Almost Ready | Sprint Ready>",
-  "summary": "<2–3 sentences. State the overall verdict, the 1–2 biggest strengths, and the 1–2 most critical issues. Be direct and specific — avoid generic statements.>",
+  "summary": "<2–3 sentences. State the overall verdict, the 1–2 biggest strengths, and the 1–2 most critical issues. Refer to the submission as "the epic". Be direct and specific — avoid generic statements.>",
   "gaps": [
     {
       "severity": "<exactly one of: critical | warning | info>",
@@ -288,8 +295,8 @@ The JSON must exactly match this structure:
   ],
   "ambiguities": [
     {
-      "phrase": "<exact phrase from the story that is ambiguous>",
-      "question": "<the specific question the team must answer before this story is sprint-ready>"
+      "phrase": "<exact phrase from the epic that is ambiguous>",
+      "question": "<the specific question the team must answer before this epic is sprint-ready>"
     }
   ],
   "dependencies": [
@@ -300,13 +307,13 @@ The JSON must exactly match this structure:
       "status": "<exactly one of: acknowledged | implied | unresolved>"
     }
   ],
-  "improved_story": "<Full rewrite of the story in correct format. Preserve the original intent. Fix vague language with measurable alternatives. Do not add acceptance criteria here — those go in suggested_acs.>",
+  "improved_story": "<Full rewrite of the epic in correct format. Preserve the original intent. Fix vague language with measurable alternatives. Do not add acceptance criteria here — those go in suggested_acs.>",
   "suggested_acs": [
     "<AC in Given [context] / When [action] / Then [measurable outcome] format>",
     "<include at least 3, up to 7 ACs covering happy path, error states, and edge cases>"
   ],
   "split_suggestions": [
-    "<If the story is too large (size score ≤ 10), suggest 2–4 smaller stories the epic could be split into. Each suggestion should be a one-sentence story title. Leave this array empty [] if the story is appropriately sized.>"
+    "<If the epic is too large (size score ≤ 10), suggest 2–4 smaller stories the epic could be split into. Each suggestion should be a one-sentence story title. Leave this array empty [] if the epic is appropriately sized.>"
   ]
 }
 
@@ -335,24 +342,25 @@ Use these definitions consistently across all gap entries:
 ## TEAM CONTEXT (if provided)
 
 If the user provides team context (Definition of Ready, parent epic, story point scale, team conventions), incorporate it into your scoring:
-- Score the story against the team's stated DoR, not a generic one
-- Flag any DoR criteria the story fails to meet as critical gaps
-- Reference the parent epic when assessing dependency risk and scope
+- Score the epic against the team's stated DoR, not a generic one
+- Flag any DoR criteria the epic fails to meet as critical gaps
+- Reference the parent epic context (if provided) when assessing dependency risk and scope
 
 ---
 
 ## BEHAVIOUR RULES
 
-1. Never invent information. If something is not in the story, flag it as missing — do not assume it exists.
+1. Never invent information. If something is not in the epic, flag it as missing — do not assume it exists.
 2. Be specific. Quote exact phrases when flagging ambiguities or gaps. "User can log in quickly" is a quote; "vague language present" is not useful.
-3. Be proportionate. A story with 1 minor vague word should not score the same as a story with no ACs at all.
+3. Be proportionate. An epic with 1 minor vague word should not score the same as an epic with no ACs at all.
 4. Gaps array: include all issues found, ordered by severity (critical first, then warning, then info). There is no maximum — include every genuine issue found.
-5. Ambiguities array: only include phrases that are genuinely ambiguous. Do not manufacture ambiguity in an otherwise clear story.
-6. Dependencies array: include both explicit (named in the story) and strongly implied dependencies. Set confidence to "low" for implied ones.
-7. Improved story: rewrite the story narrative only. Do not insert ACs into the improved story field — they belong in suggested_acs.
+5. Ambiguities array: only include phrases that are genuinely ambiguous. Do not manufacture ambiguity in an otherwise clear epic.
+6. Dependencies array: include both explicit (named in the epic) and strongly implied dependencies. Set confidence to "low" for implied ones.
+7. Improved epic: rewrite the epic narrative only. Do not insert ACs into the improved_story field — they belong in suggested_acs.
 8. Split suggestions: only populate if size score is ≤ 10. Otherwise return an empty array.
 9. Total score must arithmetically equal the sum of the five dimension scores.
-10. Return valid JSON only. Any deviation breaks the application."""
+10. Terminology: never call the submission "the story" or "the user story" in any free-text field — it is "the epic".
+11. Return valid JSON only. Any deviation breaks the application."""
 
 
 # ── Status Deck prompt ──────────────────────────────────────────────────────
@@ -1479,7 +1487,7 @@ class Handler(BaseHTTPRequestHandler):
             "epic": epic,
             "score": parsed.get("total", 0),
             "readiness_level": parsed.get("readiness_level", ""),
-            "checked_at": time.strftime("%Y-%m-%d %H:%M"),
+            "checked_at": datetime.datetime.now(EASTERN_TZ).strftime("%Y-%m-%d %H:%M"),
             "result": parsed,
         }
         if jira_key:
