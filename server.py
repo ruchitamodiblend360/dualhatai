@@ -718,10 +718,12 @@ def build_pptx(deck):
     add_text(cover, sn, 0.85, 3.10, 4.5, 0.38, size=13, color=C["lt"])
     if sprint_timeline:
         add_text(cover, sprint_timeline, 0.85, 3.52, 4.5, 0.32, size=11, color=C["ow"])
-    add_text(cover, "Created: " + created_label, 0.85, 3.88, 4.5, 0.30, size=10, color="#A2A2A2")
+    completion_pct = m.get("completionPct", 0)
+    add_text(cover, f"Sprint Completion: {completion_pct}%", 0.85, 3.88, 4.5, 0.30, size=10, color=C["nt"])
+    add_text(cover, "Created: " + created_label, 0.85, 4.22, 4.5, 0.30, size=10, color="#A2A2A2")
     h_clr = {"On Track": "#065F46", "At Risk": "#92400E", "Off Track": "#7F1D1D"}.get(hs, "#92400E")
-    add_rect(cover, 0.85, 4.35, 2.5, 0.40, h_clr)
-    add_text(cover, hs, 0.85, 4.35, 2.5, 0.40, size=11, color=C["wh"], align="center")
+    add_rect(cover, 0.85, 4.70, 2.5, 0.40, h_clr)
+    add_text(cover, hs, 0.85, 4.70, 2.5, 0.40, size=11, color=C["wh"], align="center")
     # Blend360.com footer bottom-left (matching reference)
     add_text(cover, "Blend360.com", 0.5, 7.1, 2.5, 0.28, size=8, color=C["lt"])
 
