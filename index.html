@@ -2335,18 +2335,20 @@ Acceptance Criteria:
 
                       <div style={{ borderTop: "0.5px solid var(--color-border-tertiary)", paddingTop: 13, marginBottom: 13 }}>
                         <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 9 }}>
-                          Context <span style={{ fontWeight: 400, color: "var(--color-text-tertiary)" }}>(optional - COMING SOON)</span>
+                          Additional Context <span style={{ fontWeight: 400, color: "var(--color-text-tertiary)" }}>(optional - COMING SOON)</span>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: 11, color: "var(--color-text-primary)", marginBottom: 5 }}>Parent epic</label>
-                            <input value={epic} onChange={e => setEpic(e.target.value)}
-                              placeholder="e.g. Auth & security epic"
-                              style={{ width: "100%", fontSize: 12, padding: "7px 10px", boxSizing: "border-box",
-                                background: "var(--color-background-secondary)",
-                                border: "0.5px solid var(--color-border-secondary)",
-                                borderRadius: "var(--border-radius-md)", color: "var(--color-text-primary)" }} />
-                          </div>
+                        <div style={{ display: "grid", gridTemplateColumns: checkerMode === "epic" ? "1fr" : "1fr 1fr", gap: 10 }}>
+                          {checkerMode !== "epic" && (
+                            <div>
+                              <label style={{ display: "block", fontSize: 11, color: "var(--color-text-primary)", marginBottom: 5 }}>Parent epic</label>
+                              <input value={epic} onChange={e => setEpic(e.target.value)}
+                                placeholder="e.g. Auth & security epic"
+                                style={{ width: "100%", fontSize: 12, padding: "7px 10px", boxSizing: "border-box",
+                                  background: "var(--color-background-secondary)",
+                                  border: "0.5px solid var(--color-border-secondary)",
+                                  borderRadius: "var(--border-radius-md)", color: "var(--color-text-primary)" }} />
+                            </div>
+                          )}
                           <div>
                             <label style={{ display: "block", fontSize: 11, color: "var(--color-text-primary)", marginBottom: 5 }}>Definition of Ready</label>
                             <input value={dor} onChange={e => setDor(e.target.value)}
