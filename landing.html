@@ -619,13 +619,13 @@
         <div class="card-icon-wrap">
           <i class="ti ti-circle-check"></i>
         </div>
-        <h2 class="card-title">User Story Readiness Checker</h2>
+        <h2 class="card-title">Story / Epic Readiness Checker</h2>
         <p class="card-desc">Paste a user story or epic and get an instant AI-powered readiness score across five dimensions — before sprint planning.</p>
         <div class="card-chips">
           <span class="card-chip"><i class="ti ti-chart-bar" style="font-size:10px;margin-right:4px;"></i>Readiness score</span>
           <span class="card-chip"><i class="ti ti-list-check" style="font-size:10px;margin-right:4px;"></i>Gap analysis</span>
           <span class="card-chip"><i class="ti ti-sparkles" style="font-size:10px;margin-right:4px;"></i>AI suggestions</span>
-          <span class="card-chip"><i class="ti ti-brand-jira" style="font-size:10px;margin-right:4px;"></i>Jira batch</span>
+          <span class="card-chip"><i class="ti ti-layout-kanban" style="font-size:10px;margin-right:4px;"></i>Jira Batch Analysis</span>
         </div>
         <div class="card-cta">
           Open tool <i class="ti ti-arrow-right" style="font-size:14px;"></i>
@@ -638,9 +638,9 @@
           <i class="ti ti-presentation-analytics"></i>
         </div>
         <h2 class="card-title">Sprint Status Generator</h2>
-        <p class="card-desc">Connect to your Jira board, pick a sprint, and generate an executive draft status deck — accomplishments, next steps, blockers, and metrics in seconds.</p>
+        <p class="card-desc">Connect to your Jira board, pick a sprint, and generate a draft executive status deck — accomplishments, next steps, blockers, and metrics in seconds.</p>
         <div class="card-chips">
-          <span class="card-chip"><i class="ti ti-brand-jira" style="font-size:10px;margin-right:4px;"></i>Jira connected</span>
+          <span class="card-chip"><i class="ti ti-layout-kanban" style="font-size:10px;margin-right:4px;"></i>Jira connected</span>
           <span class="card-chip"><i class="ti ti-file-type-ppt" style="font-size:10px;margin-right:4px;"></i>PPT export</span>
           <span class="card-chip"><i class="ti ti-sparkles" style="font-size:10px;margin-right:4px;"></i>AI generated</span>
           <span class="card-chip"><i class="ti ti-edit" style="font-size:10px;margin-right:4px;"></i>Editable deck</span>
@@ -683,9 +683,9 @@
       <div class="step">
         <div class="step-num">3</div>
         <div class="step-body">
-          <span class="step-tag"><i class="ti ti-presentation-analytics" style="font-size:10px;"></i> Status Generator</span>
-          <h3>Connect your Jira board</h3>
-          <p>Link your Jira workspace. DualHat AI pulls your boards, sprints, and backlog synchronized automatically — no copy-pasting, no manual data entry.</p>
+          <span class="step-tag"><i class="ti ti-layout-kanban" style="font-size:10px;"></i> Readiness Checker</span>
+          <h3>Run Jira batch processing &amp; analysis</h3>
+          <p>Connect to Jira and select multiple stories or epics at once — DualHat AI scores every ticket in the batch in one pass, so you can triage a whole sprint's readiness without checking issues one at a time.</p>
         </div>
       </div>
 
@@ -693,8 +693,26 @@
         <div class="step-num">4</div>
         <div class="step-body">
           <span class="step-tag"><i class="ti ti-presentation-analytics" style="font-size:10px;"></i> Status Generator</span>
+          <h3>Connect your Jira board</h3>
+          <p>Link your Jira workspace. DualHat AI pulls your boards and sprints, synchronized automatically — no copy-pasting, no manual data entry.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <span class="step-tag"><i class="ti ti-presentation-analytics" style="font-size:10px;"></i> Status Generator</span>
           <h3>Generate a draft executive status deck</h3>
-          <p>Pick a sprint or backlog row and hit Generate. The AI synthesises accomplishments, next steps, blockers, and sprint metrics into a Blend-branded PowerPoint deck — ready to present in under 30 seconds.</p>
+          <p>Pick a sprint and hit Generate. The AI synthesises accomplishments, next steps, blockers, and sprint metrics into a Blend-branded PowerPoint deck — ready to present in under 30 seconds.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <span class="step-tag"><i class="ti ti-edit" style="font-size:10px;"></i> Status Generator</span>
+          <h3>Edit the deck before you present</h3>
+          <p>The generated PowerPoint isn't locked — every slide, chart, and bullet is fully editable, so you can tweak the tone, trim content, or add your own polish before it goes to stakeholders.</p>
         </div>
       </div>
 
@@ -739,7 +757,14 @@
       </div>
 
       <div class="feat-card">
-        <div class="feat-icon"><i class="ti ti-brand-jira"></i></div>
+        <div class="feat-icon"><i class="ti ti-layout-kanban"></i></div>
+        <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Readiness Checker</span>
+        <h3>Jira batch processing &amp; analysis</h3>
+        <p>Select multiple stories or epics from Jira at once and score the whole batch in a single pass — triage a sprint's readiness without opening tickets one by one.</p>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon"><i class="ti ti-layout-kanban"></i></div>
         <span class="feat-tool-tag tag-status"><i class="ti ti-presentation-analytics" style="font-size:9px;"></i> Status Generator</span>
         <h3>Live Jira integration</h3>
         <p>Connects directly to your Jira workspace. Reads boards, sprints, and issue data in real time — no exports, no CSVs, no manual sync.</p>
@@ -757,6 +782,13 @@
         <span class="feat-tool-tag tag-status"><i class="ti ti-presentation-analytics" style="font-size:9px;"></i> Status Generator</span>
         <h3>Blend-branded PPTX output</h3>
         <p>Every generated deck uses the official Blend colour palette, Montserrat typography, and the Blend logo — brand-ready without any design work.</p>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon"><i class="ti ti-edit"></i></div>
+        <span class="feat-tool-tag tag-status"><i class="ti ti-presentation-analytics" style="font-size:9px;"></i> Status Generator</span>
+        <h3>Fully editable deck</h3>
+        <p>The generated PowerPoint isn't locked — every slide, chart, and bullet is fully editable, so you can tweak tone or content before it goes to stakeholders.</p>
       </div>
 
       <div class="feat-card">
