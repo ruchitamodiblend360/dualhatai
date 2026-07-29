@@ -718,27 +718,18 @@ def build_pptx(deck):
         pic_w   = int(iw * scale)
         pic_h   = int(ih * scale)
         x_off   = (slide_w - pic_w) // 2
-        y_off   = (slide_h - pic_h) // 2
+        y_off   = 0  # anchor to top — gear detail is in the upper portion
         cover.shapes.add_picture(bg_path, x_off, y_off,
                                   width=pic_w, height=pic_h)
 
-    # Rounded-rectangle shape matching reference — clips off left/top/bottom edges
+    # Oval shape — clips off left/top/bottom edges to match reference
     from pptx.util import Pt as _Pt
-    from pptx.oxml.ns import qn as _qn
-    from lxml import etree as _et
-    rr = cover.shapes.add_shape(5, Inches(-1.1), Inches(-0.6),
+    rr = cover.shapes.add_shape(9, Inches(-1.1), Inches(-0.6),
                                  Inches(6.6), Inches(8.7))
     rr.fill.solid()
     rr.fill.fore_color.rgb = rgb(C["wb"])
     rr.line.color.rgb = rgb(C["nt"])
     rr.line.width = _Pt(1.5)
-    # Maximise corner rounding to match reference oval-like look
-    avLst = rr._element.find('.//' + _qn('a:avLst'))
-    if avLst is not None:
-        for gd in avLst.findall(_qn('a:gd')):
-            avLst.remove(gd)
-        gd = _et.SubElement(avLst, _qn('a:gd'))
-        gd.set('name', 'adj'); gd.set('fmla', 'val 45000')
 
     # Text inside shape
     add_text(cover, pn, 0.75, 1.8, 4.2, 1.4, size=28, color=C["wh"])
