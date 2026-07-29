@@ -225,32 +225,34 @@ Scoring guide:
 - 16–20: Precise language throughout, all terms measurable or clearly defined
 
 ### 3. TESTABILITY (0–20)
+An epic itself rarely has granular acceptance criteria — what matters is whether the team could tell, unambiguously, when the epic as a whole is done, and whether its goals are concrete enough for testable child stories to be written from them.
+
 What to check:
-- Can every acceptance criterion be independently verified by a QA engineer?
-- Are ACs written in Given/When/Then (or equivalent) format?
-- Are there measurable outcomes (SLAs, counts, specific error messages, HTTP status codes)?
-- Are success and failure paths both defined?
-- Could a test be written for each AC without asking the author for clarification?
+- Is there a clear, epic-level Definition of Done — a set of measurable conditions that define when the epic is complete (not just "when all child stories are done", but what those stories collectively need to prove)?
+- Is the "done" state observable and verifiable (specific metrics, launched capabilities, a named set of child stories or milestones) rather than subjective ("users are happier", "the system is better")?
+- Are the epic's stated goals concrete enough that a team could write independently testable acceptance criteria for each child story without inventing scope?
+- If child stories or milestones are listed or implied, is there enough detail to judge whether each would be testable on its own?
 
 Scoring guide:
-- 0–5:   ACs are absent or entirely untestable ("system works correctly")
-- 6–10:  ACs present but mostly unverifiable without further information
-- 11–15: Most ACs testable, some gaps in failure paths or edge cases
-- 16–20: All ACs independently verifiable, Given/When/Then, measurable outcomes throughout
+- 0–5:   No definition of done; success criteria are subjective or entirely absent
+- 6–10:  A rough goal is stated but not measurable; unclear how anyone would verify the epic is complete
+- 11–15: Definition of done is mostly measurable, some gaps in how child-story-level testability would work
+- 16–20: Clear, measurable epic-level definition of done; goals are concrete enough that testable child stories could be written directly from them
 
 ### 4. SIZE (0–20)
+An epic is expected to span multiple sprints — do not penalize it for being larger than a single story. What matters is whether its scope is bounded and cleanly decomposable, not whether it fits in one sprint.
+
 What to check:
-- Does the epic represent a single, deliverable unit of value?
-- Can it realistically be completed in one sprint by one team?
-- Is it an epic in disguise (covering multiple features or flows)?
-- Could it be split into smaller independently deliverable stories?
-- Is a story point estimate included or inferable?
+- Is the epic bounded — does it have a clear start and end state, or is it open-ended ("and more", "etc.", unscoped future work folded in)?
+- Does it represent a single coherent initiative or theme, rather than several unrelated initiatives bundled together under one epic?
+- Is there a rough scope signal — an estimated number of sprints, a story count, or a team-months estimate — stated or clearly inferable?
+- Could it realistically be decomposed into a set of sprint-sized child stories right now, without requiring another round of scoping first?
 
 Scoring guide:
-- 0–5:   Clearly an epic — covers 3+ distinct features or workflows
-- 6–10:  Too large for a single sprint, should be split
-- 11–15: Borderline — could be completed in a sprint but is on the larger side
-- 16–20: Well-scoped, single unit of value, sprint-sized
+- 0–5:   Unbounded scope with no defined end state, or bundles multiple unrelated initiatives together
+- 6–10:  Bounded but too coarse to decompose yet — needs another scoping pass before child stories can be written
+- 11–15: Mostly bounded and decomposable, but a scope estimate is missing or the boundary is fuzzy in places
+- 16–20: Clearly bounded single initiative, scope estimate present, cleanly decomposable into sprint-sized stories today
 
 ### 5. DEPENDENCY RISK (0–20)
 What to check:
@@ -283,7 +285,7 @@ The JSON must exactly match this structure:
     "dependency_risk": <integer 0–20>
   },
   "total": <integer 0–100, must equal sum of all 5 scores>,
-  "readiness_level": "<exactly one of: Not Ready | Needs Work | Almost Ready | Sprint Ready>",
+  "readiness_level": "<exactly one of: Not Ready | Needs Work | Almost Ready | Decomposition Ready>",
   "summary": "<2–3 sentences. State the overall verdict, the 1–2 biggest strengths, and the 1–2 most critical issues. Refer to the submission as "the epic". Be direct and specific — avoid generic statements.>",
   "gaps": [
     {
@@ -296,7 +298,7 @@ The JSON must exactly match this structure:
   "ambiguities": [
     {
       "phrase": "<exact phrase from the epic that is ambiguous>",
-      "question": "<the specific question the team must answer before this epic is sprint-ready>"
+      "question": "<the specific question the team must answer before this epic is ready to decompose into stories>"
     }
   ],
   "dependencies": [
@@ -313,7 +315,7 @@ The JSON must exactly match this structure:
     "<include at least 3, up to 7 ACs covering happy path, error states, and edge cases>"
   ],
   "split_suggestions": [
-    "<If the epic is too large (size score ≤ 10), suggest 2–4 smaller stories the epic could be split into. Each suggestion should be a one-sentence story title. Leave this array empty [] if the epic is appropriately sized.>"
+    "<Always populate this for an epic, regardless of the size score — decomposing into child stories is expected output, not a fallback for a poorly-scoped one. Suggest 3–6 child stories the epic could be decomposed into, each a one-sentence story title. If size score is ≤ 10, first note the missing boundary/estimate as a gap, then still provide the best decomposition you can from what's given.>"
   ]
 }
 
@@ -325,7 +327,7 @@ Map total score to readiness_level as follows:
 - 0–39:   "Not Ready"
 - 40–59:  "Needs Work"
 - 60–79:  "Almost Ready"
-- 80–100: "Sprint Ready"
+- 80–100: "Decomposition Ready"
 
 ---
 
@@ -357,7 +359,7 @@ If the user provides team context (Definition of Ready, parent epic, story point
 5. Ambiguities array: only include phrases that are genuinely ambiguous. Do not manufacture ambiguity in an otherwise clear epic.
 6. Dependencies array: include both explicit (named in the epic) and strongly implied dependencies. Set confidence to "low" for implied ones.
 7. Improved epic: rewrite the epic narrative only. Do not insert ACs into the improved_story field — they belong in suggested_acs.
-8. Split suggestions: only populate if size score is ≤ 10. Otherwise return an empty array.
+8. Split suggestions: always populate with a decomposition into child stories — do not gate this on the size score.
 9. Total score must arithmetically equal the sum of the five dimension scores.
 10. Terminology: never call the submission "the story" or "the user story" in any free-text field — it is "the epic".
 11. Return valid JSON only. Any deviation breaks the application."""
@@ -1470,7 +1472,7 @@ class Handler(BaseHTTPRequestHandler):
         # Enforce consistent readiness_level based on total score
         total = parsed.get("total", 0)
         if total >= 80:
-            parsed["readiness_level"] = "Sprint Ready"
+            parsed["readiness_level"] = "Decomposition Ready" if mode == "epic" else "Sprint Ready"
         elif total >= 60:
             parsed["readiness_level"] = "Almost Ready"
         elif total >= 40:

@@ -7,7 +7,7 @@
 
   <!-- Tabler icons (the `ti ti-*` classes used in the component). Non-critical: if a
        network filter blocks this, the app still works, just without icon glyphs. -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css" />
 
   <!-- React + Babel served locally by server.py — no browser CDN dependency -->
   <script src="/vendor/react.production.min.js"></script>
@@ -202,10 +202,11 @@ Dependencies:
     };
 
     const READINESS_CFG = {
-      "Not Ready":    { color: "#A32D2D", bg: "#FCEBEB" },
-      "Needs Work":   { color: "#854F0B", bg: "#FAEEDA" },
-      "Almost Ready": { color: "#053057", bg: "#A2F3F3" },
-      "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" },
+      "Not Ready":           { color: "#A32D2D", bg: "#FCEBEB" },
+      "Needs Work":          { color: "#854F0B", bg: "#FAEEDA" },
+      "Almost Ready":        { color: "#053057", bg: "#A2F3F3" },
+      "Sprint Ready":        { color: "#0F6E56", bg: "#E1F5EE" },
+      "Decomposition Ready": { color: "#5B21B6", bg: "#EDE9FE" },
     };
 
     const RECENT_MOCK = [
@@ -640,16 +641,16 @@ Dependencies:
       },
       epic: {
         checks: [
-          "Clarity of the epic goal & business outcome",
-          "Scope definition & boundary clarity",
-          "Decomposability into sprint-sized stories",
+          "Completeness of the goal, outcome & format",
+          "Clarity — no vague, unmeasurable language",
+          "A measurable Definition of Done across child stories",
+          "Bounded scope, decomposable into sprint-sized stories",
           "Dependency & cross-team risk signals",
-          "Measurable success criteria",
         ],
         tips: [
-          "Include the business outcome, not just the feature",
+          "State what \"done\" looks like across all child stories",
           "List known dependencies or impacted teams upfront",
-          "Add rough story count or sizing if available",
+          "Give a rough scope estimate — story count or sprint count",
         ],
       },
     };
@@ -747,7 +748,7 @@ Dependencies:
       const sc = r.scores || {};
       const scoreColor = v => v >= 80 ? "#1D9E75" : v >= 60 ? "#378ADD" : v >= 40 ? "#EF9F27" : "#E24B4A";
       const dimColor = v => v >= 16 ? "#1D9E75" : v >= 11 ? "#378ADD" : v >= 6 ? "#EF9F27" : "#E24B4A";
-      const RC = { "Not Ready": { color: "#A32D2D", bg: "#FCEBEB" }, "Needs Work": { color: "#854F0B", bg: "#FAEEDA" }, "Almost Ready": { color: "#053057", bg: "#A2F3F3" }, "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" } };
+      const RC = { "Not Ready": { color: "#A32D2D", bg: "#FCEBEB" }, "Needs Work": { color: "#854F0B", bg: "#FAEEDA" }, "Almost Ready": { color: "#053057", bg: "#A2F3F3" }, "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" }, "Decomposition Ready": { color: "#5B21B6", bg: "#EDE9FE" } };
       const rc = RC[r.readiness_level] || RC["Needs Work"];
       const SEV = { critical: { color: "#A32D2D", bg: "#FCEBEB", border: "#F09595", icon: "ti-alert-circle" }, warning: { color: "#854F0B", bg: "#FAEEDA", border: "#EF9F27", icon: "ti-alert-triangle" }, info: { color: "#053057", bg: "#A2F3F3", border: "#A2F3F3", icon: "ti-info-circle" } };
       const SCORE_LABELS = { completeness: "Completeness", clarity: "Clarity", testability: "Testability", size: "Story size", dependency_risk: "Dependencies" };
@@ -854,7 +855,7 @@ Dependencies:
                           style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11,
                             color: "#053057", background: "#A2F3F3", cursor: "pointer",
                             border: "none", borderRadius: "var(--border-radius-md)", padding: "3px 9px", fontWeight: 600 }}>
-                          <i className="ti ti-brand-jira" style={{ fontSize: 12 }} />
+                          <i className="ti ti-layout-kanban" style={{ fontSize: 12 }} />
                           Update Jira
                         </button>
                       </div>
@@ -1018,7 +1019,7 @@ Dependencies:
     /* ── Dashboard ── */
     function Dashboard({ history, setHistory, onRecheck }) {
       const PAGE_SIZE_OPTIONS = [10, 25, 50, "All"];
-      const RC = { "Not Ready": { color: "#A32D2D", bg: "#FCEBEB" }, "Needs Work": { color: "#854F0B", bg: "#FAEEDA" }, "Almost Ready": { color: "#053057", bg: "#A2F3F3" }, "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" } };
+      const RC = { "Not Ready": { color: "#A32D2D", bg: "#FCEBEB" }, "Needs Work": { color: "#854F0B", bg: "#FAEEDA" }, "Almost Ready": { color: "#053057", bg: "#A2F3F3" }, "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" }, "Decomposition Ready": { color: "#5B21B6", bg: "#EDE9FE" } };
       const scoreColor = v => v >= 80 ? "#1D9E75" : v >= 60 ? "#378ADD" : v >= 40 ? "#EF9F27" : "#E24B4A";
 
       const [expandedId, setExpandedId] = useState(null);
@@ -1139,7 +1140,7 @@ Dependencies:
                   borderRadius: "var(--border-radius-md)", background: "var(--color-background-primary)",
                   color: "var(--color-text-primary)" }}>
                 <option value="">All statuses</option>
-                {["Not Ready", "Needs Work", "Almost Ready", "Sprint Ready"].map(s => (
+                {["Not Ready", "Needs Work", "Almost Ready", "Sprint Ready", "Decomposition Ready"].map(s => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
@@ -1766,13 +1767,13 @@ Dependencies:
       const doneCount        = Object.values(statuses).filter(s => s === "done").length;
       const activeIssue      = issues.find(i => statuses[i.key] === "running");
       const activeIdx        = activeIssue ? issues.filter(i => selected.has(i.key)).indexOf(activeIssue) + 1 : 0;
-      const sprintReadyCount = Object.values(results).filter(r => r.readiness_level === "Sprint Ready").length;
+      const sprintReadyCount = Object.values(results).filter(r => r.readiness_level === "Sprint Ready" || r.readiness_level === "Decomposition Ready").length;
       const criticalGaps     = Object.values(results).reduce((n, r) => n + (r.gaps?.filter(g => g.severity === "critical").length || 0), 0);
       const progressPct      = selectedCount > 0 ? Math.round((doneCount / selectedCount) * 100) : 0;
       const batchStarted     = running || doneCount > 0;
 
       /* ── helpers ── */
-      const RC2 = { "Not Ready": { color: "#A32D2D", bg: "#FCEBEB" }, "Needs Work": { color: "#854F0B", bg: "#FAEEDA" }, "Almost Ready": { color: "#053057", bg: "#A2F3F3" }, "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" } };
+      const RC2 = { "Not Ready": { color: "#A32D2D", bg: "#FCEBEB" }, "Needs Work": { color: "#854F0B", bg: "#FAEEDA" }, "Almost Ready": { color: "#053057", bg: "#A2F3F3" }, "Sprint Ready": { color: "#0F6E56", bg: "#E1F5EE" }, "Decomposition Ready": { color: "#5B21B6", bg: "#EDE9FE" } };
       const sc2 = v => v >= 80 ? "#1D9E75" : v >= 60 ? "#378ADD" : v >= 40 ? "#EF9F27" : "#E24B4A";
       const SEV2 = { critical: { color: "#A32D2D", bg: "#FCEBEB", border: "#F09595" }, warning: { color: "#854F0B", bg: "#FAEEDA", border: "#EF9F27" }, info: { color: "#053057", bg: "#A2F3F3", border: "#A2F3F3" } };
       const DIM_LABELS = { completeness: "Completeness", clarity: "Clarity", testability: "Testability", size: "Size", dependency_risk: "Dependencies" };
@@ -1930,7 +1931,7 @@ Dependencies:
             <div style={{ display: "flex", background: "#0B0D0E", borderBottom: "1px solid #314550" }}>
               {[
                 { val: `${doneCount}/${selectedCount}`, sub: "Analyzed",     color: "#A2F3F3", icon: "ti-chart-bar" },
-                { val: sprintReadyCount,                sub: "Sprint ready",  color: "#1D9E75", icon: "ti-circle-check" },
+                { val: sprintReadyCount,                sub: "Ready",  color: "#1D9E75", icon: "ti-circle-check" },
                 { val: criticalGaps,                    sub: "Critical gaps", color: criticalGaps > 0 ? "#F87171" : "#A2F3F3", icon: "ti-alert-circle" },
               ].map((s, i) => (
                 <div key={i} style={{ flex: 1, textAlign: "center", padding: "14px 0",
