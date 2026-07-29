@@ -729,23 +729,22 @@ def build_pptx(deck):
             cover.shapes.add_picture(bg_path, Emu(0), Emu(0),
                                       width=Emu(12192000), height=Emu(6858000))
 
-    # Rounded-rectangle shape matching reference — clips off left/top/bottom edges
-    from pptx.util import Pt as _Pt
-    from pptx.oxml.ns import qn as _qn
-    from lxml import etree as _et
-    rr = cover.shapes.add_shape(5, Inches(-1.1), Inches(-0.6),
-                                 Inches(6.6), Inches(8.7))
-    rr.fill.solid()
-    rr.fill.fore_color.rgb = rgb(C["wb"])
-    rr.line.color.rgb = rgb(C["nt"])
-    rr.line.width = _Pt(1.5)
-    # Maximise corner rounding to match reference oval-like look
-    avLst = rr._element.find('.//' + _qn('a:avLst'))
-    if avLst is not None:
-        for gd in avLst.findall(_qn('a:gd')):
-            avLst.remove(gd)
-        gd = _et.SubElement(avLst, _qn('a:gd'))
-        gd.set('name', 'adj'); gd.set('fmla', 'val 45000')
+    # Render oval as PNG using PIL so it clips naturally to slide bounds — no shape overflow
+    import tempfile as _tmp, os as _os2
+    from PIL import Image as _PILI, ImageDraw as _PILDraw
+    W_PX, H_PX = 1920, 1080
+    overlay = _PILI.new("RGBA", (W_PX, H_PX), (0, 0, 0, 0))
+    draw = _PILDraw.Draw(overlay)
+    sx = W_PX / 12192000; sy = H_PX / 6858000
+    ox = int(Inches(-1.1) * sx); oy = int(Inches(-0.6) * sy)
+    ow = int(Inches(6.6)  * sx); oh = int(Inches(8.7)  * sy)
+    draw.ellipse([ox, oy, ox+ow, oy+oh], fill=(5,48,87,255))
+    draw.ellipse([ox, oy, ox+ow, oy+oh], outline=(0,237,237,255), width=3)
+    _tf = _tmp.NamedTemporaryFile(suffix=".png", delete=False)
+    overlay.save(_tf.name, "PNG"); _tf.close()
+    cover.shapes.add_picture(_tf.name, Emu(0), Emu(0),
+                              width=Emu(12192000), height=Emu(6858000))
+    _os2.unlink(_tf.name)
 
     # Text inside shape
     add_text(cover, pn, 0.75, 1.8, 4.2, 1.4, size=28, color=C["wh"])
