@@ -86,15 +86,16 @@
       flex-wrap: wrap;
       justify-content: center;
       width: 100%;
-      max-width: 820px;
+      max-width: 860px;
     }
 
     .card {
       background: var(--blend-cool-gray);
-      border: 1px solid rgba(0, 237, 237, 0.12);
-      border-radius: 12px;
-      padding: 32px 28px;
-      width: 340px;
+      border: 1px solid rgba(0, 237, 237, 0.15);
+      border-top: 3px solid var(--blend-neon-turquoise);
+      border-radius: 14px;
+      padding: 32px 28px 28px;
+      width: 380px;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -103,41 +104,58 @@
       cursor: pointer;
       text-decoration: none;
       color: inherit;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 120px; height: 120px;
+      background: radial-gradient(circle at top right, rgba(0,237,237,0.07), transparent 70%);
+      pointer-events: none;
     }
 
     .card:hover {
-      border-color: rgba(0, 237, 237, 0.45);
-      box-shadow: 0 0 28px rgba(0, 237, 237, 0.10);
-      transform: translateY(-2px);
-    }
-
-    .card-disabled {
-      cursor: default;
-      opacity: 0.9;
-    }
-
-    .card-disabled:hover {
-      border-color: rgba(0, 237, 237, 0.12);
-      box-shadow: none;
-      transform: none;
+      border-color: rgba(0, 237, 237, 0.55);
+      border-top-color: var(--blend-neon-turquoise);
+      box-shadow: 0 8px 32px rgba(0, 237, 237, 0.10), 0 2px 8px rgba(0,0,0,0.3);
+      transform: translateY(-3px);
     }
 
     .card-icon-wrap {
       box-sizing: border-box;
-      width: 50px;
-      height: 50px;
-      border-radius: 11px;
+      width: 60px;
+      height: 60px;
+      border-radius: 14px;
       display: grid;
       place-items: center;
-      font-size: 20px;
-      margin-bottom: 4px;
-      background: rgba(5, 48, 87, 0.12);
-      color: rgb(5, 48, 87);
+      margin-bottom: 20px;
+      background: rgba(0, 237, 237, 0.10);
+      border: 1px solid rgba(0, 237, 237, 0.2);
     }
 
     .card-icon-wrap i {
-      font-size: 28px;
-      color: rgb(5, 48, 87);
+      font-size: 30px;
+      color: var(--blend-neon-turquoise);
+    }
+
+    .card-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 20px;
+    }
+
+    .card-chip {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      background: rgba(244,243,240,0.06);
+      border: 1px solid rgba(244,243,240,0.12);
+      color: rgba(244,243,240,0.7);
+      letter-spacing: 0.02em;
     }
 
     .card-badge {
@@ -522,9 +540,8 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: center top;
       border-radius: 50%;
-      image-rendering: -webkit-optimize-contrast;
-      image-rendering: crisp-edges;
     }
 
     .team-name {
@@ -603,7 +620,13 @@
           <i class="ti ti-circle-check"></i>
         </div>
         <h2 class="card-title">User Story Readiness Checker</h2>
-        <p class="card-desc">Paste a user story and get an instant AI-powered readiness score across completeness, clarity, testability, size, and dependency risk.</p>
+        <p class="card-desc">Paste a user story or epic and get an instant AI-powered readiness score across five dimensions — before sprint planning.</p>
+        <div class="card-chips">
+          <span class="card-chip"><i class="ti ti-chart-bar" style="font-size:10px;margin-right:4px;"></i>Readiness score</span>
+          <span class="card-chip"><i class="ti ti-list-check" style="font-size:10px;margin-right:4px;"></i>Gap analysis</span>
+          <span class="card-chip"><i class="ti ti-sparkles" style="font-size:10px;margin-right:4px;"></i>AI suggestions</span>
+          <span class="card-chip"><i class="ti ti-brand-jira" style="font-size:10px;margin-right:4px;"></i>Jira batch</span>
+        </div>
         <div class="card-cta">
           Open tool <i class="ti ti-arrow-right" style="font-size:14px;"></i>
         </div>
@@ -614,8 +637,14 @@
         <div class="card-icon-wrap">
           <i class="ti ti-presentation-analytics"></i>
         </div>
-        <h2 class="card-title">Status Generator</h2>
-        <p class="card-desc">Connect to your Jira board, select a sprint, and generate an AI-powered executive status deck — accomplishments, next steps, blockers, and metrics in seconds.</p>
+        <h2 class="card-title">Sprint Status Generator</h2>
+        <p class="card-desc">Connect to your Jira board, pick a sprint, and generate an executive status deck — accomplishments, next steps, blockers, and metrics in seconds.</p>
+        <div class="card-chips">
+          <span class="card-chip"><i class="ti ti-brand-jira" style="font-size:10px;margin-right:4px;"></i>Jira connected</span>
+          <span class="card-chip"><i class="ti ti-file-type-ppt" style="font-size:10px;margin-right:4px;"></i>PPT export</span>
+          <span class="card-chip"><i class="ti ti-sparkles" style="font-size:10px;margin-right:4px;"></i>AI generated</span>
+          <span class="card-chip"><i class="ti ti-edit" style="font-size:10px;margin-right:4px;"></i>Editable deck</span>
+        </div>
         <div class="card-cta">
           Open tool <i class="ti ti-arrow-right" style="font-size:14px;"></i>
         </div>
