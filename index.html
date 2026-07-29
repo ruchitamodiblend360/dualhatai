@@ -127,6 +127,31 @@ Acceptance Criteria:
 - System sends an email
 - User can set a new password`;
 
+    const EXAMPLE_EPIC = `Epic: Self-Service Account Management
+
+Goal: Enable users to manage their own account settings, credentials, and preferences without contacting support, reducing support ticket volume by 40% and improving user satisfaction scores.
+
+Scope:
+- Password reset and change flows
+- Email address update with re-verification
+- Multi-factor authentication setup and management
+- Profile information editing (name, timezone, language)
+- Account deactivation and data export (GDPR)
+
+Out of scope:
+- Billing and subscription changes (handled by Payments epic)
+- Admin-level account management
+
+Success Metrics:
+- Support tickets related to account management reduced by 40%
+- 80% of password resets completed without support intervention
+- MFA adoption rate > 30% within 3 months of launch
+
+Dependencies:
+- Auth service team (SSO integration)
+- Email notification service
+- GDPR compliance review from Legal`;
+
     const LOADING_STEPS = [
       { label: "Parsing story format & persona" },
       { label: "Detecting acceptance criteria" },
@@ -2364,7 +2389,7 @@ Acceptance Criteria:
 
                     <div style={{ borderTop: "0.5px solid var(--color-border-tertiary)", padding: "12px 18px",
                       display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <button onClick={() => { setStory(EXAMPLE_STORY); setEpic(""); setDor(""); setUiState("idle"); setResult(null); }}
+                      <button onClick={() => { setStory(checkerMode === "epic" ? EXAMPLE_EPIC : EXAMPLE_STORY); setEpic(""); setDor(""); setUiState("idle"); setResult(null); }}
                         style={{ fontSize: 12, padding: "7px 13px", background: "none", cursor: "pointer",
                           border: "0.5px solid var(--color-border-secondary)",
                           borderRadius: "var(--border-radius-md)", color: "var(--color-text-primary)" }}>
