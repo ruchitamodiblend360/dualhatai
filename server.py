@@ -335,7 +335,7 @@ Map total score to readiness_level as follows:
 
 Use these definitions consistently across all gap entries:
 
-- critical: A blocker. The story cannot be built or tested without resolving this. Examples: missing ACs, undefined token expiry, no error states, epic-sized scope.
+- critical: A blocker. The epic cannot be decomposed or built without resolving this. Examples: missing ACs, undefined token expiry, no error states, unbounded scope.
 - warning:  Likely to cause a mid-sprint clarification request or rework. Examples: vague language with no metric, missing edge case, dependency named but not de-risked.
 - info:     Nice to have. Will improve quality but won't block delivery. Examples: out-of-scope not stated, story point estimate missing, minor inconsistency in terminology.
 
