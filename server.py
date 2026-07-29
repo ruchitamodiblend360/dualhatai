@@ -702,7 +702,7 @@ def build_pptx(deck):
     # ── Slide 1: Cover ────────────────────────────────────────────────────────
     cover = prs.slides.add_slide(blank)
 
-    # Gear photo background — scale to fill height, keep aspect ratio (no stretch)
+    # Gear photo background — object-fit:cover, centered (no stretch)
     bg_path = os.path.join(ROOT_DIR, "cover-bg.jpeg")
     if os.path.exists(bg_path):
         from PIL import Image as _PIL
@@ -711,12 +711,15 @@ def build_pptx(deck):
                 iw, ih = im.size
         except Exception:
             iw, ih = 1920, 1080
-        # Scale so height fills the slide; center horizontally
-        scale = Emu(6858000) / ih
-        pic_w = int(iw * scale)
-        pic_h = Emu(6858000)
-        x_off = (Emu(12192000) - pic_w) // 2
-        cover.shapes.add_picture(bg_path, x_off, Emu(0),
+        slide_w, slide_h = Emu(12192000), Emu(6858000)
+        scale_w = slide_w / iw
+        scale_h = slide_h / ih
+        scale   = max(scale_w, scale_h)   # cover: fill the larger dimension
+        pic_w   = int(iw * scale)
+        pic_h   = int(ih * scale)
+        x_off   = (slide_w - pic_w) // 2
+        y_off   = (slide_h - pic_h) // 2
+        cover.shapes.add_picture(bg_path, x_off, y_off,
                                   width=pic_w, height=pic_h)
 
     # Solid navy oval with turquoise outline — matches reference layout
