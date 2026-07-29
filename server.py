@@ -716,7 +716,9 @@ def build_pptx(deck):
     from datetime import date as _date
     created_label = _date.today().strftime("%B %d, %Y")
     add_text(cover, sn, 0.85, 3.10, 4.5, 0.38, size=13, color=C["lt"])
-    add_text(cover, created_label, 0.85, 3.52, 4.5, 0.32, size=11, color=C["ow"])
+    if sprint_timeline:
+        add_text(cover, sprint_timeline, 0.85, 3.52, 4.5, 0.32, size=11, color=C["ow"])
+    add_text(cover, "Created: " + created_label, 0.85, 3.88, 4.5, 0.30, size=10, color="#A2A2A2")
     h_clr = {"On Track": "#065F46", "At Risk": "#92400E", "Off Track": "#7F1D1D"}.get(hs, "#92400E")
     add_rect(cover, 0.85, 4.35, 2.5, 0.40, h_clr)
     add_text(cover, hs, 0.85, 4.35, 2.5, 0.40, size=11, color=C["wh"], align="center")
