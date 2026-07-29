@@ -174,13 +174,22 @@ Dependencies:
 - Email notification service
 - GDPR compliance review from Legal`;
 
-    const LOADING_STEPS = [
-      { label: "Parsing story format & persona" },
-      { label: "Detecting acceptance criteria" },
-      { label: "Scoring completeness, clarity, testability…" },
-      { label: "Detecting dependency signals" },
-      { label: "Generating improved story & ACs" },
-    ];
+    const LOADING_STEPS_BY_MODE = {
+      story: [
+        { label: "Parsing story format & persona" },
+        { label: "Detecting acceptance criteria" },
+        { label: "Scoring completeness, clarity, testability…" },
+        { label: "Detecting dependency signals" },
+        { label: "Generating improved story & ACs" },
+      ],
+      epic: [
+        { label: "Parsing epic goal & business outcome" },
+        { label: "Checking scope boundaries & decomposability" },
+        { label: "Scoring completeness, clarity, testability…" },
+        { label: "Detecting dependency signals" },
+        { label: "Generating improved epic & child stories" },
+      ],
+    };
 
     const SEVERITY_CFG = {
       critical: { color: "#A32D2D", bg: "#FCEBEB", border: "#F09595", label: "Critical", icon: "ti-alert-circle" },
@@ -250,7 +259,8 @@ Dependencies:
     }
 
     /* ── Loading state ── */
-    function LoadingState({ step }) {
+    function LoadingState({ step, mode }) {
+      const steps = LOADING_STEPS_BY_MODE[mode] || LOADING_STEPS_BY_MODE.story;
       return (
         <div style={{ ...cardStyle, marginBottom: 0 }}>
           <div style={{ padding: "16px 18px" }}>
@@ -260,7 +270,9 @@ Dependencies:
                   border: "3px solid #A2F3F3", borderTopColor: "#053057",
                   animation: "spin 0.9s linear infinite", flexShrink: 0 }} aria-hidden="true" />
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>Analyzing your story…</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}>
+                    {mode === "epic" ? "Analyzing your epic…" : "Analyzing your story…"}
+                  </div>
                   <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 2 }}>This takes about 5–10 seconds</div>
                 </div>
               </div>
@@ -268,12 +280,12 @@ Dependencies:
                 padding: "4px 10px", borderRadius: 99 }}>In progress</span>
             </div>
 
-            {LOADING_STEPS.map((s, i) => {
+            {steps.map((s, i) => {
               const done = i < step;
               const active = i === step;
               return (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0",
-                  borderBottom: i < LOADING_STEPS.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
+                  borderBottom: i < steps.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
                   <div style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "flex",
                     alignItems: "center", justifyContent: "center",
                     background: done ? "#E1F5EE" : active ? "#A2F3F3" : "var(--color-background-secondary)",
@@ -794,6 +806,13 @@ Dependencies:
               }
               <span style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)" }}>{selectedStory.title}</span>
               <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99, background: rc.bg, color: rc.color }}>{r.readiness_level}</span>
+              {selectedStory.epic && (
+                <span style={{ fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 99,
+                  background: "rgba(162,243,243,0.1)", color: "#A2F3F3", border: "0.5px solid rgba(162,243,243,0.3)",
+                  display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <i className="ti ti-map" style={{ fontSize: 10 }} aria-hidden="true" /> {selectedStory.epic}
+                </span>
+              )}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={onRecheck}
@@ -2142,9 +2161,9 @@ Dependencies:
                                     <circle cx="7" cy="7" r="5" fill="none" stroke="#00EDED" strokeWidth="2.5"
                                       strokeDasharray="8 23" strokeLinecap="round" transform="rotate(-90 7 7)" />
                                   </svg>
-                                  <span style={{ color: "#A2F3F3", fontWeight: 500 }}>Analyzing this story…</span></>
+                                  <span style={{ color: "#A2F3F3", fontWeight: 500 }}>{isEpic ? "Analyzing this epic…" : "Analyzing this story…"}</span></>
                                 : <><i className="ti ti-sparkles" style={{ fontSize: 14 }} />
-                                    {isSel ? "Queued — run the batch to see readiness scores." : "Select this story and run the batch to analyze it."}</>}
+                                    {isSel ? "Queued — run the batch to see readiness scores." : `Select this ${isEpic ? "epic" : "story"} and run the batch to analyze it.`}</>}
                             </div>
                           )}
                         </td>
@@ -2221,7 +2240,7 @@ Dependencies:
         if (uiState === "loading") {
           setLoadStep(0);
           timerRef.current = setInterval(() => {
-            setLoadStep(s => Math.min(s + 1, LOADING_STEPS.length - 1));
+            setLoadStep(s => Math.min(s + 1, LOADING_STEPS_BY_MODE[checkerMode].length - 1));
           }, 1800);
         } else {
           clearInterval(timerRef.current);
@@ -2449,7 +2468,7 @@ Dependencies:
 
                   {/* Dynamic result area */}
                   <div ref={resultRef}>
-                    {uiState === "loading" && <LoadingState step={loadStep} />}
+                    {uiState === "loading" && <LoadingState step={loadStep} mode={checkerMode} />}
                     {uiState === "error"   && <ErrorState message={errorMsg} onRetry={analyzeStory} onEdit={() => setUiState("idle")} />}
                     {uiState === "done" && result && (
                       <ResultState result={result} onRecheck={() => analyzeStory()} mode={checkerMode} />
