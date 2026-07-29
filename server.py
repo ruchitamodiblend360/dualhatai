@@ -722,26 +722,32 @@ def build_pptx(deck):
         cover.shapes.add_picture(bg_path, x_off, y_off,
                                   width=pic_w, height=pic_h)
 
-    # Solid navy oval with turquoise outline — matches reference layout
+    # Rounded-rectangle shape matching reference — clips off left/top/bottom edges
     from pptx.util import Pt as _Pt
-    oval = cover.shapes.add_shape(9, Inches(-0.25), Inches(-0.4),
-                                   Inches(6.8), Inches(8.3))
-    oval.fill.solid()
-    oval.fill.fore_color.rgb = rgb(C["wb"])   # solid navy fill
-    oval.line.color.rgb = rgb(C["nt"])         # turquoise outline
-    oval.line.width = _Pt(2.0)
+    from pptx.oxml.ns import qn as _qn
+    from lxml import etree as _et
+    rr = cover.shapes.add_shape(5, Inches(-1.1), Inches(-0.6),
+                                 Inches(6.6), Inches(8.7))
+    rr.fill.solid()
+    rr.fill.fore_color.rgb = rgb(C["wb"])
+    rr.line.color.rgb = rgb(C["nt"])
+    rr.line.width = _Pt(1.5)
+    # Maximise corner rounding to match reference oval-like look
+    avLst = rr._element.find('.//' + _qn('a:avLst'))
+    if avLst is not None:
+        for gd in avLst.findall(_qn('a:gd')):
+            avLst.remove(gd)
+        gd = _et.SubElement(avLst, _qn('a:gd'))
+        gd.set('name', 'adj'); gd.set('fmla', 'val 45000')
 
-    # Text inside oval
-    add_text(cover, pn, 0.85, 1.72, 4.5, 1.3, size=30, color=C["wh"])
+    # Text inside shape
+    add_text(cover, pn, 0.75, 1.8, 4.2, 1.4, size=28, color=C["wh"])
     from datetime import date as _date
     created_label = _date.today().strftime("%B %d, %Y")
-    add_text(cover, sn, 0.85, 3.10, 4.5, 0.38, size=13, color=C["lt"])
+    add_text(cover, sn, 0.75, 3.25, 4.2, 0.38, size=13, color=C["lt"])
     if sprint_timeline:
-        add_text(cover, sprint_timeline, 0.85, 3.52, 4.5, 0.32, size=11, color=C["ow"])
-    add_text(cover, "Created: " + created_label, 0.85, 3.88, 4.5, 0.30, size=10, color="#A2A2A2")
-    h_clr = {"On Track": "#065F46", "At Risk": "#92400E", "Off Track": "#7F1D1D"}.get(hs, "#92400E")
-    add_rect(cover, 0.85, 4.35, 2.5, 0.40, h_clr)
-    add_text(cover, hs, 0.85, 4.35, 2.5, 0.40, size=11, color=C["wh"], align="center")
+        add_text(cover, sprint_timeline, 0.75, 3.65, 4.2, 0.32, size=11, color=C["ow"])
+    add_text(cover, "Created: " + created_label, 0.75, 4.0, 4.2, 0.30, size=10, color="#A2A2A2")
     # Blend360.com footer bottom-left (matching reference)
     add_text(cover, "Blend360.com", 0.5, 7.1, 2.5, 0.28, size=8, color=C["lt"])
 
