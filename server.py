@@ -685,19 +685,31 @@ def build_pptx(deck):
     # ── Slide 1: Cover ────────────────────────────────────────────────────────
     cover = prs.slides.add_slide(blank)
 
-    # Full-slide gear photo background
+    # Gear photo background — scale to fill height, keep aspect ratio (no stretch)
     bg_path = os.path.join(ROOT_DIR, "cover-bg.jpeg")
     if os.path.exists(bg_path):
-        cover.shapes.add_picture(bg_path, Emu(0), Emu(0),
-                                  width=Emu(12192000), height=Emu(6858000))
+        from PIL import Image as _PIL
+        try:
+            with _PIL.open(bg_path) as im:
+                iw, ih = im.size
+        except Exception:
+            iw, ih = 1920, 1080
+        # Scale so height fills the slide; center horizontally
+        scale = Emu(6858000) / ih
+        pic_w = int(iw * scale)
+        pic_h = Emu(6858000)
+        x_off = (Emu(12192000) - pic_w) // 2
+        cover.shapes.add_picture(bg_path, x_off, Emu(0),
+                                  width=pic_w, height=pic_h)
 
-    # Turquoise oval outline (left half of slide)
+    # Solid navy oval with turquoise outline — matches reference layout
     from pptx.util import Pt as _Pt
-    oval = cover.shapes.add_shape(9, Inches(0), Inches(-0.3),
-                                   Inches(6.5), Inches(8.1))
-    oval.fill.background()
-    oval.line.color.rgb = rgb(C["nt"])
-    oval.line.width = _Pt(2.5)
+    oval = cover.shapes.add_shape(9, Inches(-0.25), Inches(-0.4),
+                                   Inches(6.8), Inches(8.3))
+    oval.fill.solid()
+    oval.fill.fore_color.rgb = rgb(C["wb"])   # solid navy fill
+    oval.line.color.rgb = rgb(C["nt"])         # turquoise outline
+    oval.line.width = _Pt(2.0)
 
     # Text inside oval
     add_text(cover, "SPRINT STATUS", 0.85, 1.3, 4.5, 0.28, size=8, color=C["nt"])
@@ -712,6 +724,8 @@ def build_pptx(deck):
     h_clr = {"On Track": "#065F46", "At Risk": "#92400E", "Off Track": "#7F1D1D"}.get(hs, "#92400E")
     add_rect(cover, 0.85, 4.35, 2.5, 0.40, h_clr)
     add_text(cover, hs, 0.85, 4.35, 2.5, 0.40, size=11, color=C["wh"], align="center")
+    # Blend360.com footer bottom-left (matching reference)
+    add_text(cover, "Blend360.com", 0.5, 7.1, 2.5, 0.28, size=8, color=C["lt"])
 
     # ── Content slide builder ─────────────────────────────────────────────────
     FOOTER_Y = 6.85
