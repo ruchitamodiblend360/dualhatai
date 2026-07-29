@@ -104,6 +104,8 @@
             isBacklog:   selectedSprint.type === "backlog",
             projectName: selectedBoard.projectName || selectedBoard.name,
             sprintName:  selectedSprint.name,
+            sprintStart: selectedSprint.startDate || "",
+            sprintEnd:   selectedSprint.endDate   || "",
           })
         })
         .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
@@ -161,48 +163,6 @@
                 </button>
               )}
             </div>
-            {/* Generate action bar */}
-            {selectedSprint && !deck && (
-              <div style={{ padding: "10px 20px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ fontSize: 12, color: "#F4F3F0", opacity: 0.6 }}>
-                  <i className="ti ti-calendar-event" style={{ marginRight: 5 }} />
-                  {selectedSprint.name}
-                </div>
-                <button onClick={generate} disabled={generating}
-                  style={{ marginLeft: "auto", padding: "9px 24px", borderRadius: 8,
-                    background: generating ? "#314550" : "#00EDED",
-                    border: "none", color: generating ? "#F4F3F0" : "#053057",
-                    fontSize: 13, fontWeight: 700, cursor: generating ? "not-allowed" : "pointer",
-                    display: "flex", alignItems: "center", gap: 8 }}>
-                  {generating
-                    ? <span><i className="ti ti-loader-2" style={{ animation: "spin 1s linear infinite", marginRight: 6 }} />Generating...</span>
-                    : <span><i className="ti ti-sparkles" style={{ marginRight: 6 }} />Generate Draft Status Deck</span>}
-                </button>
-              </div>
-            )}
-          </div>
-            {genError && (
-              <div style={{
-                marginTop: 10, padding: "12px 16px", borderRadius: 8, fontSize: 13,
-                background: genError === "rate_limited" ? "rgba(251,191,36,0.08)" : "#1A1A1A",
-                border: genError === "rate_limited" ? "1px solid rgba(251,191,36,0.35)" : "1px solid #7F1D1D",
-                color: genError === "rate_limited" ? "#FCD34D" : "#FCA5A5",
-                display: "flex", alignItems: "flex-start", gap: 9,
-              }}>
-                <i className={`ti ${genError === "rate_limited" ? "ti-clock-pause" : "ti-alert-circle"}`}
-                  style={{ fontSize: 16, marginTop: 1, flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontWeight: 500, marginBottom: 3 }}>
-                    {genError === "rate_limited" ? "AI rate limit reached" : "Generation failed"}
-                  </div>
-                  <div style={{ opacity: 0.8, lineHeight: 1.5 }}>
-                    {genError === "rate_limited"
-                      ? "The AI service is temporarily limiting requests. The server retries automatically — wait a moment and try again."
-                      : genError}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         );
       }
@@ -210,7 +170,7 @@
       function BoardGrid() {
         const [boardPage, setBoardPage] = React.useState(1);
         const [search, setSearch] = React.useState("");
-        const BOARD_PAGE_SIZE = 25;
+        const BOARD_PAGE_SIZE = 24;
         const filteredBoards = (boards || []).filter(function(b) { return (b.projectName || b.name || "").toLowerCase().includes(search.toLowerCase()); });
         const totalBoardPages = Math.ceil(filteredBoards.length / BOARD_PAGE_SIZE);
         const pagedBoards = filteredBoards.slice((boardPage - 1) * BOARD_PAGE_SIZE, boardPage * BOARD_PAGE_SIZE);
@@ -259,6 +219,49 @@
                     background: "none", border: "none", cursor: "pointer", color: "#314550", fontSize: 16, lineHeight: 1, padding: 0, zIndex: 2 }}>×</button>
               )}
             </div>
+            {/* Generate bar — shown when a sprint is selected, above the board grid */}
+            {selectedSprint && !deck && (
+              <div style={{ marginBottom: 16, padding: "12px 16px", borderRadius: 10,
+                background: "#053057", border: "1px solid #00EDED33",
+                display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  <i className="ti ti-calendar-event" style={{ color: "#A2F3F3", fontSize: 14, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: "#F4F3F0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {(selectedBoard.projectName || selectedBoard.name)} &middot; {selectedSprint.name}
+                  </span>
+                </div>
+                <button onClick={generate} disabled={generating}
+                  style={{ marginLeft: "auto", padding: "8px 22px", borderRadius: 8,
+                    background: generating ? "#314550" : "#00EDED",
+                    border: "none", color: generating ? "#F4F3F0" : "#053057",
+                    fontSize: 13, fontWeight: 700, cursor: generating ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
+                  {generating
+                    ? <span><i className="ti ti-loader-2" style={{ animation: "spin 1s linear infinite", marginRight: 6 }} />Generating...</span>
+                    : <span><i className="ti ti-sparkles" style={{ marginRight: 6 }} />Generate Draft Status Deck</span>}
+                </button>
+              </div>
+            )}
+            {genError && (
+              <div style={{ marginBottom: 14, padding: "12px 16px", borderRadius: 8, fontSize: 13,
+                background: genError === "rate_limited" ? "rgba(251,191,36,0.08)" : "#1A1A1A",
+                border: genError === "rate_limited" ? "1px solid rgba(251,191,36,0.35)" : "1px solid #7F1D1D",
+                color: genError === "rate_limited" ? "#FCD34D" : "#FCA5A5",
+                display: "flex", alignItems: "flex-start", gap: 9 }}>
+                <i className={`ti ${genError === "rate_limited" ? "ti-clock-pause" : "ti-alert-circle"}`}
+                  style={{ fontSize: 16, marginTop: 1, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 500, marginBottom: 3 }}>
+                    {genError === "rate_limited" ? "AI rate limit reached" : "Generation failed"}
+                  </div>
+                  <div style={{ opacity: 0.8, lineHeight: 1.5 }}>
+                    {genError === "rate_limited"
+                      ? "The AI service is temporarily limiting requests. Wait a moment and try again."
+                      : genError}
+                  </div>
+                </div>
+              </div>
+            )}
             {filteredBoards.length === 0 && search && (
               <div style={{ textAlign: "center", padding: "40px 0", color: "#314550", fontSize: 13 }}>
                 No projects match "<span style={{ color: "#A2F3F3" }}>{search}</span>"
@@ -338,6 +341,18 @@
 
       function DeckView(props) {
         const d = props.d;
+        // Local editable copy — isolated from parent so typing doesn't trigger re-renders
+        const [local, setLocal] = React.useState(d);
+        const [exporting, setExporting] = React.useState(false);
+        function update(patch) {
+          setLocal(function(prev) { return Object.assign({}, prev, patch); });
+        }
+        function handleExportLocal() {
+          setExporting(true);
+          generatePptx(local)
+            .catch(function(e) { alert("PPTX export failed: " + e.message); })
+            .finally(function() { setExporting(false); });
+        }
         const hcfg = ({
           "On Track":  { bg: "#0B0D0E", border: "#065F46", text: "#6EE7B7", icon: "ti-circle-check" },
           "At Risk":   { bg: "#1A1A1A", border: "#B45309", text: "#FCD34D", icon: "ti-alert-triangle" },
@@ -374,7 +389,7 @@
                   background: hcfg.bg, border: "1.5px solid " + hcfg.border, color: hcfg.text, fontWeight: 700, fontSize: 13 }}>
                   <i className={"ti " + hcfg.icon} />{d.healthStatus}
                 </div>
-                <button onClick={handleExport} disabled={exporting}
+                <button onClick={handleExportLocal} disabled={exporting}
                   style={{ padding: "9px 18px", borderRadius: 8, border: "1.5px solid #00EDED",
                     background: exporting ? "#314550" : "#053057", color: "#FFFFFF",
                     fontSize: 13, fontWeight: 700, cursor: exporting ? "not-allowed" : "pointer",
@@ -388,8 +403,17 @@
 
             {/* Executive Summary */}
             <div style={{ background: "#1A1A1A", border: "1px solid #314550", borderRadius: 10, padding: "15px 18px", marginBottom: 14 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#00EDED", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 9 }}>Executive Summary</div>
-              <p style={{ margin: 0, fontSize: 14, color: "#F4F3F0", lineHeight: 1.7 }}>{d.executiveSummary}</p>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#00EDED", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 9, display: "flex", alignItems: "center", gap: 6 }}>
+                Executive Summary
+                <i className="ti ti-pencil" style={{ fontSize: 11, color: "#314550" }} />
+              </div>
+              <textarea
+                value={local.executiveSummary || ""}
+                onChange={function(e) { update({ executiveSummary: e.target.value }); }}
+                rows={3}
+                style={{ width: "100%", boxSizing: "border-box", background: "transparent", border: "none", outline: "none",
+                  resize: "vertical", fontSize: 14, color: "#F4F3F0", lineHeight: 1.7, fontFamily: "inherit", padding: 0 }}
+              />
             </div>
 
             {/* Metrics */}
@@ -430,19 +454,37 @@
                   <span style={{ marginLeft: "auto", fontSize: 11, background: "#00EDED22", color: "#A2F3F3", padding: "1px 7px", borderRadius: 99 }}>{(d.accomplishments || []).length}</span>
                 </div>
                 <div style={{ padding: "6px", background: "#0B0D0E" }}>
-                  {(d.accomplishments || []).length === 0
+                  {(local.accomplishments || []).length === 0
                     ? <div style={{ padding: "18px", fontSize: 13, color: "#A2F3F3", textAlign: "center" }}>No completed items</div>
-                    : (d.accomplishments || []).map(function(a, i) {
+                    : (local.accomplishments || []).map(function(a, i) {
                       return (
-                        <div key={i} style={{ display: "flex", gap: 9, padding: "9px 10px", borderRadius: 7, marginBottom: 2, background: i % 2 === 0 ? "#1A1A1A" : "#0B0D0E" }}>
-                          <i className="ti ti-check" style={{ color: "#00EDED", fontSize: 12, flexShrink: 0, marginTop: 2 }} />
-                          <div>
-                            <div style={{ fontSize: 13, color: "#F4F3F0" }}>{a.sentence || a.title}</div>
-                          </div>
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px", borderRadius: 7, marginBottom: 2, background: i % 2 === 0 ? "#1A1A1A" : "#0B0D0E" }}>
+                          <i className="ti ti-check" style={{ color: "#00EDED", fontSize: 12, flexShrink: 0 }} />
+                          <input
+                            value={a.sentence || a.title || ""}
+                            onChange={function(e) {
+                              var next = (local.accomplishments || []).map(function(item, j) {
+                                return j === i ? Object.assign({}, item, { sentence: e.target.value, title: e.target.value }) : item;
+                              });
+                              update({ accomplishments: next });
+                            }}
+                            style={{ flex: 1, background: "transparent", border: "none", outline: "none",
+                              fontSize: 13, color: "#F4F3F0", fontFamily: "inherit", padding: 0 }}
+                          />
+                          <button onClick={function() {
+                            update({ accomplishments: (local.accomplishments || []).filter(function(_, j) { return j !== i; }) });
+                          }} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", padding: 0, lineHeight: 1 }} title="Remove">
+                            <i className="ti ti-x" style={{ fontSize: 11 }} />
+                          </button>
                         </div>
                       );
                     })
                   }
+                  <button onClick={function() {
+                    update({ accomplishments: (local.accomplishments || []).concat([{ sentence: "", title: "" }]) });
+                  }} style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, padding: "5px 10px", background: "none", border: "1px dashed #314550", borderRadius: 7, cursor: "pointer", color: "#A2F3F3", fontSize: 12, width: "100%" }}>
+                    <i className="ti ti-plus" style={{ fontSize: 12 }} /> Add item
+                  </button>
                 </div>
               </div>
 
@@ -453,50 +495,88 @@
                   <span style={{ marginLeft: "auto", fontSize: 11, background: "#00EDED22", color: "#A2F3F3", padding: "1px 7px", borderRadius: 99 }}>{(d.nextSteps || []).length}</span>
                 </div>
                 <div style={{ padding: "6px", background: "#0B0D0E" }}>
-                  {(d.nextSteps || []).length === 0
+                  {(local.nextSteps || []).length === 0
                     ? <div style={{ padding: "18px", fontSize: 13, color: "#A2F3F3", textAlign: "center" }}>No action items</div>
-                    : (d.nextSteps || []).map(function(s, i) {
+                    : (local.nextSteps || []).map(function(s, i) {
                       return (
-                        <div key={i} style={{ padding: "9px 10px", borderRadius: 7, marginBottom: 2, background: i % 2 === 0 ? "#1A1A1A" : "#0B0D0E" }}>
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: 7 }}>
-                            <i className="ti ti-arrow-right" style={{ color: "#A2F3F3", fontSize: 12, flexShrink: 0, marginTop: 2 }} />
-                            <div style={{ fontSize: 13, color: "#F4F3F0" }}>{s.action}</div>
-                          </div>
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 10px", borderRadius: 7, marginBottom: 2, background: i % 2 === 0 ? "#1A1A1A" : "#0B0D0E" }}>
+                          <i className="ti ti-arrow-right" style={{ color: "#A2F3F3", fontSize: 12, flexShrink: 0 }} />
+                          <input
+                            value={s.action || ""}
+                            onChange={function(e) {
+                              var next = (local.nextSteps || []).map(function(item, j) {
+                                return j === i ? Object.assign({}, item, { action: e.target.value }) : item;
+                              });
+                              update({ nextSteps: next });
+                            }}
+                            style={{ flex: 1, background: "transparent", border: "none", outline: "none",
+                              fontSize: 13, color: "#F4F3F0", fontFamily: "inherit", padding: 0 }}
+                          />
+                          <button onClick={function() {
+                            update({ nextSteps: (local.nextSteps || []).filter(function(_, j) { return j !== i; }) });
+                          }} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", padding: 0, lineHeight: 1 }} title="Remove">
+                            <i className="ti ti-x" style={{ fontSize: 11 }} />
+                          </button>
                         </div>
                       );
                     })
                   }
+                  <button onClick={function() {
+                    update({ nextSteps: (local.nextSteps || []).concat([{ action: "" }]) });
+                  }} style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, padding: "5px 10px", background: "none", border: "1px dashed #314550", borderRadius: 7, cursor: "pointer", color: "#A2F3F3", fontSize: 12, width: "100%" }}>
+                    <i className="ti ti-plus" style={{ fontSize: 12 }} /> Add item
+                  </button>
                 </div>
               </div>
             </div>
 
             {/* Blockers */}
-            {(d.blockers || []).length > 0 && (
-              <div style={{ border: "1px solid #7F1D1D", borderRadius: 10, overflow: "hidden", marginBottom: 14 }}>
+            <div style={{ border: "1px solid #7F1D1D", borderRadius: 10, overflow: "hidden", marginBottom: 14 }}>
                 <div style={{ padding: "11px 15px", background: "#450a0a", display: "flex", alignItems: "center", gap: 8 }}>
                   <i className="ti ti-alert-triangle" style={{ color: "#FCA5A5", fontSize: 14 }} />
                   <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Issues, Blockers &amp; Risks</span>
-                  <span style={{ marginLeft: "auto", fontSize: 11, color: "#FCA5A5", background: "#7F1D1D44", padding: "1px 7px", borderRadius: 99 }}>{d.blockers.length}</span>
+                  <span style={{ marginLeft: "auto", fontSize: 11, color: "#FCA5A5", background: "#7F1D1D44", padding: "1px 7px", borderRadius: 99 }}>{(local.blockers || []).length}</span>
                 </div>
                 <div style={{ padding: "8px", background: "#0B0D0E" }}>
-                  {d.blockers.map(function(b, i) {
+                  {(local.blockers || []).length === 0
+                    ? <div style={{ padding: "18px", fontSize: 13, color: "#FCA5A5", textAlign: "center" }}>No blockers</div>
+                    : (local.blockers || []).map(function(b, i) {
                     const ic = ({ High: { bg: "#1A1A1A", border: "#F87171", text: "#F87171" }, Medium: { bg: "#1A1A1A", border: "#FCD34D", text: "#FCD34D" }, Low: { bg: "#0B0D0E", border: "#6EE7B7", text: "#6EE7B7" } })[b.impact] || { bg: "#1A1A1A", border: "#FCD34D", text: "#FCD34D" };
                     return (
                       <div key={i} style={{ padding: "12px 14px", borderRadius: 8, marginBottom: 6, background: ic.bg, border: "1px solid " + ic.border + "50" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-                          <i className="ti ti-circle-x" style={{ color: ic.text, fontSize: 14 }} />
-                          <span style={{ fontSize: 13, fontWeight: 600, color: "#fff", flex: 1 }}>{b.title}</span>
-                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, fontWeight: 700, background: ic.text + "30", color: ic.text }}>{b.impact}</span>
-                          {b.type && <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 99, fontWeight: 600, background: "#314550", color: "#A2F3F3" }}>{b.type}</span>}
+                          <i className="ti ti-circle-x" style={{ color: ic.text, fontSize: 14, flexShrink: 0 }} />
+                          <input
+                            value={b.title || ""}
+                            onChange={function(e) {
+                              var next = (local.blockers || []).map(function(item, j) {
+                                return j === i ? Object.assign({}, item, { title: e.target.value }) : item;
+                              });
+                              update({ blockers: next });
+                            }}
+                            style={{ flex: 1, background: "transparent", border: "none", outline: "none",
+                              fontSize: 13, fontWeight: 600, color: "#fff", fontFamily: "inherit", padding: 0 }}
+                          />
+                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, fontWeight: 700, background: ic.text + "30", color: ic.text, flexShrink: 0 }}>{b.impact}</span>
+                          {b.type && <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 99, fontWeight: 600, background: "#314550", color: "#A2F3F3", flexShrink: 0 }}>{b.type}</span>}
+                          <button onClick={function() {
+                            update({ blockers: (local.blockers || []).filter(function(_, j) { return j !== i; }) });
+                          }} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", padding: 0, lineHeight: 1 }} title="Remove">
+                            <i className="ti ti-x" style={{ fontSize: 11 }} />
+                          </button>
                         </div>
                         {b.mitigation && <div style={{ fontSize: 12, color: "#A2F3F3", marginLeft: 22 }}>Mitigation: {b.mitigation}</div>}
                         {b.owner && <div style={{ fontSize: 11, color: "#A2F3F3", marginLeft: 22, marginTop: 3 }}>Owner: {b.owner}</div>}
                       </div>
                     );
                   })}
+                  <button onClick={function() {
+                    update({ blockers: (local.blockers || []).concat([{ title: "", impact: "Medium" }]) });
+                  }} style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, padding: "5px 10px", background: "none", border: "1px dashed #7F1D1D", borderRadius: 7, cursor: "pointer", color: "#FCA5A5", fontSize: 12, width: "100%" }}>
+                    <i className="ti ti-plus" style={{ fontSize: 12 }} /> Add item
+                  </button>
                 </div>
               </div>
-            )}
 
             {/* Milestones */}
             {(d.milestones || []).length > 0 && (
@@ -533,8 +613,8 @@
 
       return (
         <div>
-          <SprintBar />
           {!deck && !generating && <BoardGrid />}
+          <SprintBar />
           {generating && (
             <div style={{ padding: "72px 24px", textAlign: "center", color: "#A2F3F3", fontSize: 14 }}>
               <i className="ti ti-loader-2" style={{ fontSize: 36, display: "block", marginBottom: 14, animation: "spin 1s linear infinite", color: "#00EDED" }} />

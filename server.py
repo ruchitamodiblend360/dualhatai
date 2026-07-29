@@ -580,30 +580,14 @@ def build_pptx(deck):
         h = hex6.lstrip("#")
         return RGBColor(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
 
-    # Blend brand palette
-    C = dict(
-        wb="#053057", nt="#00EDED", lt="#A2F3F3",
-        cg="#314550", gr="#1A1A1A", dg="#0B0D0E",
-        wh="#FFFFFF", ow="#F4F3F0",
-    )
+    C = dict(wb="#053057", nt="#00EDED", lt="#A2F3F3",
+             cg="#314550", gr="#1A1A1A", dg="#0B0D0E",
+             wh="#FFFFFF", ow="#F4F3F0")
 
-    # Blend brand fonts — Montserrat Regular only; hierarchy via scale + color, never weight
-    FONT_HEADING = "Montserrat"   # headings — larger scale + accent color (no bold)
-    FONT_BODY    = "Montserrat"   # body — standard scale + primary/secondary color
+    FONT = "Montserrat"
+    ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    # Blend white logo (white variant on dark Washed Blue / Dark Gray backgrounds)
-    LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "blend-logo-white.png")
-    LOGO_W_IN = 2.2   # inches wide  (height auto-calculated from 5.21:1 ratio)
-    LOGO_H_IN = LOGO_W_IN / 5.21
-
-    W, H = Inches(13.33), Inches(7.5)   # 16:9 widescreen
-
-    prs = Presentation()
-    prs.slide_width  = W
-    prs.slide_height = H
-
-    blank_layout = prs.slide_layouts[6]  # completely blank
-
+    # ── Helpers ──────────────────────────────────────────────────────────────
     def add_rect(slide, x, y, w, h, fill_hex):
         shape = slide.shapes.add_shape(1, Inches(x), Inches(y), Inches(w), Inches(h))
         shape.fill.solid()
@@ -612,7 +596,7 @@ def build_pptx(deck):
         return shape
 
     def add_text(slide, text, x, y, w, h, size=14, color="#FFFFFF",
-                 align="left", wrap=True, font=None):
+                 align="left", wrap=True):
         txb = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
         txb.word_wrap = wrap
         tf = txb.text_frame
@@ -622,122 +606,171 @@ def build_pptx(deck):
                        "right": PP_ALIGN.RIGHT}.get(align, PP_ALIGN.LEFT)
         run = p.add_run()
         run.text = str(text)
-        run.font.name = font or FONT_BODY
+        run.font.name = FONT
         run.font.size = Pt(size)
         run.font.color.rgb = rgb(color)
         run.font.bold = False
         return txb
 
-    def add_logo(slide, x, y, w=None):
-        if not os.path.exists(LOGO_PATH):
-            return
-        lw = Inches(w or LOGO_W_IN)
-        lh = Inches((w or LOGO_W_IN) / 5.21)
-        slide.shapes.add_picture(LOGO_PATH, Inches(x), Inches(y), lw, lh)
+    def section_label(slide, text, y=0.45):
+        add_text(slide, text, 0.62, y, 11.87, 0.28, size=8, color=C["nt"])
+        add_rect(slide, 0.62, y + 0.30, 11.87, 0.016, C["nt"])
 
-    def bottom_bar(slide):
-        add_rect(slide, 0, 7.25, 13.33, 0.25, C["nt"])
+    def navy_bg(slide):
+        add_rect(slide, 0, 0, 13.33, 7.5, C["wb"])
 
-    def section_label(slide, text, y=0.3):
-        add_text(slide, text, 0.5, y, 12.5, 0.3, size=9, color=C["nt"], font=FONT_HEADING)
-        add_rect(slide, 0.5, y + 0.34, 12.5, 0.02, C["nt"])
+    def add_logo(slide, x, y, w):
+        logo_path = os.path.join(ROOT_DIR, "blend-logo-white.png")
+        if os.path.exists(logo_path):
+            slide.shapes.add_picture(logo_path, Inches(x), Inches(y), width=Inches(w))
+
+    def add_footer_text(slide):
+        add_text(slide, "Private and Confidential", 9.5, 7.15, 3.7, 0.25,
+                 size=7, color=C["lt"], align="right")
 
     m  = deck.get("metrics") or {}
     pn = deck.get("projectName") or "Project"
     sn = deck.get("sprintName") or ""
     wo = deck.get("weekOf") or ""
     hs = deck.get("healthStatus") or "At Risk"
+    sid        = deck.get("sprintId") or ""
+    sprint_start_raw = deck.get("sprintStart") or ""
+    sprint_end_raw   = deck.get("sprintEnd") or ""
 
-    # ── Slide 1: Cover ──────────────────────────────────────────────────────
-    sl = prs.slides.add_slide(blank_layout)
-    add_rect(sl, 0, 0, 13.33, 7.5, C["wb"])           # Washed Blue background
-    add_rect(sl, 0, 0, 0.06, 7.5, C["nt"])            # Thin neon-turquoise left accent
-    bottom_bar(sl)
-    # Logo — top-right, white on Washed Blue
-    add_logo(sl, x=10.83, y=0.35)
-    # Labels — Montserrat Medium, no bold
-    add_text(sl, "WEEKLY STATUS UPDATE", 0.5, 0.55, 10.0, 0.35, size=9, color=C["nt"], font=FONT_HEADING)
-    add_rect(sl, 0.5, 0.9, 10.0, 0.015, C["nt"])
-    # Project name — display scale, Montserrat Medium, white
-    add_text(sl, pn, 0.5, 1.1, 12.5, 2.0, size=52, color=C["wh"], font=FONT_HEADING)
-    # Sprint + date — body scale, Light Turquoise
-    add_text(sl, sn, 0.5, 3.2, 12.5, 0.55, size=22, color=C["lt"], font=FONT_BODY)
-    add_text(sl, "Week of " + wo, 0.5, 3.85, 9, 0.45, size=14, color=C["lt"], font=FONT_BODY)
-    # Health badge
-    h_clr = {"On Track": "#065F46", "At Risk": "#B45309", "Off Track": "#7F1D1D"}.get(hs, "#B45309")
-    add_rect(sl, 0.5, 4.5, 2.6, 0.48, h_clr)
-    add_text(sl, hs, 0.5, 4.5, 2.6, 0.48, size=13, color=C["wh"], align="center", font=FONT_HEADING)
+    def _fmt_date(iso):
+        if not iso:
+            return ""
+        try:
+            import re
+            m2 = re.match(r"(\d{4})-(\d{2})-(\d{2})", iso)
+            if m2:
+                from datetime import date
+                d = date(int(m2.group(1)), int(m2.group(2)), int(m2.group(3)))
+                return d.strftime("%b %d, %Y")
+        except Exception:
+            pass
+        return iso[:10]
 
-    # ── Slide 2: Exec Summary + Metrics + Accomplishments + Next Steps + Blockers ──
-    sl = prs.slides.add_slide(blank_layout)
-    add_rect(sl, 0, 0, 13.33, 7.5, C["dg"])           # Dark Gray background
-    add_rect(sl, 0, 0, 0.06, 7.5, C["nt"])            # Thin neon-turquoise accent strip
+    sprint_timeline = ""
+    if sprint_start_raw or sprint_end_raw:
+        parts = [_fmt_date(sprint_start_raw), _fmt_date(sprint_end_raw)]
+        sprint_timeline = " – ".join(p for p in parts if p)
 
-    blockers = deck.get("blockers") or []
+    # ── Fresh presentation — no reference PPTX manipulation ──────────────────
+    from pptx.util import Emu
+    prs = Presentation()
+    prs.slide_width  = Emu(12192000)   # exact 13.333..." widescreen
+    prs.slide_height = Emu(6858000)    # exact 7.5"
+    # Remove the built-in type="screen4x3" attribute — mismatches our dims and
+    # causes PowerPoint to show a repair prompt on open.
+    from pptx.oxml.ns import qn
+    sldSz = prs._element.find(qn('p:sldSz'))
+    if sldSz is not None:
+        sldSz.attrib.pop('type', None)
+    blank = prs.slide_layouts[6]   # truly blank layout
+
+    # ── Slide 1: Cover ────────────────────────────────────────────────────────
+    cover = prs.slides.add_slide(blank)
+
+    # Full-slide gear photo background
+    bg_path = os.path.join(ROOT_DIR, "cover-bg.jpeg")
+    if os.path.exists(bg_path):
+        cover.shapes.add_picture(bg_path, Emu(0), Emu(0),
+                                  width=Emu(12192000), height=Emu(6858000))
+
+    # Turquoise oval outline (left half of slide)
+    from pptx.util import Pt as _Pt
+    oval = cover.shapes.add_shape(9, Inches(0), Inches(-0.3),
+                                   Inches(6.5), Inches(8.1))
+    oval.fill.background()
+    oval.line.color.rgb = rgb(C["nt"])
+    oval.line.width = _Pt(2.5)
+
+    # Text inside oval
+    add_text(cover, "SPRINT STATUS", 0.85, 1.3, 4.5, 0.28, size=8, color=C["nt"])
+    add_rect(cover, 0.85, 1.58, 4.5, 0.012, C["nt"])
+    add_text(cover, pn, 0.85, 1.72, 4.5, 1.3, size=30, color=C["wh"])
+    sprint_label = (f"ID {sid}  ·  " if sid else "") + sn
+    add_text(cover, sprint_label, 0.85, 3.10, 4.5, 0.38, size=13, color=C["lt"])
+    if sprint_timeline:
+        add_text(cover, sprint_timeline, 0.85, 3.52, 4.5, 0.32, size=11, color=C["ow"])
+    if wo:
+        add_text(cover, "Week of " + wo, 0.85, 3.88, 4.5, 0.30, size=10, color="#A2A2A2")
+    h_clr = {"On Track": "#065F46", "At Risk": "#92400E", "Off Track": "#7F1D1D"}.get(hs, "#92400E")
+    add_rect(cover, 0.85, 4.35, 2.5, 0.40, h_clr)
+    add_text(cover, hs, 0.85, 4.35, 2.5, 0.40, size=11, color=C["wh"], align="center")
+
+    # ── Content slide builder ─────────────────────────────────────────────────
+    FOOTER_Y = 6.85
+
+    def new_content_slide():
+        sl = prs.slides.add_slide(blank)
+        navy_bg(sl)
+        add_logo(sl, 0.21, 7.1, 0.9)
+        add_footer_text(sl)
+        # Thin turquoise top rule
+        add_rect(sl, 0, 0, 13.33, 0.04, C["nt"])
+        return sl
+
+    blockers     = deck.get("blockers") or []
     has_blockers = len(blockers) > 0
-    blocker_strip_h = 1.05 if has_blockers else 0.0
-    col_bottom      = 7.5 - 0.25 - blocker_strip_h
+    blocker_h    = 1.0 if has_blockers else 0.0
+    col_bottom   = FOOTER_Y - blocker_h
 
-    # Executive Summary — Montserrat Medium label, Montserrat body
-    add_text(sl, "EXECUTIVE SUMMARY", 0.4, 0.15, 12.5, 0.28, size=8, color=C["nt"], font=FONT_HEADING)
-    add_rect(sl, 0.4, 0.43, 12.5, 0.018, C["nt"])
-    add_text(sl, deck.get("executiveSummary") or "", 0.4, 0.48, 12.5, 0.70, size=12, color=C["ow"], font=FONT_BODY)
+    # ── Slide 2: Exec Summary + Metrics + Accomplishments + Next Steps ────────
+    sl = new_content_slide()
 
-    # Metrics row — Cool Gray tiles, Neon Turquoise values (Montserrat Medium), Light Turquoise labels
+    section_label(sl, "EXECUTIVE SUMMARY")
+    add_text(sl, deck.get("executiveSummary") or "", 0.62, 0.90, 11.87, 0.70,
+             size=12, color=C["ow"])
+
     stats = [
         ("Total",       str(m.get("totalIssues",      0))),
         ("Completed",   str(m.get("doneIssues",       0))),
         ("In Progress", str(m.get("inProgressIssues", 0))),
         ("Completion",  str(m.get("completionPct",    0)) + "%"),
     ]
-    tw, sx, sy_m = 2.95, 0.4, 1.24
+    tw, sx, sy_m = 2.83, 0.62, 1.70
     for i, (lbl, val) in enumerate(stats):
-        x = sx + i * (tw + 0.18)
+        x = sx + i * (tw + 0.15)
         add_rect(sl, x, sy_m, tw, 0.74, C["cg"])
-        add_text(sl, val, x, sy_m + 0.04, tw, 0.44, size=24, color=C["nt"], align="center", font=FONT_HEADING)
-        add_text(sl, lbl, x, sy_m + 0.52, tw, 0.20, size=9,  color=C["lt"], align="center", font=FONT_BODY)
+        add_text(sl, val, x, sy_m + 0.04, tw, 0.44, size=24, color=C["nt"], align="center")
+        add_text(sl, lbl, x, sy_m + 0.52, tw, 0.20, size=9,  color=C["lt"], align="center")
 
-    # Two-column: Accomplishments (left) + Next Steps (right)
-    col_top = 2.10
+    col_top = 2.58
     col_h   = col_bottom - col_top
-    col_w   = 6.1
-    left_x  = 0.4
-    right_x = 6.83
+    col_w   = 5.83
+    left_x  = 0.62
+    right_x = 6.66
 
-    add_text(sl, "KEY ACCOMPLISHMENTS", left_x,  col_top, col_w, 0.26, size=8, color=C["nt"], font=FONT_HEADING)
+    add_text(sl, "KEY ACCOMPLISHMENTS", left_x,  col_top, col_w, 0.26, size=8, color=C["nt"])
     add_rect(sl, left_x,  col_top + 0.26, col_w, 0.015, C["nt"])
-    add_text(sl, "NEXT STEPS",          right_x, col_top, col_w, 0.26, size=8, color=C["nt"], font=FONT_HEADING)
+    add_text(sl, "NEXT STEPS",          right_x, col_top, col_w, 0.26, size=8, color=C["nt"])
     add_rect(sl, right_x, col_top + 0.26, col_w, 0.015, C["nt"])
 
     row_h    = 0.44
     max_rows = max(1, int((col_h - 0.3) / row_h))
 
-    accomplishments = (deck.get("accomplishments") or [])[:max_rows]
-    steps           = (deck.get("nextSteps")       or [])[:max_rows]
-
-    for i, item in enumerate(accomplishments):
+    for i, item in enumerate((deck.get("accomplishments") or [])[:max_rows]):
         ry = col_top + 0.32 + i * row_h
         add_rect(sl, left_x, ry + 0.06, 0.2, 0.2, C["nt"])
-        add_text(sl, "✓", left_x, ry + 0.05, 0.22, 0.22, size=8, color=C["wb"], align="center", font=FONT_HEADING)
-        sentence = item.get("sentence") or item.get("title") or ""
-        add_text(sl, sentence, left_x + 0.28, ry, col_w - 0.3, 0.4, size=11, color=C["wh"], font=FONT_BODY)
+        add_text(sl, "✓", left_x, ry + 0.05, 0.22, 0.22, size=8, color=C["wb"], align="center")
+        add_text(sl, item.get("sentence") or item.get("title") or "",
+                 left_x + 0.28, ry, col_w - 0.3, 0.4, size=11, color=C["wh"])
 
-    for i, s in enumerate(steps):
+    for i, s in enumerate((deck.get("nextSteps") or [])[:max_rows]):
         ry = col_top + 0.32 + i * row_h
         if i % 2 == 0:
             add_rect(sl, right_x, ry, col_w, row_h, C["cg"])
-        add_text(sl, "→", right_x + 0.05, ry + 0.06, 0.24, 0.28, size=11, color=C["nt"], font=FONT_HEADING)
-        add_text(sl, s.get("action") or "", right_x + 0.3, ry + 0.04, col_w - 0.35, 0.38, size=11, color=C["wh"], font=FONT_BODY)
+        add_text(sl, "→", right_x + 0.05, ry + 0.06, 0.24, 0.28, size=11, color=C["nt"])
+        add_text(sl, s.get("action") or "", right_x + 0.3, ry + 0.04, col_w - 0.35, 0.38,
+                 size=11, color=C["wh"])
 
-    # Bottom bar
-    add_rect(sl, 0, 7.25, 13.33, 0.25, C["nt"])
-
-    # Blockers strip
     if has_blockers:
-        bsy = 7.25 - blocker_strip_h
-        add_rect(sl, 0, bsy, 13.33, blocker_strip_h, C["gr"])
-        add_rect(sl, 0.06, bsy, 0.06, blocker_strip_h, C["cg"])
-        add_text(sl, "ISSUES / BLOCKERS", 0.2, bsy + 0.08, 2.3, 0.22, size=7, color=C["lt"], font=FONT_HEADING)
+        bsy = FOOTER_Y - blocker_h
+        add_rect(sl, 0, bsy, 13.33, blocker_h, C["gr"])
+        add_rect(sl, 0.06, bsy, 0.06, blocker_h, C["cg"])
+        add_text(sl, "ISSUES / BLOCKERS", 0.2, bsy + 0.08, 2.3, 0.22, size=7, color=C["lt"])
         i_clr = {"High": "#F87171", "Medium": "#FCD34D", "Low": "#6EE7B7"}
         bw = 10.6 / max(len(blockers[:4]), 1)
         for i, b in enumerate(blockers[:4]):
@@ -745,40 +778,42 @@ def build_pptx(deck):
             ic = i_clr.get(b.get("impact") or "", "#FCD34D")
             add_rect(sl, bx, bsy + 0.08, bw, 0.85, C["cg"])
             add_rect(sl, bx, bsy + 0.08, 0.05, 0.85, ic)
-            add_text(sl, (b.get("impact") or "").upper(), bx + 0.10, bsy + 0.10, 0.8, 0.2, size=7, color=ic, font=FONT_HEADING)
-            add_text(sl, b.get("title") or "", bx + 0.10, bsy + 0.30, bw - 0.15, 0.54, size=9, color=C["ow"], font=FONT_BODY)
+            add_text(sl, (b.get("impact") or "").upper(), bx + 0.10, bsy + 0.10, 0.8, 0.2,
+                     size=7, color=ic)
+            add_text(sl, b.get("title") or "", bx + 0.10, bsy + 0.30, bw - 0.15, 0.54,
+                     size=9, color=C["ow"])
 
     # ── Milestones (conditional) ──────────────────────────────────────────────
     milestones = deck.get("milestones") or []
     if milestones:
-        sl = prs.slides.add_slide(blank_layout)
-        add_rect(sl, 0, 0, 13.33, 7.5, C["dg"])
-        add_rect(sl, 0, 0, 0.06, 7.5, C["nt"])
+        sl = new_content_slide()
         section_label(sl, "MILESTONES")
         s_icon = {"complete": "✓", "in_progress": "◎", "upcoming": "○"}
         s_clr  = {"complete": C["nt"], "in_progress": "#FCD34D", "upcoming": C["ow"]}
         for i, ms in enumerate(milestones):
-            y = 1.0 + i * 0.95
+            y  = 1.0 + i * 0.95
             st = ms.get("status") or "upcoming"
-            add_rect(sl, 0.4, y + 0.05, 12.5, 0.72, C["cg"])
-            add_text(sl, s_icon.get(st, "○"), 0.55, y + 0.08, 0.5, 0.55, size=20, color=s_clr.get(st, C["ow"]), font=FONT_HEADING)
-            add_text(sl, ms.get("name") or "", 1.15, y + 0.18, 9.5, 0.4, size=15, color=C["wh"], font=FONT_BODY)
+            add_rect(sl, 0.62, y + 0.05, 11.87, 0.72, C["cg"])
+            add_text(sl, s_icon.get(st, "○"), 0.75, y + 0.08, 0.5, 0.55, size=20,
+                     color=s_clr.get(st, C["ow"]))
+            add_text(sl, ms.get("name") or "", 1.35, y + 0.18, 9.5, 0.4, size=15, color=C["wh"])
             if ms.get("date"):
-                add_text(sl, ms["date"], 11.3, y + 0.18, 1.5, 0.4, size=13, color=C["lt"], align="right", font=FONT_BODY)
-        bottom_bar(sl)
+                add_text(sl, ms["date"], 11.3, y + 0.18, 1.2, 0.4, size=13,
+                         color=C["lt"], align="right")
 
     # ── Closing slide ─────────────────────────────────────────────────────────
-    sl = prs.slides.add_slide(blank_layout)
-    add_rect(sl, 0, 0, 13.33, 7.5, C["wb"])           # Washed Blue background
-    add_rect(sl, 0, 0, 0.06, 7.5, C["nt"])            # Thin turquoise strip
-    bottom_bar(sl)
-    # Logo — centered, larger on closing slide
-    add_logo(sl, x=(13.33 - 3.2) / 2, y=1.4, w=3.2)
-    add_text(sl, "Thank you", 0.5, 2.6, 12.33, 1.4, size=66, color=C["wh"], align="center", font=FONT_HEADING)
-    add_text(sl, pn, 0.5, 4.1, 12.33, 0.65, size=22, color=C["lt"], align="center", font=FONT_BODY)
-    add_text(sl, f"Generated by Blend PM Tools  ·  {wo}",
-             0.5, 4.85, 12.33, 0.45, size=11, color=C["lt"], align="center", font=FONT_BODY)
+    cl = prs.slides.add_slide(blank)
+    navy_bg(cl)
 
+    # Large "Thank you" in turquoise
+    add_text(cl, "Thank you", 1.5, 2.6, 10.33, 1.8, size=60, color=C["nt"], align="center")
+
+    # Centered Blend logo
+    logo_path = os.path.join(ROOT_DIR, "blend-logo-white.png")
+    if os.path.exists(logo_path):
+        cl.shapes.add_picture(logo_path, Inches(5.4), Inches(5.0), width=Inches(2.5))
+
+    # ── Save clean ────────────────────────────────────────────────────────────
     buf = io.BytesIO()
     prs.save(buf)
     return buf.getvalue()
@@ -1009,6 +1044,8 @@ class Handler(BaseHTTPRequestHandler):
             is_backlog  = payload.get("isBacklog", False)
             project_name = payload.get("projectName", "Project")
             sprint_name  = payload.get("sprintName", "Sprint")
+            sprint_start = payload.get("sprintStart", "")
+            sprint_end   = payload.get("sprintEnd", "")
 
             try:
                 fields = "summary,issuetype,status,priority,assignee,customfield_10016,labels"
@@ -1146,6 +1183,9 @@ class Handler(BaseHTTPRequestHandler):
                     "completionPct": completion_pct,
                     "storyPointsPlanned": int(sp_planned), "storyPointsDone": int(sp_done),
                 }
+                parsed["sprintId"]    = str(sprint_id) if sprint_id else ""
+                parsed["sprintStart"] = sprint_start
+                parsed["sprintEnd"]   = sprint_end
                 self._send(200, json.dumps(parsed))
             except Exception as e:
                 self._send(502, json.dumps({"error": str(e)}))
