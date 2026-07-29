@@ -715,12 +715,10 @@ def build_pptx(deck):
     add_text(cover, "SPRINT STATUS", 0.85, 1.3, 4.5, 0.28, size=8, color=C["nt"])
     add_rect(cover, 0.85, 1.58, 4.5, 0.012, C["nt"])
     add_text(cover, pn, 0.85, 1.72, 4.5, 1.3, size=30, color=C["wh"])
-    sprint_label = sn
-    add_text(cover, sprint_label, 0.85, 3.10, 4.5, 0.38, size=13, color=C["lt"])
-    if sprint_timeline:
-        add_text(cover, sprint_timeline, 0.85, 3.52, 4.5, 0.32, size=11, color=C["ow"])
-    if wo:
-        add_text(cover, "Week of " + wo, 0.85, 3.88, 4.5, 0.30, size=10, color="#A2A2A2")
+    from datetime import date as _date
+    created_label = _date.today().strftime("%B %d, %Y")
+    add_text(cover, sn, 0.85, 3.10, 4.5, 0.38, size=13, color=C["lt"])
+    add_text(cover, created_label, 0.85, 3.52, 4.5, 0.32, size=11, color=C["ow"])
     h_clr = {"On Track": "#065F46", "At Risk": "#92400E", "Off Track": "#7F1D1D"}.get(hs, "#92400E")
     add_rect(cover, 0.85, 4.35, 2.5, 0.40, h_clr)
     add_text(cover, hs, 0.85, 4.35, 2.5, 0.40, size=11, color=C["wh"], align="center")
