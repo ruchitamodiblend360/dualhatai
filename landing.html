@@ -417,23 +417,14 @@
 
     /* ── Features grid ──────────────────────────── */
     .section-wide {
-      max-width: 1240px;
+      max-width: 1100px;
     }
 
     .features-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
-    .feat-row {
       display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 18px;
     }
-
-    .feat-row-checker { grid-template-columns: repeat(5, 1fr); }
-    .feat-row-status  { grid-template-columns: repeat(4, 1fr); }
-    .feat-row-shared  { grid-template-columns: 1fr; }
 
     .feat-card {
       background: rgba(49,69,80,0.45);
@@ -503,6 +494,39 @@
       background: rgba(162,243,243,0.08);
       color: var(--blend-light-turquoise);
       border: 1px solid rgba(162,243,243,0.2);
+    }
+
+    /* ── Trust banner (shared, closing statement) ── */
+    .trust-banner {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background: rgba(0,237,237,0.05);
+      border: 1px solid rgba(0,237,237,0.2);
+      border-radius: 12px;
+      padding: 24px 28px;
+    }
+
+    .trust-banner .feat-icon {
+      margin-bottom: 0;
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+    }
+
+    .trust-banner-body h3 {
+      font-size: 0.95rem;
+      color: var(--blend-white);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .trust-banner-body p {
+      font-size: 0.82rem;
+      color: var(--blend-off-white);
+      opacity: 0.6;
+      line-height: 1.6;
     }
 
     /* ── Team section ───────────────────────────── */
@@ -585,17 +609,14 @@
       line-height: 1.4;
     }
 
-    @media (max-width: 1023px) {
-      .feat-row-checker, .feat-row-status { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-    }
-
     @media (max-width: 740px) {
       .cards { flex-direction: column; align-items: center; }
       .card { width: 100%; max-width: 400px; }
       header { padding: 18px 20px; }
       .hero { padding: 48px 20px 60px; }
       .section { padding: 56px 20px; }
-      .feat-row-checker, .feat-row-status, .feat-row-shared { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .trust-banner { flex-direction: column; text-align: center; }
       .nav-link { display: none; }
     }
   </style>
@@ -746,88 +767,78 @@
 
     <div class="features-grid">
 
-      <div class="feat-row feat-row-checker">
-
-        <div class="feat-card">
-          <div class="feat-icon"><i class="ti ti-sparkles"></i></div>
-          <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Readiness Checker</span>
-          <h3>AI-powered readiness score</h3>
-          <p>Score any story out of 100 across five dimensions: completeness, clarity, testability, size fit, and dependency risk — in under 3 seconds.</p>
-        </div>
-
-        <div class="feat-card">
-          <div class="feat-icon"><i class="ti ti-layout-kanban"></i></div>
-          <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Readiness Checker</span>
-          <h3>Jira batch processing &amp; analysis</h3>
-          <p>Select multiple stories or epics from Jira at once and score the whole batch in a single pass — triage a sprint's readiness without opening tickets one by one.</p>
-        </div>
-
-        <div class="feat-card">
-          <div class="feat-icon"><i class="ti ti-edit"></i></div>
-          <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Readiness Checker</span>
-          <h3>Instant story rewrite</h3>
-          <p>Every analysis includes an AI-improved version of your story — better structured, clearer Acceptance Criteria, ready to paste straight back into Jira.</p>
-        </div>
-
-        <div class="feat-card">
-          <div class="feat-icon"><i class="ti ti-list-check"></i></div>
-          <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Readiness Checker</span>
-          <h3>Definition of Ready scoring</h3>
-          <p>Add your team's DoR and the score adapts to your bar — not a generic checklist. Works with any DoR format.</p>
-        </div>
-
-        <div class="feat-card">
-          <div class="feat-icon"><i class="ti ti-history"></i></div>
-          <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Readiness Checker</span>
-          <h3>Analysis history &amp; dashboard</h3>
-          <p>Every story you check is saved to your session dashboard. Review past scores, re-run analysis, and track how stories improve over time.</p>
-        </div>
-
+      <div class="feat-card">
+        <div class="feat-icon"><i class="ti ti-sparkles"></i></div>
+        <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Readiness Checker</span>
+        <h3>AI-powered readiness score</h3>
+        <p>Score any story out of 100 across five dimensions: completeness, clarity, testability, size fit, and dependency risk — in under 3 seconds.</p>
       </div>
 
-      <div class="feat-row feat-row-status">
-
-        <div class="feat-card">
-          <div class="feat-icon"><i class="ti ti-layout-kanban"></i></div>
-          <span class="feat-tool-tag tag-status"><i class="ti ti-presentation-analytics" style="font-size:9px;"></i> Status Generator</span>
-          <h3>Live Jira integration</h3>
-          <p>Connects directly to your Jira workspace. Reads boards, sprints, and issue data in real time — no exports, no CSVs, no manual sync.</p>
-        </div>
-
-        <div class="feat-card">
-          <div class="feat-icon"><i class="ti ti-presentation-analytics"></i></div>
-          <span class="feat-tool-tag tag-status"><i class="ti ti-presentation-analytics" style="font-size:9px;"></i> Status Generator</span>
-          <h3>One-click draft status deck</h3>
-          <p>Select a sprint or backlog row and generate a complete executive status PowerPoint — accomplishments, next steps, blockers, and metrics — in under 30 seconds.</p>
-        </div>
-
-        <div class="feat-card">
-          <div class="feat-icon"><i class="ti ti-edit"></i></div>
-          <span class="feat-tool-tag tag-status"><i class="ti ti-presentation-analytics" style="font-size:9px;"></i> Status Generator</span>
-          <h3>Fully editable deck</h3>
-          <p>The generated PowerPoint isn't locked — every slide, chart, and bullet is fully editable, so you can tweak tone or content before it goes to stakeholders.</p>
-        </div>
-
-        <div class="feat-card">
-          <div class="feat-icon"><i class="ti ti-file-type-ppt"></i></div>
-          <span class="feat-tool-tag tag-status"><i class="ti ti-presentation-analytics" style="font-size:9px;"></i> Status Generator</span>
-          <h3>Blend-branded PPTX output</h3>
-          <p>Every generated deck uses the official Blend colour palette, Montserrat typography, and the Blend logo — brand-ready without any design work.</p>
-        </div>
-
+      <div class="feat-card">
+        <div class="feat-icon"><i class="ti ti-layout-kanban"></i></div>
+        <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Readiness Checker</span>
+        <h3>Jira batch processing &amp; analysis</h3>
+        <p>Select multiple stories or epics from Jira at once and score the whole batch in a single pass — triage a sprint's readiness without opening tickets one by one.</p>
       </div>
 
-      <div class="feat-row feat-row-shared">
-
-        <div class="feat-card">
-          <div class="feat-icon"><i class="ti ti-shield-check"></i></div>
-          <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Both tools</span>
-          <h3>No data leaves your network</h3>
-          <p>Runs on your local machine. Jira credentials stay in your <code style="font-size:11px;background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:3px;">.env</code> file and are never sent to any third party.</p>
-        </div>
-
+      <div class="feat-card">
+        <div class="feat-icon"><i class="ti ti-edit"></i></div>
+        <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Readiness Checker</span>
+        <h3>Instant story rewrite</h3>
+        <p>Every analysis includes an AI-improved version of your story — better structured, clearer Acceptance Criteria, ready to paste straight back into Jira.</p>
       </div>
 
+      <div class="feat-card">
+        <div class="feat-icon"><i class="ti ti-list-check"></i></div>
+        <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Readiness Checker</span>
+        <h3>Definition of Ready scoring</h3>
+        <p>Add your team's DoR and the score adapts to your bar — not a generic checklist. Works with any DoR format.</p>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon"><i class="ti ti-history"></i></div>
+        <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Readiness Checker</span>
+        <h3>Analysis history &amp; dashboard</h3>
+        <p>Every story you check is saved to your session dashboard. Review past scores, re-run analysis, and track how stories improve over time.</p>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon"><i class="ti ti-layout-kanban"></i></div>
+        <span class="feat-tool-tag tag-status"><i class="ti ti-presentation-analytics" style="font-size:9px;"></i> Status Generator</span>
+        <h3>Live Jira integration</h3>
+        <p>Connects directly to your Jira workspace. Reads boards, sprints, and issue data in real time — no exports, no CSVs, no manual sync.</p>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon"><i class="ti ti-presentation-analytics"></i></div>
+        <span class="feat-tool-tag tag-status"><i class="ti ti-presentation-analytics" style="font-size:9px;"></i> Status Generator</span>
+        <h3>One-click draft status deck</h3>
+        <p>Select a sprint or backlog row and generate a complete executive status PowerPoint — accomplishments, next steps, blockers, and metrics — in under 30 seconds.</p>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon"><i class="ti ti-edit"></i></div>
+        <span class="feat-tool-tag tag-status"><i class="ti ti-presentation-analytics" style="font-size:9px;"></i> Status Generator</span>
+        <h3>Fully editable deck</h3>
+        <p>The generated PowerPoint isn't locked — every slide, chart, and bullet is fully editable, so you can tweak tone or content before it goes to stakeholders.</p>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon"><i class="ti ti-file-type-ppt"></i></div>
+        <span class="feat-tool-tag tag-status"><i class="ti ti-presentation-analytics" style="font-size:9px;"></i> Status Generator</span>
+        <h3>Blend-branded PPTX output</h3>
+        <p>Every generated deck uses the official Blend colour palette, Montserrat typography, and the Blend logo — brand-ready without any design work.</p>
+      </div>
+
+    </div>
+
+    <div class="trust-banner">
+      <div class="feat-icon"><i class="ti ti-shield-check"></i></div>
+      <div class="trust-banner-body">
+        <span class="feat-tool-tag tag-checker"><i class="ti ti-circle-check" style="font-size:9px;"></i> Both tools</span>
+        <h3>No data leaves your network</h3>
+        <p>Runs on your local machine. Jira credentials stay in your <code style="font-size:11px;background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:3px;">.env</code> file and are never sent to any third party.</p>
+      </div>
     </div>
   </section>
 
