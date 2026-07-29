@@ -421,6 +421,17 @@ def jira_get(path):
         return json.loads(resp.read().decode("utf-8"))
 
 
+def extract_epic_from_fields(f):
+    """Return the epic name (or key) for a Jira issue's fields dict, or '' if none."""
+    parent = f.get("parent") or {}
+    parent_fields = parent.get("fields") or {}
+    parent_type = (parent_fields.get("issuetype") or {}).get("name", "")
+    if parent_type == "Epic":
+        return parent_fields.get("summary", "")
+    epic_key = f.get("customfield_10014") or ""
+    return epic_key
+
+
 def jira_issue_to_text(issue):
     """Convert a Jira issue to plain text suitable for the readiness checker."""
     fields = issue.get("fields", {})
@@ -452,6 +463,7 @@ def jira_issue_to_text(issue):
     priority   = (fields.get("priority") or {}).get("name", "")
     assignee   = ((fields.get("assignee") or {}).get("displayName") or "Unassigned")
     story_points = fields.get("story_points") or fields.get("customfield_10016") or ""
+    epic_name = extract_epic_from_fields(fields)
 
     lines = [f"[{key}] {summary}"]
     if issue_type: lines.append(f"Type: {issue_type}")
@@ -459,6 +471,7 @@ def jira_issue_to_text(issue):
     if priority:   lines.append(f"Priority: {priority}")
     if assignee:   lines.append(f"Assignee: {assignee}")
     if story_points: lines.append(f"Story Points: {story_points}")
+    if epic_name:  lines.append(f"Parent Epic: {epic_name}")
     if description:
         lines.append("")
         lines.append(description)
@@ -892,7 +905,7 @@ class Handler(BaseHTTPRequestHandler):
                 jql = "ORDER BY updated DESC"
             try:
                 params = urlencode({"jql": jql, "maxResults": max_results,
-                                    "fields": "summary,issuetype,status,priority,assignee,customfield_10016,description"})
+                                    "fields": "summary,issuetype,status,priority,assignee,customfield_10016,description,parent,customfield_10014"})
                 data = jira_get(f"search?{params}")
                 issues = []
                 for iss in data.get("issues", []):
@@ -905,6 +918,7 @@ class Handler(BaseHTTPRequestHandler):
                         "priority": (f.get("priority") or {}).get("name", ""),
                         "points": f.get("customfield_10016"),
                         "assignee": ((f.get("assignee") or {}).get("displayName") or ""),
+                        "epic": extract_epic_from_fields(f),
                     })
                 self._send(200, json.dumps({"issues": issues, "total": data.get("total", 0)}))
             except Exception as e:
@@ -917,11 +931,12 @@ class Handler(BaseHTTPRequestHandler):
                 return
             key = self.path.split("/api/jira/issue/")[-1].split("?")[0].strip()
             try:
-                issue = jira_get(f"issue/{key}?fields=summary,issuetype,status,priority,assignee,customfield_10016,description")
+                issue = jira_get(f"issue/{key}?fields=summary,issuetype,status,priority,assignee,customfield_10016,description,parent,customfield_10014")
                 self._send(200, json.dumps({
                     "key": issue["key"],
                     "text": jira_issue_to_text(issue),
                     "type": (issue["fields"].get("issuetype") or {}).get("name", ""),
+                    "epic": extract_epic_from_fields(issue.get("fields", {})),
                 }))
             except urllib.error.HTTPError as e:
                 self._send(e.code, json.dumps({"error": f"Jira {e.code}: {e.read().decode('utf-8','replace')}"}))
@@ -938,7 +953,7 @@ class Handler(BaseHTTPRequestHandler):
             sprint_id = qs.get("sprintId", [""])[0]
             is_backlog = qs.get("backlog", [""])[0] == "true"
             try:
-                fields = "summary,issuetype,status,priority,assignee,customfield_10016,description"
+                fields = "summary,issuetype,status,priority,assignee,customfield_10016,description,parent,customfield_10014"
                 if sprint_id:
                     data = jira_agile_get(f"sprint/{sprint_id}/issue?maxResults=50&fields={fields}")
                 elif is_backlog and board_id:
@@ -957,8 +972,30 @@ class Handler(BaseHTTPRequestHandler):
                         "priority": (f.get("priority")  or {}).get("name", ""),
                         "points":   f.get("customfield_10016"),
                         "assignee": ((f.get("assignee") or {}).get("displayName") or ""),
+                        "epic":     extract_epic_from_fields(f),
                         "text":     jira_issue_to_text(iss),
                     })
+                # Batch-resolve epic keys to names for classic projects
+                import re as _re
+                epic_keys = list(set(
+                    i["epic"] for i in issues
+                    if i.get("epic") and _re.match(r'^[A-Z][A-Z0-9]+-\d+$', i["epic"])
+                ))
+                if epic_keys:
+                    epic_name_map = {}
+                    def fetch_epic_summary(key):
+                        try:
+                            d = jira_get(f"issue/{key}?fields=summary,customfield_10011")
+                            f2 = d.get("fields", {})
+                            return key, (f2.get("customfield_10011") or f2.get("summary") or key)
+                        except Exception:
+                            return key, key
+                    with ThreadPoolExecutor(max_workers=min(len(epic_keys), 5)) as pool:
+                        for k, name in pool.map(fetch_epic_summary, epic_keys):
+                            epic_name_map[k] = name
+                    for i in issues:
+                        if i.get("epic") in epic_name_map:
+                            i["epic"] = epic_name_map[i["epic"]]
                 self._send(200, json.dumps({"issues": issues, "total": data.get("total", 0)}))
             except Exception as e:
                 self._send(502, json.dumps({"error": str(e)}))

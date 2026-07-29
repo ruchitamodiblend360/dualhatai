@@ -1681,7 +1681,7 @@ Dependencies:
             const res  = await fetch("/api/analyze", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ story: issue.text, mode, jira_key: issue.key }),
+              body: JSON.stringify({ story: issue.text, mode, jira_key: issue.key, epic: issue.epic || "" }),
             });
             const data = await res.json();
             if (res.ok) {
@@ -1708,10 +1708,11 @@ Dependencies:
           const freshText = jiraData?.text || issues.find(i => i.key === key)?.text || "";
           setIssues(prev => prev.map(i => i.key === key ? { ...i, text: freshText } : i));
           const mode = (issues.find(i => i.key === key)?.type || "").toLowerCase() === "epic" ? "epic" : "story";
+          const epicName = issues.find(i => i.key === key)?.epic || "";
           const res = await fetch("/api/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ story: freshText, mode, jira_key: key }),
+            body: JSON.stringify({ story: freshText, mode, jira_key: key, epic: epicName }),
           });
           const data = await res.json();
           if (res.ok) {
@@ -1975,6 +1976,7 @@ Dependencies:
                       {/* Title */}
                       <td style={{ padding: "11px 12px", color: "#FFFFFF", maxWidth: 280 }}>
                         <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "underline" }}>{issue.summary}</div>
+                        {issue.epic && <div style={{ fontSize: 10, color: "#00EDED", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><i className="ti ti-map" style={{ fontSize: 9, marginRight: 3 }} />{issue.epic}</div>}
                         {issue.assignee && <div style={{ fontSize: 11, color: "#A2F3F3", marginTop: 1 }}>{issue.assignee}</div>}
                       </td>
                       {/* Points */}
@@ -2389,12 +2391,23 @@ Dependencies:
 
                     <div style={{ borderTop: "0.5px solid var(--color-border-tertiary)", padding: "12px 18px",
                       display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <button onClick={() => { setStory(checkerMode === "epic" ? EXAMPLE_EPIC : EXAMPLE_STORY); setEpic(""); setDor(""); setUiState("idle"); setResult(null); }}
-                        style={{ fontSize: 12, padding: "7px 13px", background: "none", cursor: "pointer",
-                          border: "0.5px solid var(--color-border-secondary)",
-                          borderRadius: "var(--border-radius-md)", color: "var(--color-text-primary)" }}>
-                        Load example
-                      </button>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => { setStory(checkerMode === "epic" ? EXAMPLE_EPIC : EXAMPLE_STORY); setEpic(""); setDor(""); setUiState("idle"); setResult(null); }}
+                          style={{ fontSize: 12, padding: "7px 13px", background: "none", cursor: "pointer",
+                            border: "0.5px solid var(--color-border-secondary)",
+                            borderRadius: "var(--border-radius-md)", color: "var(--color-text-primary)" }}>
+                          Load example
+                        </button>
+                        {story.trim() && (
+                          <button onClick={() => { setStory(""); setEpic(""); setDor(""); setUiState("idle"); setResult(null); }}
+                            style={{ fontSize: 12, padding: "7px 13px", background: "none", cursor: "pointer",
+                              border: "0.5px solid var(--color-border-secondary)",
+                              borderRadius: "var(--border-radius-md)", color: "var(--color-text-tertiary)",
+                              display: "flex", alignItems: "center", gap: 5 }}>
+                            <i className="ti ti-x" style={{ fontSize: 11 }} /> Clear
+                          </button>
+                        )}
+                      </div>
                       <button onClick={analyzeStory}
                         disabled={uiState === "loading" || !story.trim()}
                         style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500,
