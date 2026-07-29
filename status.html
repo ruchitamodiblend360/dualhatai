@@ -244,17 +244,17 @@
             )}
             {genError && (
               <div style={{ marginBottom: 14, padding: "12px 16px", borderRadius: 8, fontSize: 13,
-                background: genError === "rate_limited" ? "rgba(251,191,36,0.08)" : "#1A1A1A",
-                border: genError === "rate_limited" ? "1px solid rgba(251,191,36,0.35)" : "1px solid #7F1D1D",
-                color: genError === "rate_limited" ? "#FCD34D" : "#FCA5A5",
+                background: genError === "rate_limited" ? "#FFFBEB" : "#FEF2F2",
+                border: genError === "rate_limited" ? "1px solid #F59E0B" : "1px solid #EF4444",
+                color: genError === "rate_limited" ? "#92400E" : "#7F1D1D",
                 display: "flex", alignItems: "flex-start", gap: 9 }}>
                 <i className={`ti ${genError === "rate_limited" ? "ti-clock-pause" : "ti-alert-circle"}`}
                   style={{ fontSize: 16, marginTop: 1, flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontWeight: 500, marginBottom: 3 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 3 }}>
                     {genError === "rate_limited" ? "AI rate limit reached" : "Generation failed"}
                   </div>
-                  <div style={{ opacity: 0.8, lineHeight: 1.5 }}>
+                  <div style={{ lineHeight: 1.5 }}>
                     {genError === "rate_limited"
                       ? "The AI service is temporarily limiting requests. Wait a moment and try again."
                       : genError}
