@@ -715,7 +715,7 @@ def build_pptx(deck):
     add_text(cover, "SPRINT STATUS", 0.85, 1.3, 4.5, 0.28, size=8, color=C["nt"])
     add_rect(cover, 0.85, 1.58, 4.5, 0.012, C["nt"])
     add_text(cover, pn, 0.85, 1.72, 4.5, 1.3, size=30, color=C["wh"])
-    sprint_label = (f"ID {sid}  ·  " if sid else "") + sn
+    sprint_label = sn
     add_text(cover, sprint_label, 0.85, 3.10, 4.5, 0.38, size=13, color=C["lt"])
     if sprint_timeline:
         add_text(cover, sprint_timeline, 0.85, 3.52, 4.5, 0.32, size=11, color=C["ow"])
