@@ -1194,16 +1194,21 @@ class Handler(BaseHTTPRequestHandler):
                         line += "\n  Comments:\n" + "\n".join(f"    > {c}" for c in coms)
                     return line
 
+                # Cap issues sent to Groq to stay within token limits
+                done_capped     = done_issues[:30]
+                progress_capped = in_progress_issues[:20]
+                todo_capped     = todo_issues[:15]
+
                 lines = [
                     f"PROJECT: {project_name}", f"SPRINT: {sprint_name}", f"DATE: {week_of}",
                     f"TOTAL: {total} | DONE: {done_count} | IN PROGRESS: {len(in_progress_issues)} | TO DO: {len(todo_issues)}",
                     f"STORY POINTS: Planned={int(sp_planned)} Done={int(sp_done)}",
                     "", "COMPLETED (Done):",
-                ] + ([fmt(i, include_desc=True) for i in done_issues] if done_issues else ["(none)"]) + [
+                ] + ([fmt(i, include_desc=True) for i in done_capped] if done_capped else ["(none)"]) + [
                     "", "IN PROGRESS:",
-                ] + ([fmt(i) for i in in_progress_issues] if in_progress_issues else ["(none)"]) + [
+                ] + ([fmt(i) for i in progress_capped] if progress_capped else ["(none)"]) + [
                     "", "TO DO / NOT STARTED:",
-                ] + ([fmt(i) for i in todo_issues] if todo_issues else ["(none)"])
+                ] + ([fmt(i) for i in todo_capped] if todo_capped else ["(none)"])
 
                 groq_body = json.dumps({
                     "model": MODEL, "max_tokens": 2000, "temperature": 0.3,
