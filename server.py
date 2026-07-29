@@ -535,11 +535,15 @@ def fetch_board_detail(board):
     except Exception:
         raw_sprints = []
     try:
-        cd = jira_agile_get(f"board/{bid}/sprint?state=closed&maxResults=50")
-        closed_all = cd.get("values", [])
-        # Keep only the 2 most recently ended
-        closed_all.sort(key=lambda s: s.get("endDate", ""), reverse=True)
-        raw_sprints += closed_all[:2]
+        # Jira returns closed sprints oldest-first; fetch last page to get most recent
+        probe = jira_agile_get(f"board/{bid}/sprint?state=closed&maxResults=1")
+        total_closed = probe.get("total", 0)
+        if total_closed > 0:
+            start_at = max(0, total_closed - 5)
+            cd = jira_agile_get(f"board/{bid}/sprint?state=closed&maxResults=5&startAt={start_at}")
+            closed_all = cd.get("values", [])
+            closed_all.sort(key=lambda s: s.get("endDate", ""), reverse=True)
+            raw_sprints += closed_all[:2]
     except Exception:
         pass
 
