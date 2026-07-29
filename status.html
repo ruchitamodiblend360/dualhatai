@@ -347,6 +347,7 @@
 
       function DeckView(props) {
         const d = props.d;
+        const onBack = props.onBack;
         // Local editable copy — isolated from parent so typing doesn't trigger re-renders
         const [local, setLocal] = React.useState(d);
         const [exporting, setExporting] = React.useState(false);
@@ -370,6 +371,13 @@
 
         return (
           <div style={{ padding: "20px" }}>
+            {/* Back button */}
+            <button onClick={onBack}
+              style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14,
+                padding: "7px 14px", borderRadius: 8, border: "1px solid #314550",
+                background: "transparent", color: "#A2F3F3", fontSize: 13, cursor: "pointer" }}>
+              <i className="ti ti-arrow-left" style={{ fontSize: 14 }} /> Back to projects
+            </button>
             {/* Draft banner */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14,
               padding: "8px 14px", borderRadius: 8,
@@ -626,7 +634,7 @@
               Fetching Jira data and generating status deck...
             </div>
           )}
-          {deck && !generating && <DeckView d={deck} />}
+          {deck && !generating && <DeckView d={deck} onBack={function() { setDeck(null); setSelectedBoard(null); setSelectedSprint(null); }} />}
         </div>
       );
     }
