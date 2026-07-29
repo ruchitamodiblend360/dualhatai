@@ -1310,7 +1310,7 @@ Dependencies:
         </div>
       );
 
-      const BOARD_PAGE_SIZE = 25;
+      const BOARD_PAGE_SIZE = 24;
       const filteredBoards = boards.filter(b => (b.projectName || b.name || "").toLowerCase().includes(search.toLowerCase()));
       const totalBoardPages = Math.ceil(filteredBoards.length / BOARD_PAGE_SIZE);
       const pagedBoards = filteredBoards.slice((boardPage - 1) * BOARD_PAGE_SIZE, boardPage * BOARD_PAGE_SIZE);
