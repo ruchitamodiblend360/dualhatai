@@ -12,7 +12,7 @@ set -euo pipefail
 export MSYS_NO_PATHCONV=1
 export MSYS2_ARG_CONV_EXCL='*'
 
-HOST="ec2-user@13.223.189.255"
+HOST="ec2-user@50.16.167.48"
 KEY="dualhatai-key.pem"
 APPDIR="/opt/dualhatai"
 
@@ -36,4 +36,4 @@ echo ">> installing + restarting ..."
 ssh -i "$KEY" "$HOST" \
   "sudo cp -r /tmp/deploy/* $APPDIR/ && sudo systemctl restart dualhatai && sleep 1 && systemctl is-active dualhatai"
 
-echo ">> done. http://13.223.189.255/"
+echo ">> done. http://50.16.167.48/"
