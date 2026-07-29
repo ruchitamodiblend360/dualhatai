@@ -96,6 +96,28 @@
           '<pre style="white-space:pre-wrap;font-size:12px;margin:0;color:#5a1717">' + detail + '</pre></div>';
       }
     }
+    function copyTextToClipboard(text) {
+      text = text || "";
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(function () { _fallbackCopy(text); });
+        return;
+      }
+      _fallbackCopy(text);
+    }
+    function _fallbackCopy(text) {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.top = "-9999px";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch (e) {}
+    }
     window.addEventListener("error", function (e) {
       showError("A script error occurred", (e.message || e.error || e) + "\n" + (e.filename || ""));
     });
@@ -332,7 +354,7 @@ Dependencies:
       const [pushMsg, setPushMsg]   = useState("");
 
       function copyImproved() {
-        navigator.clipboard.writeText(result.improved_story || "");
+        copyTextToClipboard(result.improved_story || "");
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }
@@ -1431,7 +1453,7 @@ Dependencies:
       const [copied, setCopied] = useState(false);
 
       function copyImproved() {
-        navigator.clipboard.writeText(result.improved_story || "");
+        copyTextToClipboard(result.improved_story || "");
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }

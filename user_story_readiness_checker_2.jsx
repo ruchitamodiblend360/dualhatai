@@ -201,7 +201,20 @@ function ResultState({ result, onRecheck }) {
   const [copied, setCopied] = useState(false);
 
   function copyImproved() {
-    navigator.clipboard.writeText(result.improved_story || "");
+    const text = result.improved_story || "";
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
+    function fallbackCopy() {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        document.execCommand("copy"); document.body.removeChild(ta);
+      } catch (e) {}
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
