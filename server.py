@@ -1170,20 +1170,38 @@ class Handler(BaseHTTPRequestHandler):
                 week_end   = week_start + datetime.timedelta(days=6)
                 week_of    = f"{week_start.strftime('%B %d')}–{week_end.strftime('%d, %Y')}"
 
+                # Cap issues sent to Groq to stay within token limits
+                done_capped     = done_issues[:30]
+                progress_capped = in_progress_issues[:20]
+                todo_capped     = todo_issues[:15]
+
+                # Fetch comments only for in-progress + blocked issues (max 2 each, 120 chars)
+                blocked_issues = [i for i in progress_capped + todo_capped
+                                  if any(l.lower() in ("blocked", "risk", "blocker")
+                                         for l in i.get("labels", []))
+                                  or "block" in i.get("status", "").lower()]
+                needs_comments = progress_capped + blocked_issues
+                comments_map = {}
+                if needs_comments:
+                    with ThreadPoolExecutor(max_workers=4) as pool:
+                        futures = {pool.submit(fetch_issue_comments, iss["key"]): iss["key"]
+                                   for iss in needs_comments}
+                        for fut in as_completed(futures):
+                            key = futures[fut]
+                            try:
+                                comments_map[key] = [c[:120] for c in fut.result()[:2]]
+                            except Exception:
+                                comments_map[key] = []
+
                 def fmt(iss, include_desc=False):
                     pts = f"| Points: {iss['points']}" if iss['points'] else ""
                     lbl = f"| Labels: {', '.join(iss['labels'])}" if iss['labels'] else ""
                     desc = ("\n  Description: " + iss['description'][:150] if include_desc and iss.get('description') else "")
                     line = f"- [{iss['key']}] {iss['summary']} | Type: {iss['type']} | Assignee: {iss['assignee']} | Priority: {iss['priority']} {pts} {lbl}{desc}"
-                    coms = []
+                    coms = comments_map.get(iss["key"], [])
                     if coms:
-                        line += "\n  Comments:\n" + "\n".join(f"    > {c}" for c in coms)
+                        line += "\n  Latest comments:\n" + "\n".join(f"    > {c}" for c in coms)
                     return line
-
-                # Cap issues sent to Groq to stay within token limits
-                done_capped     = done_issues[:30]
-                progress_capped = in_progress_issues[:20]
-                todo_capped     = todo_issues[:15]
 
                 lines = [
                     f"PROJECT: {project_name}", f"SPRINT: {sprint_name}", f"DATE: {week_of}",
