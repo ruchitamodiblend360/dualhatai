@@ -207,8 +207,8 @@ What to check:
 Scoring guide:
 - 0–5:   ACs are absent or entirely untestable ("system works correctly")
 - 6–10:  ACs present but mostly unverifiable without further information
-- 11–15: Most ACs testable, some gaps in failure paths or edge cases
-- 16–20: All ACs independently verifiable, Given/When/Then, measurable outcomes throughout
+- 11–15: Most ACs testable; Given/When/Then is ideal but not required
+- 16–20: All ACs independently verifiable; format flexible if testable
 
 ### 4. SIZE (0–20)
 What to check:
