@@ -662,8 +662,30 @@ def extract_epic_from_fields(f):
     return epic_key
 
 
-def jira_issue_to_text(issue):
-    """Convert a Jira issue to plain text suitable for the readiness checker."""
+_EPIC_KEY_RE = re.compile(r'^[A-Z][A-Z0-9]+-\d+$')
+
+
+def resolve_epic_name(epic_value):
+    """If epic_value looks like a raw issue key (classic/company-managed
+    "Epic Link" field), fetch and return the epic's actual name. Otherwise
+    return it unchanged — it's already a name (e.g. team-managed projects'
+    parent field, resolved directly by extract_epic_from_fields)."""
+    if not epic_value or not _EPIC_KEY_RE.match(epic_value):
+        return epic_value
+    try:
+        d = jira_get(f"issue/{epic_value}?fields=summary,customfield_10011")
+        ef = d.get("fields", {})
+        return ef.get("customfield_10011") or ef.get("summary") or epic_value
+    except Exception:
+        return epic_value
+
+
+def jira_issue_to_text(issue, epic_name=None):
+    """Convert a Jira issue to plain text suitable for the readiness checker.
+
+    Pass epic_name if it's already been resolved (e.g. batch-resolved
+    elsewhere) to avoid a redundant lookup; otherwise it's resolved here.
+    """
     fields = issue.get("fields", {})
     key    = issue.get("key", "")
     summary = fields.get("summary", "")
@@ -693,7 +715,8 @@ def jira_issue_to_text(issue):
     priority   = (fields.get("priority") or {}).get("name", "")
     assignee   = ((fields.get("assignee") or {}).get("displayName") or "Unassigned")
     story_points = fields.get("story_points") or fields.get("customfield_10016") or ""
-    epic_name = extract_epic_from_fields(fields)
+    if epic_name is None:
+        epic_name = resolve_epic_name(extract_epic_from_fields(fields))
 
     lines = [f"[{key}] {summary}"]
     if issue_type: lines.append(f"Type: {issue_type}")
@@ -1221,7 +1244,7 @@ class Handler(BaseHTTPRequestHandler):
                     "key": issue["key"],
                     "text": jira_issue_to_text(issue),
                     "type": (issue["fields"].get("issuetype") or {}).get("name", ""),
-                    "epic": extract_epic_from_fields(issue.get("fields", {})),
+                    "epic": resolve_epic_name(extract_epic_from_fields(issue.get("fields", {}))),
                 }))
             except urllib.error.HTTPError as e:
                 self._send(e.code, json.dumps({"error": f"Jira {e.code}: {e.read().decode('utf-8','replace')}"}))
@@ -1246,8 +1269,9 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     self._send(400, json.dumps({"error": "Need boardId+backlog=true or sprintId"}))
                     return
+                raw_issues = data.get("issues", [])
                 issues = []
-                for iss in data.get("issues", []):
+                for iss in raw_issues:
                     f = iss.get("fields", {})
                     issues.append({
                         "key":      iss["key"],
@@ -1258,16 +1282,16 @@ class Handler(BaseHTTPRequestHandler):
                         "points":   f.get("customfield_10016"),
                         "assignee": ((f.get("assignee") or {}).get("displayName") or ""),
                         "epic":     extract_epic_from_fields(f),
-                        "text":     jira_issue_to_text(iss),
                     })
-                # Batch-resolve epic keys to names for classic projects
-                import re as _re
+
+                # Batch-resolve epic keys to names for classic projects, deduped
+                # so issues sharing an epic don't each trigger their own lookup.
                 epic_keys = list(set(
                     i["epic"] for i in issues
-                    if i.get("epic") and _re.match(r'^[A-Z][A-Z0-9]+-\d+$', i["epic"])
+                    if i.get("epic") and _EPIC_KEY_RE.match(i["epic"])
                 ))
+                epic_name_map = {}
                 if epic_keys:
-                    epic_name_map = {}
                     def fetch_epic_summary(key):
                         try:
                             d = jira_get(f"issue/{key}?fields=summary,customfield_10011")
@@ -1278,9 +1302,15 @@ class Handler(BaseHTTPRequestHandler):
                     with ThreadPoolExecutor(max_workers=min(len(epic_keys), 5)) as pool:
                         for k, name in pool.map(fetch_epic_summary, epic_keys):
                             epic_name_map[k] = name
-                    for i in issues:
-                        if i.get("epic") in epic_name_map:
-                            i["epic"] = epic_name_map[i["epic"]]
+
+                # Resolve each issue's epic and bake the resolved name into its
+                # text (jira_issue_to_text embeds "Parent Epic: ..." itself, so
+                # it needs the resolved name too, not just the "epic" field).
+                for entry, iss in zip(issues, raw_issues):
+                    resolved = epic_name_map.get(entry["epic"], entry["epic"])
+                    entry["epic"] = resolved
+                    entry["text"] = jira_issue_to_text(iss, epic_name=resolved)
+
                 self._send(200, json.dumps({"issues": issues, "total": data.get("total", 0)}))
             except Exception as e:
                 self._send(502, json.dumps({"error": str(e)}))
