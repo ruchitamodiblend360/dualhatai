@@ -522,9 +522,9 @@ Output rules:
    Strong verbs: Implemented, Deployed, Resolved, Delivered, Launched, Fixed, Migrated, Integrated, Optimized, Shipped, Automated, Configured, Built, Enabled, Completed, Released, Refactored.
    Examples: summary 'User auth API' + desc 'JWT auth with refresh tokens' -> sentence 'Implemented JWT-based user authentication with automatic token refresh'. Summary 'Fix login bug' + desc 'Fixed redirect loop' -> sentence 'Resolved OAuth callback redirect loop causing login failures'. 4-8 items max.
 
-3. nextSteps: Extract from In Progress + high-priority To Do. Action-oriented, starting with a verb. Include owner and due date where derivable. 4-8 items max. Never generic ("continue development").
+3. nextSteps: Extract from In Progress + high-priority To Do. Action-oriented, starting with a verb. Include owner and due date where derivable — if the ticket fields don't specify one, check "Latest comments" for a stated next action or owner before leaving it blank. 4-8 items max. Never generic ("continue development").
 
-4. blockers: Items labeled blocked or risk, unassigned critical items, issues with no progress. 5 max.
+4. blockers: Items labeled blocked or risk, unassigned critical items, issues with no progress. Also include issues whose "Latest comments" reveal they're stuck, waiting on another team, or have an unresolved question — even if status/labels don't say so. When comments name who owns the fix or describe a resolution plan, use that for "owner" and "mitigation" instead of leaving them blank. 5 max.
 
 5. healthStatus: On Track if >60% complete and no critical blockers. At Risk if 40-60% or has blockers. Off Track if <40% or multiple critical blockers.
 
