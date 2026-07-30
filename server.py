@@ -471,8 +471,8 @@ The JSON must exactly match this structure:
 Map total score to readiness_level as follows:
 - 0–39:   "Not Ready"
 - 40–59:  "Needs Work"
-- 60–79:  "Almost Ready"
-- 80–100: "Decomposition Ready"
+- 60–74:  "Almost Ready"
+- 75–100: "Decomposition Ready"
 
 ---
 
@@ -1674,13 +1674,10 @@ class Handler(BaseHTTPRequestHandler):
             self._send(502, json.dumps({"error": f"Could not parse model output: {e}", "raw": text}))
             return
 
-        # Enforce consistent readiness_level based on total score.
-        # Top-tier cutoff differs by mode: epics stay at 80 ("Decomposition
-        # Ready"); stories use 75 ("Sprint Ready"), matching SYSTEM_PROMPT's
-        # READINESS LEVEL THRESHOLDS.
+        # Enforce consistent readiness_level based on total score. Both modes
+        # share the same thresholds; only the top-tier label differs.
         total = parsed.get("total", 0)
-        top_tier_cutoff = 80 if mode == "epic" else 75
-        if total >= top_tier_cutoff:
+        if total >= 75:
             parsed["readiness_level"] = "Decomposition Ready" if mode == "epic" else "Sprint Ready"
         elif total >= 60:
             parsed["readiness_level"] = "Almost Ready"
