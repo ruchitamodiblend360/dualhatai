@@ -367,7 +367,12 @@ Dependencies:
       const [pushMsg, setPushMsg]   = useState("");
 
       function copyImproved() {
-        copyTextToClipboard(result.improved_story || "");
+        let text = result.improved_story || "";
+        if ((result.suggested_acs || []).length > 0) {
+          const label = mode === "epic" ? "Definition of Done" : "Acceptance Criteria";
+          text += `\n\n${label}:\n` + result.suggested_acs.map(ac => "• " + ac).join("\n");
+        }
+        copyTextToClipboard(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }
