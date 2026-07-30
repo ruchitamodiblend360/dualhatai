@@ -1524,6 +1524,12 @@ class Handler(BaseHTTPRequestHandler):
                 parsed["sprintId"]    = str(sprint_id) if sprint_id else ""
                 parsed["sprintStart"] = sprint_start
                 parsed["sprintEnd"]   = sprint_end
+                # These are already known with certainty from the user's board/
+                # sprint selection — don't trust the model's copy of them (it
+                # can rephrase the name or miscalculate the date range).
+                parsed["projectName"] = project_name
+                parsed["sprintName"]  = sprint_name
+                parsed["weekOf"]      = week_of
                 self._send(200, json.dumps(parsed))
             except Exception as e:
                 self._send(502, json.dumps({"error": str(e)}))
