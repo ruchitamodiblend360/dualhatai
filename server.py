@@ -409,10 +409,10 @@ What to check:
 - Are dependencies de-risked (e.g. contract agreed, API documented, designs approved)?
 
 Scoring guide:
-- 0–5:   Multiple unacknowledged dependencies that are likely blockers
-- 6–10:  Dependencies implied but not named; risk of mid-sprint blocks is high
-- 11–15: Some dependencies named; risk is medium; follow-up needed
-- 16–20: Dependencies fully acknowledged, named, and de-risked or low-risk
+- 0–5:   Multiple unacknowledged dependencies; likely mid-sprint blockers
+- 6–10:  Dependencies implied but not named; high risk of mid-sprint blocks
+- 11–15: Dependencies named with owner; medium risk; follow-up may be needed
+- 16–20: Dependencies fully identified, named with owners; medium-risk OK if tracked
 
 ---
 
