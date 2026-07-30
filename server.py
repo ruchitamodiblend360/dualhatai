@@ -458,8 +458,7 @@ The JSON must exactly match this structure:
   ],
   "improved_story": "<Full rewrite of the epic in correct format. Preserve the original intent. Fix vague language with measurable alternatives. Do not add acceptance criteria here — those go in suggested_acs.>",
   "suggested_acs": [
-    "<AC in Given [context] / When [action] / Then [measurable outcome] format>",
-    "<include at least 3, up to 7 ACs covering happy path, error states, and edge cases>"
+    "<NOT granular feature-level ACs — an epic doesn't need those. Instead, write epic-level Definition of Done criteria: the measurable conditions that prove the epic as a whole is complete (e.g. 'Given all committed capabilities have shipped, when [metric/capability] is verified, then the epic is done'). 3–5 items, each stated at the epic level, consistent with the TESTABILITY dimension above.>"
   ],
   "split_suggestions": [
     "<Always populate this for an epic, regardless of the size score — decomposing into child stories is expected output, not a fallback for a poorly-scoped one. Suggest 3–6 child stories the epic could be decomposed into, each a one-sentence story title. If size score is ≤ 10, first note the missing boundary/estimate as a gap, then still provide the best decomposition you can from what's given.>"
@@ -501,11 +500,11 @@ If the user provides team context (Definition of Ready, parent epic, story point
 
 1. Never invent information. If something is not in the epic, flag it as missing — do not assume it exists.
 2. Be specific. Quote exact phrases when flagging ambiguities or gaps. "User can log in quickly" is a quote; "vague language present" is not useful.
-3. Be proportionate. An epic with 1 minor vague word should not score the same as an epic with no ACs at all.
+3. Be proportionate. An epic with 1 minor vague word should not score the same as an epic with no Definition of Done at all.
 4. Gaps array: include all issues found, ordered by severity (critical first, then warning, then info). There is no maximum — include every genuine issue found.
 5. Ambiguities array: only include phrases that are genuinely ambiguous. Do not manufacture ambiguity in an otherwise clear epic.
 6. Dependencies array: include both explicit (named in the epic) and strongly implied dependencies. Set confidence to "low" for implied ones.
-7. Improved epic: rewrite the epic narrative only. Do not insert ACs into the improved_story field — they belong in suggested_acs.
+7. Improved epic: rewrite the epic narrative only. Do not insert Definition of Done criteria into the improved_story field — they belong in suggested_acs.
 8. Split suggestions: always populate with a decomposition into child stories — do not gate this on the size score.
 9. Total score must arithmetically equal the sum of the five dimension scores.
 10. Terminology: never call the submission "the story" or "the user story" in any free-text field — it is "the epic".

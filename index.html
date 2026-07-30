@@ -581,7 +581,7 @@ Dependencies:
                 {result.suggested_acs?.length > 0 && (
                   <>
                     <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 9 }}>
-                      Suggested Acceptance Criteria
+                      {mode === "epic" ? "Suggested Definition of Done" : "Suggested Acceptance Criteria"}
                     </div>
                     {result.suggested_acs.map((ac, i) => (
                       <div key={i} style={{ display: "flex", gap: 9, padding: "7px 0",
@@ -716,7 +716,8 @@ Dependencies:
       function buildJiraDescription(r) {
         let desc = r.improved_story || "";
         if ((r.suggested_acs || []).length > 0) {
-          desc += "\n\nAcceptance Criteria:\n" + r.suggested_acs.map(ac => "• " + ac).join("\n");
+          const label = (selectedStory.mode || "story") === "epic" ? "Definition of Done" : "Acceptance Criteria";
+          desc += `\n\n${label}:\n` + r.suggested_acs.map(ac => "• " + ac).join("\n");
         }
         return desc;
       }
@@ -976,7 +977,9 @@ Dependencies:
                 {/* Suggested ACs */}
                 {(r.suggested_acs || []).length > 0 && (
                   <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-tertiary)", borderRadius: "var(--border-radius-lg)", padding: "16px 18px" }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "#A2F3F3", letterSpacing: "0.07em", marginBottom: 10 }}>SUGGESTED ACCEPTANCE CRITERIA</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "#A2F3F3", letterSpacing: "0.07em", marginBottom: 10 }}>
+                      {(selectedStory.mode || "story") === "epic" ? "SUGGESTED DEFINITION OF DONE" : "SUGGESTED ACCEPTANCE CRITERIA"}
+                    </div>
                     {r.suggested_acs.map((ac, i) => (
                       <div key={i} style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: i < r.suggested_acs.length - 1 ? "0.5px solid var(--color-border-tertiary)" : "none" }}>
                         <i className="ti ti-circle-check" style={{ fontSize: 16, color: "#1D9E75", flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
