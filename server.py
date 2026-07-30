@@ -367,8 +367,10 @@ What to check:
 Scoring guide:
 - 0–5:   Multiple undefined subjective terms, epic cannot be understood without follow-up
 - 6–10:  Several vague terms, likely to cause mid-sprint clarification requests
-- 11–15: Generally clear; minor vague terms that don't block decomposition into stories
-- 16–20: Precise language throughout, all terms measurable or clearly defined
+- 11–15: Generally clear; vague terms present but don't block decomposition; team can infer meaning from context
+- 16–20: Precise language throughout; all metrics and technical terms measurable or clearly defined
+
+Note: An epic with 1-2 vague terms (e.g., "fast", "seamless") should score 14-16 if the core scope and business outcome are clear. Only flag vagueness as a gap if it blocks decomposition into child stories. Do not penalize for terms like "real-time" or "responsive" if they are defined with metrics elsewhere in the epic (e.g., "P95 latency <5 seconds").
 
 ### 3. TESTABILITY (0–20)
 An epic itself rarely has granular acceptance criteria — what matters is whether the team could tell, unambiguously, when the epic as a whole is done, and whether its goals are concrete enough for testable child stories to be written from them.
