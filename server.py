@@ -328,7 +328,8 @@ If the user provides team context (Definition of Ready, parent epic, story point
 7. Improved story: rewrite the story narrative only. Do not insert ACs into the improved_story field — they belong in suggested_acs.
 8. Total score must arithmetically equal the sum of the five dimension scores.
 9. Terminology: never call the submission "the epic" in any free-text field — it is "the story" or "the user story".
-10. Return valid JSON only. Any deviation breaks the application."""
+10. Jira comments (if provided): treat clarifying questions, scope disagreements, or dependencies raised in them as real evidence for gaps, ambiguities, or dependencies — a story that reads cleanly but generated confused comments is not actually clear. Quote the comment the same way you'd quote the story text.
+11. Return valid JSON only. Any deviation breaks the application."""
 
 # ── Epic prompt ──────────────────────────────────────────────────────────────
 EPIC_SYSTEM_PROMPT = """You are an expert agile coach, product manager, and software architect with 15+ years of experience running sprint planning, backlog refinement, and Definition of Ready reviews across engineering teams.
@@ -508,7 +509,8 @@ If the user provides team context (Definition of Ready, parent epic, story point
 8. Split suggestions: always populate with a decomposition into child stories — do not gate this on the size score.
 9. Total score must arithmetically equal the sum of the five dimension scores.
 10. Terminology: never call the submission "the story" or "the user story" in any free-text field — it is "the epic".
-11. Return valid JSON only. Any deviation breaks the application."""
+11. Jira comments (if provided): treat clarifying questions, scope disagreements, or dependencies raised in them as real evidence for gaps, ambiguities, or dependencies — an epic that reads cleanly but generated confused comments is not actually clear. Quote the comment the same way you'd quote the epic text.
+12. Return valid JSON only. Any deviation breaks the application."""
 
 
 # ── Status Deck prompt ──────────────────────────────────────────────────────
@@ -1592,6 +1594,18 @@ class Handler(BaseHTTPRequestHandler):
             context_parts.append(f"Parent epic: {epic}")
         if dor:
             context_parts.append(f"Team Definition of Ready: {dor}")
+
+        # If this came from Jira, pull recent comments — they often surface
+        # clarifying questions, scope disputes, or dependencies the ticket
+        # text itself never captured.
+        if jira_key and JIRA_AUTH:
+            comments = fetch_issue_comments(jira_key, max_comments=5, max_chars=300)
+            if comments:
+                context_parts.append(
+                    "Recent Jira comments (may reveal ambiguity, scope changes, "
+                    "or unresolved dependencies not captured in the text above):\n"
+                    + "\n".join(f"- {c}" for c in comments)
+                )
 
         # Level 1 + 2: inject team history patterns and similar past stories
         team_ctx = build_team_context(load_history(), mode, story)
