@@ -26,6 +26,7 @@
     .ld-powered { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #314550; }
     .ld-blendmark { height: 18px; width: auto; opacity: 0.85; }
     @keyframes spin  { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+    @keyframes hourglassFlip { 0%, 40% { transform: rotate(0deg) } 50%, 90% { transform: rotate(180deg) } 100% { transform: rotate(360deg) } }
     button:not(:disabled):hover { opacity: 0.88; }
     ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #0B0D0E; } ::-webkit-scrollbar-thumb { background: #314550; border-radius: 3px; }
   </style>
@@ -177,7 +178,7 @@
 
         if (loading) return (
           <div style={{ padding: "60px 24px", textAlign: "center", color: "#A2F3F3", fontSize: 14 }}>
-            <i className="ti ti-loader-2" style={{ fontSize: 32, display: "block", marginBottom: 12, animation: "spin 1s linear infinite", color: "#00EDED" }} />
+            <i className="ti ti-hourglass" style={{ fontSize: 32, display: "block", marginBottom: 12, animation: "hourglassFlip 2.2s ease-in-out infinite", color: "#00EDED" }} />
             Loading Jira boards...
           </div>
         );

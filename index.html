@@ -1343,7 +1343,7 @@ Dependencies:
 
       if (loading) return (
         <div style={{ padding: "60px 24px", textAlign: "center", color: "#A2F3F3", fontSize: 14 }}>
-          <i className="ti ti-loader-2" style={{ fontSize: 32, display: "block", marginBottom: 12, animation: "spin 1s linear infinite", color: "#00EDED" }} />
+          <i className="ti ti-hourglass" style={{ fontSize: 32, display: "block", marginBottom: 12, animation: "hourglassFlip 2.2s ease-in-out infinite", color: "#00EDED" }} />
           Loading boards from Jira…
         </div>
       );
@@ -2492,6 +2492,7 @@ Dependencies:
           <style>{`
             @keyframes spin  { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
             @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
+            @keyframes hourglassFlip { 0%, 40% { transform: rotate(0deg) } 50%, 90% { transform: rotate(180deg) } 100% { transform: rotate(360deg) } }
             textarea:focus, input:focus { outline: none; border-color: #00EDED !important; box-shadow: 0 0 0 3px rgba(0,237,237,0.15); }
             button:not(:disabled):hover { opacity: 0.88; }
           `}</style>

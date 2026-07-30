@@ -981,7 +981,7 @@ def build_pptx(deck):
     add_text(cover, sn, 0.75, 3.25, 4.2, 0.38, size=13, color=C["lt"])
     if sprint_timeline:
         add_text(cover, sprint_timeline, 0.75, 3.65, 4.2, 0.32, size=11, color=C["ow"])
-    add_text(cover, "Created: " + created_label, 0.75, 4.0, 4.2, 0.30, size=10, color="#A2A2A2")
+    add_text(cover, "Created On: " + created_label, 0.75, 4.0, 4.2, 0.30, size=10, color="#A2A2A2")
     # Blend360.com footer bottom-left (matching reference)
     add_text(cover, "Blend360.com", 0.5, 7.1, 2.5, 0.28, size=8, color=C["lt"])
 
