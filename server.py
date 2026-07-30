@@ -220,8 +220,8 @@ What to check:
 
 Scoring guide:
 - 0–5:   Clearly an epic in disguise — covers 3+ distinct features or workflows
-- 6–10:  Too large for a single sprint, should be split
-- 11–15: Borderline — could be completed in a sprint but is on the larger side
+- 6–10:  Too large for a single sprint; consider split
+- 11–15: Appropriately sized; minor edge cases could be split but not necessary
 - 16–20: Well-scoped, single unit of value, sprint-sized
 
 ### 5. DEPENDENCY RISK (0–20)
