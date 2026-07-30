@@ -625,8 +625,8 @@ Dependencies:
             background: "var(--color-background-secondary)" }}>
             <span style={{ fontSize: 12, color: criticalCount > 0 ? "#A32D2D" : "var(--color-text-secondary)" }}>
               {criticalCount > 0
-                ? <><i className="ti ti-alert-circle" style={{ fontSize: 13, marginRight: 5 }} aria-hidden="true" />{criticalCount} blocker{criticalCount > 1 ? "s" : ""} must be resolved before sprint planning</>
-                : <><i className="ti ti-circle-check" style={{ fontSize: 13, marginRight: 5, color: "#1D9E75" }} aria-hidden="true" />No critical issues detected — story is ready</>}
+                ? <><i className="ti ti-alert-circle" style={{ fontSize: 13, marginRight: 5 }} aria-hidden="true" />{criticalCount} blocker{criticalCount > 1 ? "s" : ""} must be resolved before {mode === "epic" ? "decomposition" : "sprint planning"}</>
+                : <><i className="ti ti-circle-check" style={{ fontSize: 13, marginRight: 5, color: "#1D9E75" }} aria-hidden="true" />No critical issues detected — {mode === "epic" ? "epic is ready" : "story is ready"}</>}
             </span>
             <button onClick={onRecheck}
               style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 500,
@@ -1717,8 +1717,8 @@ Dependencies:
             background: "#F4F3F0" }}>
             <span style={{ fontSize: 12, color: criticalCount > 0 ? "#A32D2D" : "#0F6E56" }}>
               {criticalCount > 0
-                ? <><i className="ti ti-alert-circle" style={{ fontSize: 13, marginRight: 5 }} />{criticalCount} blocker{criticalCount > 1 ? "s" : ""} must be resolved before sprint planning</>
-                : <><i className="ti ti-circle-check" style={{ fontSize: 13, marginRight: 5 }} />No critical issues detected — story is ready</>}
+                ? <><i className="ti ti-alert-circle" style={{ fontSize: 13, marginRight: 5 }} />{criticalCount} blocker{criticalCount > 1 ? "s" : ""} must be resolved before {(selectedStory.mode || "story") === "epic" ? "decomposition" : "sprint planning"}</>
+                : <><i className="ti ti-circle-check" style={{ fontSize: 13, marginRight: 5 }} />No critical issues detected — {(selectedStory.mode || "story") === "epic" ? "epic is ready" : "story is ready"}</>}
             </span>
           </div>
         </div>
