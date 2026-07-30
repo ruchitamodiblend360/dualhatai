@@ -631,7 +631,7 @@
           {!deck && !generating && <BoardGrid />}
           {generating && (
             <div style={{ padding: "72px 24px", textAlign: "center", color: "#A2F3F3", fontSize: 14 }}>
-              <i className="ti ti-loader-2" style={{ fontSize: 36, display: "block", marginBottom: 14, animation: "spin 1s linear infinite", color: "#00EDED" }} />
+              <i className="ti ti-hourglass" style={{ fontSize: 36, display: "block", marginBottom: 14, animation: "hourglassFlip 2.2s ease-in-out infinite", color: "#00EDED" }} />
               Fetching Jira data and generating status deck...
             </div>
           )}
