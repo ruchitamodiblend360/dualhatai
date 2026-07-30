@@ -322,7 +322,7 @@ If the user provides team context (Definition of Ready, parent epic, story point
 1. Never invent information. If something is not in the story, flag it as missing — do not assume it exists.
 2. Be specific. Quote exact phrases when flagging ambiguities or gaps. "User can log in quickly" is a quote; "vague language present" is not useful.
 3. Be proportionate. A story with 1 minor vague word should not score the same as a story with no ACs at all.
-4. Gaps array: include only gaps that would cause mid-sprint blockers or create ambiguity for the engineering team. A missing edge case detail is not a gap; a missing acceptance criteria is. Maximum 5 gaps.
+4. Gaps array: include CRITICAL and WARNING gaps only. Exclude INFO-level improvements unless they directly block sprint execution. Maximum 5 gaps per story. Proportionality rule: if the story is 85%+ clear and testable, don't penalize for minor missing details.
 5. Ambiguities array: only include phrases that are genuinely ambiguous. Do not manufacture ambiguity in an otherwise clear story.
 6. Dependencies array: include both explicit (named in the story) and strongly implied dependencies. Set confidence to "low" for implied ones.
 7. Improved story: rewrite the story narrative only. Do not insert ACs into the improved_story field — they belong in suggested_acs.
@@ -500,7 +500,7 @@ If the user provides team context (Definition of Ready, parent epic, story point
 1. Never invent information. If something is not in the epic, flag it as missing — do not assume it exists.
 2. Be specific. Quote exact phrases when flagging ambiguities or gaps. "User can log in quickly" is a quote; "vague language present" is not useful.
 3. Be proportionate. An epic with 1 minor vague word should not score the same as an epic with no Definition of Done at all.
-4. Gaps array: include only gaps that would cause mid-sprint blockers or create ambiguity for the engineering team. A missing edge case detail is not a gap; a missing Definition of Done is. Maximum 5 gaps.
+4. Gaps array: include CRITICAL and WARNING gaps only. Exclude INFO-level improvements unless they directly block decomposition into sprint-ready stories. Maximum 5 gaps per epic. Proportionality rule: if the epic is 85%+ clear and has a measurable Definition of Done, don't penalize for minor missing details.
 5. Ambiguities array: only include phrases that are genuinely ambiguous. Do not manufacture ambiguity in an otherwise clear epic.
 6. Dependencies array: include both explicit (named in the epic) and strongly implied dependencies. Set confidence to "low" for implied ones.
 7. Improved epic: rewrite the epic narrative only. Do not insert Definition of Done criteria into the improved_story field — they belong in suggested_acs.
