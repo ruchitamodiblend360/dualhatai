@@ -513,11 +513,18 @@
                           <i className="ti ti-check" style={{ color: "#00EDED", fontSize: 12, flexShrink: 0 }} />
                           <input
                             value={a.sentence || a.title || ""}
+                            autoFocus={i === (local.accomplishments || []).length - 1 && !(a.sentence || a.title)}
                             onChange={function(e) {
                               var next = (local.accomplishments || []).map(function(item, j) {
                                 return j === i ? Object.assign({}, item, { sentence: e.target.value, title: e.target.value }) : item;
                               });
                               update({ accomplishments: next });
+                            }}
+                            onKeyDown={function(e) {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                update({ accomplishments: (local.accomplishments || []).concat([{ sentence: "", title: "" }]) });
+                              }
                             }}
                             style={{ flex: 1, background: "transparent", border: "none", outline: "none",
                               fontSize: 13, color: "#F4F3F0", fontFamily: "inherit", padding: 0 }}
@@ -554,11 +561,18 @@
                           <i className="ti ti-arrow-right" style={{ color: "#A2F3F3", fontSize: 12, flexShrink: 0 }} />
                           <input
                             value={s.action || ""}
+                            autoFocus={i === (local.nextSteps || []).length - 1 && !s.action}
                             onChange={function(e) {
                               var next = (local.nextSteps || []).map(function(item, j) {
                                 return j === i ? Object.assign({}, item, { action: e.target.value }) : item;
                               });
                               update({ nextSteps: next });
+                            }}
+                            onKeyDown={function(e) {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                update({ nextSteps: (local.nextSteps || []).concat([{ action: "" }]) });
+                              }
                             }}
                             style={{ flex: 1, background: "transparent", border: "none", outline: "none",
                               fontSize: 13, color: "#F4F3F0", fontFamily: "inherit", padding: 0 }}
@@ -599,11 +613,18 @@
                           <i className="ti ti-circle-x" style={{ color: ic.text, fontSize: 14, flexShrink: 0 }} />
                           <input
                             value={b.title || ""}
+                            autoFocus={i === (local.blockers || []).length - 1 && !b.title}
                             onChange={function(e) {
                               var next = (local.blockers || []).map(function(item, j) {
                                 return j === i ? Object.assign({}, item, { title: e.target.value }) : item;
                               });
                               update({ blockers: next });
+                            }}
+                            onKeyDown={function(e) {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                update({ blockers: (local.blockers || []).concat([{ title: "", impact: "Medium", mitigation: "", owner: "" }]) });
+                              }
                             }}
                             style={{ flex: 1, background: "transparent", border: "none", outline: "none",
                               fontSize: 13, fontWeight: 600, color: "#fff", fontFamily: "inherit", padding: 0 }}
