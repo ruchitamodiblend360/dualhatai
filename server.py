@@ -455,7 +455,7 @@ The JSON must exactly match this structure:
       "status": "<exactly one of: acknowledged | implied | unresolved>"
     }
   ],
-  "improved_story": "<Full rewrite of the epic in correct format. Preserve the original intent. Fix vague language with measurable alternatives. Do not add acceptance criteria here — those go in suggested_acs.>",
+  "improved_story": "<Full rewrite of the epic in correct format. Preserve the original intent. Fix vague language with measurable alternatives. Do not add Definition of Done criteria here — those go in suggested_acs.>",
   "suggested_acs": [
     "<NOT granular feature-level ACs — an epic doesn't need those. Instead, write epic-level Definition of Done criteria: the measurable conditions that prove the epic as a whole is complete (e.g. 'Given all committed capabilities have shipped, when [metric/capability] is verified, then the epic is done'). 3–5 items, each stated at the epic level, consistent with the TESTABILITY dimension above.>"
   ],
@@ -480,7 +480,7 @@ Map total score to readiness_level as follows:
 
 Use these definitions consistently across all gap entries:
 
-- critical: A blocker. The epic cannot be decomposed or built without resolving this. Examples: missing ACs, undefined token expiry, no error states, unbounded scope.
+- critical: A blocker. The epic cannot be decomposed or built without resolving this. Examples: missing Definition of Done, undefined token expiry, no error states, unbounded scope.
 - warning:  Likely to cause a mid-sprint clarification request or rework. Examples: vague language with no metric, missing edge case, dependency named but not de-risked.
 - info:     Nice to have. Will improve quality but won't block delivery. Examples: out-of-scope not stated, story point estimate missing, minor inconsistency in terminology.
 
@@ -500,7 +500,7 @@ If the user provides team context (Definition of Ready, parent epic, story point
 1. Never invent information. If something is not in the epic, flag it as missing — do not assume it exists.
 2. Be specific. Quote exact phrases when flagging ambiguities or gaps. "User can log in quickly" is a quote; "vague language present" is not useful.
 3. Be proportionate. An epic with 1 minor vague word should not score the same as an epic with no Definition of Done at all.
-4. Gaps array: include only gaps that would cause mid-sprint blockers or create ambiguity for the engineering team. A missing edge case detail is not a gap; a missing acceptance criteria is. Maximum 5 gaps.
+4. Gaps array: include only gaps that would cause mid-sprint blockers or create ambiguity for the engineering team. A missing edge case detail is not a gap; a missing Definition of Done is. Maximum 5 gaps.
 5. Ambiguities array: only include phrases that are genuinely ambiguous. Do not manufacture ambiguity in an otherwise clear epic.
 6. Dependencies array: include both explicit (named in the epic) and strongly implied dependencies. Set confidence to "low" for implied ones.
 7. Improved epic: rewrite the epic narrative only. Do not insert Definition of Done criteria into the improved_story field — they belong in suggested_acs.
