@@ -523,7 +523,7 @@
                             onKeyDown={function(e) {
                               if (e.key === "Enter") {
                                 e.preventDefault();
-                                update({ accomplishments: (local.accomplishments || []).concat([{ sentence: "", title: "" }]) });
+                                e.target.blur();
                               }
                             }}
                             style={{ flex: 1, background: "transparent", border: "none", outline: "none",
@@ -571,7 +571,7 @@
                             onKeyDown={function(e) {
                               if (e.key === "Enter") {
                                 e.preventDefault();
-                                update({ nextSteps: (local.nextSteps || []).concat([{ action: "" }]) });
+                                e.target.blur();
                               }
                             }}
                             style={{ flex: 1, background: "transparent", border: "none", outline: "none",
@@ -623,7 +623,7 @@
                             onKeyDown={function(e) {
                               if (e.key === "Enter") {
                                 e.preventDefault();
-                                update({ blockers: (local.blockers || []).concat([{ title: "", impact: "Medium", mitigation: "", owner: "" }]) });
+                                e.target.blur();
                               }
                             }}
                             style={{ flex: 1, background: "transparent", border: "none", outline: "none",
