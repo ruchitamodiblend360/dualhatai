@@ -629,7 +629,23 @@
                             style={{ flex: 1, background: "transparent", border: "none", outline: "none",
                               fontSize: 13, fontWeight: 600, color: "#fff", fontFamily: "inherit", padding: 0 }}
                           />
-                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, fontWeight: 700, background: ic.text + "30", color: ic.text, flexShrink: 0 }}>{b.impact}</span>
+                          <select
+                            value={b.impact || "Medium"}
+                            onChange={function(e) {
+                              var next = (local.blockers || []).map(function(item, j) {
+                                return j === i ? Object.assign({}, item, { impact: e.target.value }) : item;
+                              });
+                              update({ blockers: next });
+                            }}
+                            title="Severity"
+                            style={{ fontSize: 10, padding: "2px 4px", borderRadius: 99, fontWeight: 700,
+                              background: ic.text + "30", color: ic.text, flexShrink: 0, border: "none",
+                              outline: "none", cursor: "pointer" }}
+                          >
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                          </select>
                           {b.type && <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 99, fontWeight: 600, background: "#314550", color: "#A2F3F3", flexShrink: 0 }}>{b.type}</span>}
                           <button onClick={function() {
                             update({ blockers: (local.blockers || []).filter(function(_, j) { return j !== i; }) });
