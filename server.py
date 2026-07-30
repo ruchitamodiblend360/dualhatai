@@ -367,7 +367,7 @@ What to check:
 Scoring guide:
 - 0–5:   Multiple undefined subjective terms, epic cannot be understood without follow-up
 - 6–10:  Several vague terms, likely to cause mid-sprint clarification requests
-- 11–15: Minor unclear terms, mostly understandable
+- 11–15: Generally clear; minor vague terms that don't block decomposition into stories
 - 16–20: Precise language throughout, all terms measurable or clearly defined
 
 ### 3. TESTABILITY (0–20)
