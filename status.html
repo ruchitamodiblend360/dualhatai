@@ -83,6 +83,35 @@
           .catch(function(e) { setLoadErr(e.message); setLoading(false); });
       }, []);
 
+      // Progressively fetch sprint/backlog detail per board, a few at a time,
+      // instead of blocking the whole list on every board resolving first.
+      useEffect(function() {
+        if (!boards.length) return;
+        var cancelled = false;
+        var queue = boards.filter(function(b) { return b.backlogCount === null; }).map(function(b) { return b.id; });
+        var idx = 0;
+        var CONCURRENCY = 6;
+
+        function next() {
+          if (cancelled || idx >= queue.length) return;
+          var boardId = queue[idx++];
+          fetch("/api/jira/board-detail?boardId=" + boardId)
+            .then(function(r) { return r.json(); })
+            .then(function(detail) {
+              if (cancelled) return;
+              setBoards(function(prev) { return prev.map(function(b) { return b.id === boardId ? Object.assign({}, b, detail) : b; }); });
+            })
+            .catch(function() {
+              if (cancelled) return;
+              setBoards(function(prev) { return prev.map(function(b) { return b.id === boardId ? Object.assign({}, b, { sprints: [], backlogCount: 0 }) : b; }); });
+            })
+            .finally(function() { next(); });
+        }
+
+        for (var i = 0; i < CONCURRENCY; i++) next();
+        return function() { cancelled = true; };
+      }, [boards.length]);
+
       const AVATAR_COLORS = ["#053057","#5B21B6","#065F46","#92400E","#1E40AF","#7C3AED","#0F766E","#B45309"];
       function avatarColor(key) {
         var h = 0;
@@ -281,11 +310,18 @@
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{board.projectName || board.name}</div>
                         <div style={{ fontSize: 11, color: "#F4F3F0", marginTop: 1 }}>
-                          {board.sprints.length} sprint{board.sprints.length !== 1 ? "s" : ""}
+                          {board.backlogCount === null
+                            ? <span style={{ opacity: 0.6, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                <i className="ti ti-hourglass" style={{ fontSize: 11, animation: "hourglassFlip 2.2s ease-in-out infinite" }} /> Loading…
+                              </span>
+                            : board.sprints.length + " sprint" + (board.sprints.length !== 1 ? "s" : "")}
                         </div>
                       </div>
                     </div>
                     <div style={{ padding: "8px" }}>
+                      {board.backlogCount === null && (
+                        <div style={{ padding: "10px", fontSize: 12, color: "#F4F3F0", opacity: 0.6, textAlign: "center" }}>Loading sprints…</div>
+                      )}
                       {board.sprints.map(function(sprint) {
                         const isActive  = sprint.state === "active";
                         const isClosed  = sprint.state === "closed";

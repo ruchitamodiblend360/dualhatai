@@ -749,13 +749,8 @@ def fetch_issue_comments(key, max_comments=3, max_chars=300):
     return []
 
 
-def fetch_board_detail(board):
-    """Fetch sprints + backlog count for one board. Called in parallel."""
-    bid = board["id"]
-    project_key = (board.get("location") or {}).get("projectKey", "")
-    project_name = (board.get("location") or {}).get("projectName", board.get("name", ""))
-    avatar_url = (board.get("location") or {}).get("avatarURI", "")
-
+def fetch_board_sprints_and_backlog(bid):
+    """Fetch sprints + backlog count for one board. Called per-board, on demand."""
     # Sprints (active + future + last 2 closed)
     try:
         sd = jira_agile_get(f"board/{bid}/sprint?state=active,future&maxResults=10")
@@ -812,18 +807,7 @@ def fetch_board_detail(board):
         closed = sorted([s for s in sprints if s["state"] == "closed"], key=lambda x: x.get("endDate", ""), reverse=True)
         sprints = active_future + closed
 
-    board_url = f"{JIRA_BASE_URL}/jira/software/projects/{project_key}/boards/{bid}"
-    return {
-        "id": bid,
-        "name": board.get("name", ""),
-        "type": board.get("type", "scrum"),
-        "projectKey": project_key,
-        "projectName": project_name,
-        "avatarUrl": avatar_url,
-        "sprints": sprints,
-        "backlogCount": backlog_count,
-        "url": board_url,
-    }
+    return {"sprints": sprints, "backlogCount": backlog_count}
 
 
 def build_pptx(deck):
@@ -1128,6 +1112,9 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if self.path == "/api/jira/board-overview":
+            # Lightweight board list only — no sprints/backlog here, those are
+            # fetched per-board on demand via /api/jira/board-detail so the
+            # list itself renders instantly even with 50+ boards.
             if not JIRA_AUTH:
                 self._send(503, json.dumps({"error": "Jira not configured"}))
                 return
@@ -1142,15 +1129,39 @@ class Handler(BaseHTTPRequestHandler):
                         break
                     start += 50
                 results = []
-                with ThreadPoolExecutor(max_workers=min(len(raw_boards), 8)) as ex:
-                    futures = {ex.submit(fetch_board_detail, b): b for b in raw_boards}
-                    for fut in as_completed(futures):
-                        try:
-                            results.append(fut.result())
-                        except Exception as e:
-                            print(f"  Board detail error: {e}")
+                for b in raw_boards:
+                    loc = b.get("location") or {}
+                    project_key = loc.get("projectKey", "")
+                    results.append({
+                        "id": b["id"],
+                        "name": b.get("name", ""),
+                        "type": b.get("type", "scrum"),
+                        "projectKey": project_key,
+                        "projectName": loc.get("projectName", b.get("name", "")),
+                        "avatarUrl": loc.get("avatarURI", ""),
+                        "url": f"{JIRA_BASE_URL}/jira/software/projects/{project_key}/boards/{b['id']}",
+                        "sprints": [],
+                        "backlogCount": None,
+                    })
                 results.sort(key=lambda x: x["projectName"].lower())
                 self._send(200, json.dumps(results))
+            except Exception as e:
+                self._send(502, json.dumps({"error": str(e)}))
+            return
+
+        if self.path.startswith("/api/jira/board-detail"):
+            if not JIRA_AUTH:
+                self._send(503, json.dumps({"error": "Jira not configured"}))
+                return
+            from urllib.parse import urlparse, parse_qs
+            qs = parse_qs(urlparse(self.path).query)
+            board_id = qs.get("boardId", [""])[0]
+            if not board_id:
+                self._send(400, json.dumps({"error": "Need boardId"}))
+                return
+            try:
+                detail = fetch_board_sprints_and_backlog(board_id)
+                self._send(200, json.dumps(detail))
             except Exception as e:
                 self._send(502, json.dumps({"error": str(e)}))
             return

@@ -1331,6 +1331,35 @@ Dependencies:
           .catch(e => { setError(e.message); setLoading(false); });
       }, []);
 
+      // Progressively fetch sprint/backlog detail per board, a few at a time,
+      // instead of blocking the whole list on every board resolving first.
+      useEffect(() => {
+        if (!boards.length) return;
+        let cancelled = false;
+        const queue = boards.filter(b => b.backlogCount === null).map(b => b.id);
+        let idx = 0;
+        const CONCURRENCY = 6;
+
+        function next() {
+          if (cancelled || idx >= queue.length) return;
+          const boardId = queue[idx++];
+          fetch(`/api/jira/board-detail?boardId=${boardId}`)
+            .then(r => r.json())
+            .then(detail => {
+              if (cancelled) return;
+              setBoards(prev => prev.map(b => b.id === boardId ? { ...b, ...detail } : b));
+            })
+            .catch(() => {
+              if (cancelled) return;
+              setBoards(prev => prev.map(b => b.id === boardId ? { ...b, sprints: [], backlogCount: 0 } : b));
+            })
+            .finally(() => next());
+        }
+
+        for (let i = 0; i < CONCURRENCY; i++) next();
+        return () => { cancelled = true; };
+      }, [boards.length]);
+
       const AVATAR_COLORS = ["#053057","#5B21B6","#065F46","#92400E","#1E40AF","#7C3AED","#0F766E","#B45309"];
       function avatarColor(key) {
         let h = 0;
@@ -1399,11 +1428,18 @@ Dependencies:
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{board.projectName || board.name}</div>
                       <div style={{ fontSize: 11, color: "#F4F3F0", marginTop: 1 }}>
-                        {board.sprints.length} sprint{board.sprints.length !== 1 ? "s" : ""} · {board.backlogCount} backlog
+                        {board.backlogCount === null
+                          ? <span style={{ opacity: 0.6, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                              <i className="ti ti-hourglass" style={{ fontSize: 11, animation: "hourglassFlip 2.2s ease-in-out infinite" }} /> Loading…
+                            </span>
+                          : `${board.sprints.length} sprint${board.sprints.length !== 1 ? "s" : ""} · ${board.backlogCount} backlog`}
                       </div>
                     </div>
                   </div>
                   <div style={{ padding: "8px" }}>
+                    {board.backlogCount === null && (
+                      <div style={{ padding: "10px", fontSize: 12, color: "#F4F3F0", opacity: 0.6, textAlign: "center" }}>Loading sprints &amp; backlog…</div>
+                    )}
                     {board.backlogCount > 0 && (
                       <div onClick={() => onSelect({ board, type: "backlog", label: "Backlog", sprintId: null })}
                         style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
