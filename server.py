@@ -181,7 +181,7 @@ Scoring guide:
 - 0–5:   No format, no ACs, no goal defined
 - 6–10:  Format partially present, ACs missing or very thin
 - 11–15: Good structure, some edge cases missing
-- 16–20: Full format, comprehensive ACs, edge cases covered, out-of-scope noted
+- 16–20: Full format, ACs defined, major flows covered. Edge cases are nice but not required for sprint-readiness.
 
 ### 2. CLARITY (0–20)
 What to check:
@@ -346,17 +346,16 @@ Score the epic across exactly 5 dimensions. Each dimension is scored 0–20. Tot
 
 ### 1. COMPLETENESS (0–20)
 What to check:
-- Is the "As a [persona]… I want [goal]… so that [benefit]" format present and meaningful?
-- Is the persona specific (not generic like "user" or "admin")?
-- Are acceptance criteria present? Do they cover the main flow?
-- Are edge cases and error states defined?
-- Is out-of-scope explicitly stated where needed?
+- Is the epic's goal and business outcome clearly stated (not just a feature name)?
+- Is the scope defined — what's included, and what's explicitly out of scope?
+- Are the key stakeholders or impacted teams identified?
+- Is the format meaningful (not just a title with no context)?
 
 Scoring guide:
-- 0–5:   No format, no ACs, no goal defined
-- 6–10:  Format partially present, ACs missing or very thin
-- 11–15: Good structure, some edge cases missing
-- 16–20: Full format, comprehensive ACs, edge cases covered, out-of-scope noted
+- 0–5:   No goal, outcome, or scope stated
+- 6–10:  Goal stated but business outcome or scope is thin/unclear
+- 11–15: Goal, outcome, and scope present; stakeholders or out-of-scope not stated
+- 16–20: Full goal, business outcome, scope, and out-of-scope all stated. Granular edge cases and Definition of Done are scored under TESTABILITY, not here.
 
 ### 2. CLARITY (0–20)
 What to check:
