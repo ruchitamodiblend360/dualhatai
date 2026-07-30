@@ -180,7 +180,7 @@ What to check:
 Scoring guide:
 - 0–5:   No format, no ACs, no goal defined
 - 6–10:  Format partially present, ACs missing or very thin
-- 11–15: Good structure, some edge cases missing
+- 11–15: Good structure, ACs present but a secondary flow or out-of-scope boundary isn't stated
 - 16–20: Full format, ACs defined, major flows covered. Edge cases are nice but not required for sprint-readiness.
 
 ### 2. CLARITY (0–20)
